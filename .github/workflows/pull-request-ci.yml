@@ -1,0 +1,68 @@
+name: PR SpringBoot Test
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    branches: ["main", "develop"]
+    types: [opened, reopened, ready_for_review, synchronize]
+
+jobs:
+  detect-src-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      src_changed: ${{ steps.filter.outputs.src }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            src:
+              - 'src/**'
+
+  springboot-test:
+    needs: detect-src-changes
+    if: needs.detect-src-changes.outputs.src_changed == 'true'
+    runs-on: ubuntu-latest
+
+    env:
+      SPRING_ACTIVE_PROFILES: test
+      # JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: 21
+          distribution: "temurin"
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: wrapper
+          cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
+
+      - name: Test with Gradle
+        run: ./gradlew test
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: build/test-results/test/TEST-*.xml
+
+  skip-message:
+    needs: detect-src-changes
+    if: needs.detect-src-changes.outputs.src_changed != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip Spring boot tests
+        run: echo "No src changes - tests skipped ✅"

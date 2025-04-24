@@ -1,0 +1,33 @@
+branchName: "${issue.number}-${issue.title[0,64],}"
+commentMessage: "Branch ${branchName} created for issue: ${issue.title}"
+autoLinkIssue: true
+autoCloseIssue: true
+autoDeleteBranch: true
+copyIssueLabelsToPR: true
+gitSafeReplacementChar: "-"
+experimental:
+  branchNameArgument: true
+branches:
+  - label: HOTFIX
+    name: main
+    prefix: hotfix/
+  - label: release
+    skipBranch: true
+  - label: question
+    skip: true
+  - label: test
+    prefix: test/
+  - label: refactor
+    prefix: refactor/
+  - label: docs
+    prefix: docs/
+  - label: bug
+    prefix: bug/
+  - label: build
+    prefix: build/
+  - label: style
+    prefix: style/
+  - label: chore
+    prefix: chore/
+  - label: "*"
+    prefix: feat/

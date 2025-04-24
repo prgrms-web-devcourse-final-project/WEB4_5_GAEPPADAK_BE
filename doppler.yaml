@@ -1,0 +1,7 @@
+setup:
+  - project: kkokkio-backend
+    config: dev
+    path: backend
+  - project: kkokkio-infra
+    config: dev
+    path: infra

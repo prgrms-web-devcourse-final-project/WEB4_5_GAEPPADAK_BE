@@ -1,0 +1,16 @@
+{
+  "name": "kkokkio",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "backend",
+    "infra"
+  ],
+  "scripts": {
+    "doppler": "npm run doppler:setup && turbo run doppler",
+    "doppler:setup": "doppler setup --no-interactive"
+  },
+  "devDependencies": {
+    "turbo": "1.13.4"
+  }
+}

@@ -10,10 +10,10 @@ on:
     types: [opened, reopened, ready_for_review, synchronize]
 
 jobs:
-  detect-src-changes:
+  detect-backend-changes:
     runs-on: ubuntu-latest
     outputs:
-      src_changed: ${{ steps.filter.outputs.src }}
+      backend_changed: ${{ steps.filter.outputs.backend }}
     steps:
       - uses: actions/checkout@v3
 
@@ -21,12 +21,12 @@ jobs:
         uses: dorny/paths-filter@v3
         with:
           filters: |
-            src:
-              - 'src/**'
+            backend:
+              - 'backend/**'
 
   springboot-test:
-    needs: detect-src-changes
-    if: needs.detect-src-changes.outputs.src_changed == 'true'
+    needs: detect-backend-changes
+    if: needs.detect-backend-changes.outputs.backend_changed == 'true'
     runs-on: ubuntu-latest
 
     env:
@@ -43,6 +43,7 @@ jobs:
           distribution: "temurin"
 
       - name: Grant execute permission for gradlew
+        working-directory: backend
         run: chmod +x gradlew
 
       - uses: gradle/actions/setup-gradle@v3
@@ -51,18 +52,19 @@ jobs:
           cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
 
       - name: Test with Gradle
+        working-directory: backend
         run: ./gradlew test
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
-          files: build/test-results/test/TEST-*.xml
+          files: backend/**/build/test-results/test/TEST-*.xml
 
   skip-message:
-    needs: detect-src-changes
-    if: needs.detect-src-changes.outputs.src_changed != 'true'
+    needs: detect-backend-changes
+    if: needs.detect-backend-changes.outputs.backend_changed != 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Skip Spring boot tests
-        run: echo "No src changes - tests skipped ✅"
+        run: echo "No backend changes - tests skipped ✅"

@@ -57,7 +57,7 @@ public class Member extends BaseTimeEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    public void markDeleted() {
+    public void softDelete() {
         this.deletedAt = LocalDateTime.now();
     }
 

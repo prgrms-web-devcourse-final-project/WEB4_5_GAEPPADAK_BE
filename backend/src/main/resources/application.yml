@@ -1,8 +1,4 @@
 spring:
-  security:
-    user:
-      name: user
-      password: 1234
   application:
     name: kkokkio
 

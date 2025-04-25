@@ -8,7 +8,9 @@
   ],
   "scripts": {
     "doppler": "npm run doppler:setup && turbo run doppler",
-    "doppler:setup": "doppler setup --no-interactive"
+    "doppler:setup": "doppler setup --no-interactive",
+    "docker": "cd infra && docker-compose up -d",
+    "docker:reset": "cd infra && docker-compose down -v && docker-compose up -d"
   },
   "devDependencies": {
     "turbo": "1.13.4"

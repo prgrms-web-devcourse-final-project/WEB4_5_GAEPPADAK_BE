@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  api:
+    container_name: api
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    ports:
+      - "${SERVER_PORT}:8080"
+    env_file:
+      - .env
+    volumes:
+      - ../backend/src:/app/src
+      - ../backend/build:/app/build
+      - ../backend/.gradle:/home/gradle/.gradle
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    container_name: db
+    image: mysql:8.0
+    restart: always
+    env_file:
+      - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT}:3306"
+    command: --general-log=1 --general-log-file=/var/lib/mysql/general.log
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./mysql_logs:/logs
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db_data:

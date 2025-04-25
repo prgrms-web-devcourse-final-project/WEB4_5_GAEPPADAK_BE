@@ -150,28 +150,18 @@ doppler setup
 npm run doppler
 ```
 
-**3️⃣ Run Database (MySQL via Docker Compose)**
+**3️⃣ Run Server & Database **
 
 ```bash
-# Start MySQL container with Docker Compose
-docker-compose up -d
+# Start MySQL & SpringBoot container with Docker Compose
+npm run docker
 
 # Monitor logs (logs are mapped locally)
-tail -f ./mysql_logs/general.log
+tail -f ./infra/mysql_logs/general.log
 
-# Stop Containers
-docker-compose down
+# Reset Containers
+npm run docker:reset
 
 ```
-
-**4️⃣ Run Backend (Spring Boot)**
-
-```bash
-cd backend
-
-./gradlew bootRun
-```
-
-- Port: 8080
 
 - Swagger Docs: http://localhost:8080/swagger-ui/index.html

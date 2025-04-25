@@ -13,7 +13,6 @@ spring:
   flyway:
     enabled: true # 개발 중에는 flyway 끔, 배포 전엔 true로 변경
     clean-disabled: false # 개발환경에서는 clean 허용
-    locations: classpath:db/migration,classpath:db/seed
 
 logging:
   level:

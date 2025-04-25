@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:db_test;MODE=MySQL # H2 메모리 DB (MySQL 모드)
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop # 테스트 시작 시 테이블 생성, 종료 시 삭제

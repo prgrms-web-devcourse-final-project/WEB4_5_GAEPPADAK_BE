@@ -18,8 +18,8 @@ services:
       db:
         condition: service_healthy
   db:
-    container_name: db
     image: mysql:8.0
+    container_name: mysql
     restart: always
     env_file:
       - .env

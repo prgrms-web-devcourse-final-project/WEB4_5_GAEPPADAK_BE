@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "doppler": "doppler secrets download --no-file --format env-no-quotes > .env"
+    "doppler": "doppler secrets download --no-file --format env-no-quotes > .env",
+    "db:migrate": "flyway -configFiles=\"./flyway.conf\" migrate"
   }
 }

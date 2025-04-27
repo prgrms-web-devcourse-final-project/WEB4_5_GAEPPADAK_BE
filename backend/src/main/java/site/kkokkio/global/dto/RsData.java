@@ -19,10 +19,12 @@ public class RsData<T> {
 	@NonNull
 	private T data;
 
-	public RsData(String code, String msg) {
-		this(code, msg, (T)new Empty());
+	// data 없이 code/message만 보내고 싶을 때ㅔ 빈 객체로 채우는 생성자
+	public RsData(String code, String message) {
+		this(code, message, (T)new Empty());
 	}
 
+	// getStatusCode()로 코드 앞부분을 잘라 HTTP 응답 상태로 사용
 	@JsonIgnore
 	public int getStatusCode() {
 		String statusCodeStr = code.split("-")[0];

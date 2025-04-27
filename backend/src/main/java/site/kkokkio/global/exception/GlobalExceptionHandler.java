@@ -42,7 +42,7 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<RsData<Void>> ServiceExceptionHandle(ServiceException ex) {
 
 		return ResponseEntity
-			.status(ex.getStatusCode())
+			.status(ex.getStatusCode()) // ex.getStatusCode() → RsData에서 파싱된 HTTP 상태
 			.body(
 				new RsData<>(
 					ex.getCode(),

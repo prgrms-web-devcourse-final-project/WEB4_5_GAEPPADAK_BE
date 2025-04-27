@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import site.kkokkio.global.dto.RsData;
@@ -31,6 +32,21 @@ public class GlobalExceptionHandler {
 				new RsData<>(
 					"400",
 					message
+				)
+			);
+	}
+
+	// 서비스 로직에서 발생한 커스텀 예외(ServiceException) 처리
+	@ResponseStatus // ResponseEntity.status()에 우선권이 있음
+	@ExceptionHandler(ServiceException.class)
+	public ResponseEntity<RsData<Void>> ServiceExceptionHandle(ServiceException ex) {
+
+		return ResponseEntity
+			.status(ex.getStatusCode())
+			.body(
+				new RsData<>(
+					ex.getCode(),
+					ex.getMessage()
 				)
 			);
 	}

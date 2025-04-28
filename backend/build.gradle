@@ -45,6 +45,9 @@ dependencies {
 
     // redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+    // for googleTrend
+    implementation 'com.rometools:rome:1.18.0'
 }
 
 tasks.named('test') {

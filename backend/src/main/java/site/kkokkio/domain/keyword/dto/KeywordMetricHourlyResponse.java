@@ -1,4 +1,4 @@
-package site.kkokkio.domain.keyword.controller.dto;
+package site.kkokkio.domain.keyword.dto;
 
 import java.time.LocalDateTime;
 

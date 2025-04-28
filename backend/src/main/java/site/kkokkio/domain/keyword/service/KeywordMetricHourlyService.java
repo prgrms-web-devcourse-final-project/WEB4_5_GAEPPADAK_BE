@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
-import site.kkokkio.domain.keyword.controller.dto.KeywordMetricHourlyResponse;
+import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyResponse;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourly;
 import site.kkokkio.domain.keyword.repository.KeywordMetricHourlyRepository;
 import site.kkokkio.global.exception.ServiceException;

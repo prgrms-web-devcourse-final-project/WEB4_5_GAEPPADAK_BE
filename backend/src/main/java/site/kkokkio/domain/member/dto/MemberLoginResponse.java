@@ -3,6 +3,8 @@ package site.kkokkio.domain.member.dto;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.global.enums.MemberRole;
 
@@ -12,6 +14,7 @@ public record MemberLoginResponse(
 	String email,
 	LocalDateTime deleteAt,
 	MemberRole role,
+	@JsonIgnore
 	String token
 ) {
 	public static MemberLoginResponse of(Member member, String token) {

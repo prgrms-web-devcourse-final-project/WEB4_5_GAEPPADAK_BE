@@ -8,5 +8,8 @@
 **/mysql_logs/
 
 ### custom ###
-infra/.terraform.lock.hcl
-infra/.terraform
+./infra/terraform
+./infra/terraform.lock.hcl
+./infra/terraform.tfstate
+./infra/terraform.tfstate.backup
+./infra/secrets.tf

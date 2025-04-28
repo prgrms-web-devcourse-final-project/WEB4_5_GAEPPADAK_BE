@@ -13,3 +13,4 @@
 /infra/terraform.tfstate
 /infra/terraform.tfstate.backup
 /infra/secrets.tf
+/infra/.env

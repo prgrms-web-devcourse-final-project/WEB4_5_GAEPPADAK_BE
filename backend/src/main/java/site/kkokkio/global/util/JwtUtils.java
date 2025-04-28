@@ -31,10 +31,10 @@ import site.kkokkio.global.exception.CustomAuthException;
 @Component
 public class JwtUtils {
 
-	@Value("${JWT_SECRET_KEY}")
+	@Value("${spring.jwt.secret-key}")
 	private String secretKey;
 
-	@Value("${JWT_EXPIRATION}")
+	@Value("${spring.jwt.expiration}")
 	private Long expiration;// dev 환경 10분
 
 	// JWT 생성

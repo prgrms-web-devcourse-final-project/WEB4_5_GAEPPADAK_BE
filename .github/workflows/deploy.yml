@@ -45,10 +45,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: application-secret.yml 생성
-        env:
-          APPLICATION_SECRET: ${{ secrets.APPLICATION_SECRET }}
-        run: echo "$APPLICATION_SECRET" > backend/src/main/resources/application-secret.yml
+      #      - name: application-secret.yml 생성
+      #        env:
+      #          APPLICATION_SECRET: ${{ secrets.APPLICATION_SECRET }}
+      #        run: echo "$APPLICATION_SECRET" > backend/src/main/resources/application-secret.yml
 
       - name: Docker Buildx 설치
         uses: docker/setup-buildx-action@v2
@@ -110,5 +110,6 @@ jobs:
             docker pull ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest && \
             docker stop app1 2>/dev/null || true && \
             docker rm app1 2>/dev/null || true && \
-            docker run -d --name app1 --network common -p 8080:8080 ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest && \
+            export DOPPLER_TOKEN=${{ secrets.DOPPLER_SERVICE_TOKEN }} && \
+            doppler run -- docker run -d --name app1 --network common -p 8080:8080 ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest && \
             docker rmi $(docker images -f "dangling=true" -q) || true

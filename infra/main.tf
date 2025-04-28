@@ -191,6 +191,9 @@ yum install docker -y
 systemctl enable docker
 systemctl start docker
 
+# doppler CLI 설치
+curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh | sh
+
 # 도커 네트워크 생성
 docker network create common
 

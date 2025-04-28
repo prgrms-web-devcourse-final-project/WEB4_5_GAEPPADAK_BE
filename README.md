@@ -132,6 +132,9 @@ git clone https://github.com/prgrms-web-devcourse-final-project/WEB4_5_GAEPPADAK
 ✅ Using Doppler (Recommended)
 
 > Doppler는 .env 환경 변수 파일을 안전하게 관리해주는 도구입니다.
+> 현재 프로젝트는 backend와 infra 두 폴더 안에서 Doppler를 사용하도록 구성되어 있습니다.
+> 각각의 폴더 안에서 npm run doppler 명령어를 별도로 실행해야 합니다.
+> 처음 실행하는 경우, doppler setup으로 설정할 프로젝트와 환경을 먼저 선택해 주세요.
 
 ```bash
 # Install Doppler CLI

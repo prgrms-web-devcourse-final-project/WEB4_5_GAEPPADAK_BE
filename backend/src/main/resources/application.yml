@@ -1,11 +1,18 @@
+server:
+  port: ${SERVER_PORT:8080}
+
 spring:
   application:
     name: kkokkio
+
+  profiles:
+    active: ${SPRING_ACTIVE_PROFILES:dev}
 
   data:
     redis:
       host: 127.0.0.1
       port: 6379
+
   config:
     import: optional:file:./.env[.properties]
 
@@ -15,8 +22,15 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
-      auto-commit: false
+      auto-commit: false # 트랜잭션의 자동 커밋을 비활성화하여 명시적 commit 필요
 
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
-    open-in-view: false
+    open-in-view: false # 영속성 컨텍스트를 뷰까지 열지 않음 (성능 및 Side-effect 방지)
+
+  flyway: # 공통 flyway 설정
+    enabled: false # 기본은 꺼두고, 환경별로 override
+    baseline-on-migrate: true # 초기 테이블 존재 시 baseline 적용
+    baseline-version: 0
+    fail-on-missing-locations: true
+    locations: classpath:db/migration # migration 스크립트 위치

@@ -1,0 +1,14 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate # Entity ↔ DB 스키마 일치 여부만 검사, 실제 반영은 안 함
+
+  flyway:
+    enabled: true
+    validateOnMigrate: true
+    cleanDisabled: true
+
+logging:
+  level:
+    root: WARN
+    org.hibernate: WARN

@@ -64,4 +64,8 @@ public class Comment extends BaseTimeEntity {
 	public void updateBody(String body) {
 		this.body = body;
 	}
+
+	public void increaseLikeCount() {
+		this.likeCount++;
+	}
 }

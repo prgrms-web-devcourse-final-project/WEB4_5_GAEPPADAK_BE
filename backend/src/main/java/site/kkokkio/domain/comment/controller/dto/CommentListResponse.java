@@ -5,10 +5,11 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 
 import lombok.Builder;
+import site.kkokkio.domain.comment.dto.CommentDto;
 
 @Builder
 public record CommentListResponse(
-	List<CommentResponse> list,
+	List<CommentDto> list,
 	PaginationMeta meta
 ) {
 	@Builder
@@ -22,7 +23,7 @@ public record CommentListResponse(
 	) {
 	}
 
-	public static CommentListResponse from(Page<CommentResponse> comments) {
+	public static CommentListResponse from(Page<CommentDto> comments) {
 		PaginationMeta paginationMeta = PaginationMeta.builder()
 			.page(comments.getNumber())
 			.size(comments.getSize())

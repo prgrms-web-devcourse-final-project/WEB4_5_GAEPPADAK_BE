@@ -8,6 +8,11 @@ spring:
   profiles:
     active: ${SPRING_ACTIVE_PROFILES:dev}
 
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+
   config:
     import: optional:file:./.env[.properties]
 

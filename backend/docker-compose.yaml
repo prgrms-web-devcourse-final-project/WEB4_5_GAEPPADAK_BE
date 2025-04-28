@@ -17,5 +17,14 @@ services:
       - db_data:/var/lib/mysql
       - ./mysql_logs:/logs
 
+  redis: # container name
+    image: redis:alpine
+    container_name: redis
+    restart: always
+    ports: # 바인딩할 포트:내부 포트
+      - "6379:6379"
+    volumes: # 마운트할 볼륨 설정
+      - ./redis_data:/data
+
 volumes:
   db_data:

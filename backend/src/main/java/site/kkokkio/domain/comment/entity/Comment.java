@@ -57,7 +57,11 @@ public class Comment extends BaseTimeEntity {
         this.deletedAt = LocalDateTime.now();
     }
 
-    public boolean isDeleted() {
-        return this.deletedAt != null;
-    }
+	public boolean isDeleted() {
+		return this.deletedAt != null;
+	}
+
+	public void updateBody(String body) {
+		this.body = body;
+	}
 }

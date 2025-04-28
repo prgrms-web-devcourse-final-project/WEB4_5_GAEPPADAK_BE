@@ -15,7 +15,7 @@ public record MemberLoginResponse(
 	LocalDateTime deleteAt,
 	MemberRole role,
 	@JsonIgnore
-	String token // Ignore 처리
+	String token
 ) {
 	public static MemberLoginResponse of(Member member, String token) {
 		return new MemberLoginResponse(member.getId(), member.getNickname(), member.getEmail(),

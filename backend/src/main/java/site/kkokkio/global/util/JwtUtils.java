@@ -43,9 +43,9 @@ public class JwtUtils {
 		Date issuedAt = new Date();
 
 		return Jwts.builder()
-			.claims(claims)
-			.issuedAt(issuedAt)
-			.expiration(new Date(issuedAt.getTime() + expiration))
+			.claims(claims) // 사용자 정보 포함
+			.issuedAt(issuedAt) // 발급 시간
+			.expiration(new Date(issuedAt.getTime() + expiration)) // 만료 시간
 			.signWith(key) // 알고리즘 자동 인식 (HS256)
 			.compact();
 	}

@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
@@ -29,7 +30,7 @@ public record MemberSignUpRequest(
 	String nickname,
 
 	// 생년월일
-	@NotBlank(message = "생년월일을 입력해주세요.")
+	@NotNull(message = "생년월일을 입력해주세요.")
 	LocalDate birthDate
 ) {
 }

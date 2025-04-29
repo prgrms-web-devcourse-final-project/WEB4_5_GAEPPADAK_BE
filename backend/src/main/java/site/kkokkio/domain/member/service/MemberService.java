@@ -8,9 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
-import site.kkokkio.domain.member.dto.MemberLoginResponse;
-import site.kkokkio.domain.member.dto.MemberResponse;
-import site.kkokkio.domain.member.dto.MemberSignUpRequest;
+import site.kkokkio.domain.member.controller.dto.MemberLoginResponse;
+import site.kkokkio.domain.member.controller.dto.MemberResponse;
+import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.repository.MemberRepository;
 import site.kkokkio.global.enums.MemberRole;

@@ -1,4 +1,4 @@
-package site.kkokkio.domain.member.dto;
+package site.kkokkio.domain.member.controller.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

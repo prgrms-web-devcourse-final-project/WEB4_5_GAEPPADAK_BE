@@ -36,7 +36,7 @@ public class KeywordMetricHourlyControllerV1 {
 			return new RsData<>(
 				e.getCode(),
 				e.getMessage(),
-				new ArrayList<>() // 또는 null
+				new ArrayList<>()
 			);
 		}
 	}

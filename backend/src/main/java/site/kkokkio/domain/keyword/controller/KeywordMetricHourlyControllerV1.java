@@ -18,7 +18,7 @@ import site.kkokkio.global.exception.ServiceException;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/keywords")
-@Tag(name = "Keyword API", description = "인기 Keyword 관련 API") // Tag 추가
+@Tag(name = "Keyword API", description = "인기 Keyword 관련 API")
 public class KeywordMetricHourlyControllerV1 {
 	private final KeywordMetricHourlyService keywordMetricHourlyService;
 

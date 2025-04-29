@@ -45,9 +45,9 @@ spring:
     secret-key: ${JWT_SECRET_KEY}
     expiration: ${JWT_EXPIRATION}
 
-    jackson:
-      serialization:
-        FAIL_ON_EMPTY_BEANS: false # 빈 객체도 직렬화가 가능하도록 설정 (Empty)
+  jackson:
+    serialization:
+      FAIL_ON_EMPTY_BEANS: false # 빈 객체도 직렬화가 가능하도록 설정 (Empty)
 
 google:
   trends:

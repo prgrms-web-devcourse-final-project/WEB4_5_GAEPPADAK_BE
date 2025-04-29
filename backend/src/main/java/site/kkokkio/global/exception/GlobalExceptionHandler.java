@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import site.kkokkio.global.dto.RsData;
 
@@ -35,6 +36,18 @@ public class GlobalExceptionHandler {
 				)
 			);
 	}
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<RsData<Void>> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
+        return ResponseEntity
+			.status(HttpStatus.BAD_REQUEST)
+            .body(
+				new RsData<>(
+					"400",
+					"잘못된 요청입니다."
+				));
+    }
+
 
 	// 서비스 로직에서 발생한 커스텀 예외(ServiceException) 처리
 	@ResponseStatus // ResponseEntity.status()에 우선권이 있음

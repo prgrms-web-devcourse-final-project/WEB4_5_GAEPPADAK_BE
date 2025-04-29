@@ -11,7 +11,7 @@ spring:
         default_batch_fetch_size: 100 # N+1 최소화를 위한 배치 fetch 사이즈 설정
 
   flyway:
-    enabled: true # 개발 중에는 flyway 끔, 배포 전엔 true로 변경
+    enabled: false # 개발 중에는 flyway 끔, 배포 전엔 true로 변경
     clean-disabled: false # 개발환경에서는 clean 허용
 
 logging:

@@ -37,6 +37,9 @@ public class Source extends BaseTimeEntity {
     @Column
     private String title;
 
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @Column(name = "thumbnail_url", columnDefinition = "TEXT")
     private String thumbnailUrl;
 

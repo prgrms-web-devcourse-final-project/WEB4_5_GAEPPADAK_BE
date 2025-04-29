@@ -82,7 +82,7 @@ public class KeywordMetricHourlyServiceTest {
 		ServiceException exception = assertThrows(ServiceException.class, () -> {
 			keywordMetricHourlyService.findHourlyMetrics();
 		});
-		assertThat(exception.getCode()).isEqualTo("400");
+		assertThat(exception.getCode()).isEqualTo("404");
 		assertThat(exception.getMessage()).isEqualTo("키워드를 불러오지 못했습니다.");
 	}
 
@@ -97,7 +97,7 @@ public class KeywordMetricHourlyServiceTest {
 		ServiceException exception = assertThrows(ServiceException.class, () -> {
 			keywordMetricHourlyService.findHourlyMetrics();
 		});
-		assertThat(exception.getCode()).isEqualTo("400");
+		assertThat(exception.getCode()).isEqualTo("404");
 		assertThat(exception.getMessage()).isEqualTo("키워드를 불러오지 못했습니다.");
 	}
 }

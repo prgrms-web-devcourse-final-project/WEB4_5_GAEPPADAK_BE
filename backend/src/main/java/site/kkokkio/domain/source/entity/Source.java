@@ -40,8 +40,8 @@ public class Source extends BaseTimeEntity {
     @Column(name = "thumbnail_url", columnDefinition = "TEXT")
     private String thumbnailUrl;
 
-    @Column(name = "fetched_at", nullable = false)
-    private LocalDateTime fetchedAt;
+    @Column(name = "published_at", nullable = false)
+    private LocalDateTime publishedAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

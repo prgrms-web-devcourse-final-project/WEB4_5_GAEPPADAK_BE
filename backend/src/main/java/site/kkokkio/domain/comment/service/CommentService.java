@@ -44,9 +44,7 @@ public class CommentService {
 			.body(request.body())
 			.build();
 
-		commentRepository.save(comment);
-
-		return CommentDto.from(comment);
+		return CommentDto.from(commentRepository.save(comment));
 	}
 
 	@Transactional

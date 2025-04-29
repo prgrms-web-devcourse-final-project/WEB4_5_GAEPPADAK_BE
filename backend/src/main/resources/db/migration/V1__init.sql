@@ -92,11 +92,11 @@ CREATE TABLE source (
   normalized_url VARCHAR(500) NOT NULL,
   title VARCHAR(255),
   thumbnail_url TEXT,
-  fetched_at DATETIME NOT NULL,
+  published_at DATETIME NOT NULL,
   platform VARCHAR(30) NOT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_source_platform_published (platform, fetched_at)
+  INDEX idx_source_platform_published (platform, published_at)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE post_source (

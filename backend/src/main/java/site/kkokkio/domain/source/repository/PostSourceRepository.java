@@ -1,20 +1,16 @@
 package site.kkokkio.domain.source.repository;
 
-import java.util.List;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.stereotype.Repository;
-
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 import site.kkokkio.domain.source.entity.PostSource;
 import site.kkokkio.domain.source.entity.Source;
 import site.kkokkio.global.enums.Platform;
-import site.kkokkio.domain.keyword.entity.KeywordMetricHourly;
-import site.kkokkio.domain.keyword.entity.KeywordPostHourly;
-import site.kkokkio.domain.post.entity.Post;
+
+import java.util.List;
 
 @Repository
 public interface PostSourceRepository extends JpaRepository<PostSource, Long> {
@@ -62,7 +58,7 @@ public interface PostSourceRepository extends JpaRepository<PostSource, Long> {
 			FROM KeywordMetricHourly kmh
 			JOIN KeywordPostHourly kph
 			ON kph.id.bucketAt = kmh.id.bucketAt
-			AND kph.id.platform = kph.id.platform
+			AND kph.id.platform = kmh.id.platform
 			AND kph.id.keywordId = kmh.id.keywordId
 			JOIN kph.post p
 			JOIN PostSource ps

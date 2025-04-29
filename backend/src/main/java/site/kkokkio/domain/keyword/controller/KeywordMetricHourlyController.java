@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyResponse;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
@@ -14,6 +15,7 @@ import site.kkokkio.global.dto.RsData;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/keywords")
+@Tag(name = "Keyword API", description = "인기 Keyword 관련 API") // Tag 추가
 public class KeywordMetricHourlyController {
 	private final KeywordMetricHourlyService keywordMetricHourlyService;
 

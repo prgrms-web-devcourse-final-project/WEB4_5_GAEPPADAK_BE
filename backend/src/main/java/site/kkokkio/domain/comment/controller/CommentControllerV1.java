@@ -29,8 +29,8 @@ import site.kkokkio.global.dto.RsData;
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
-@Tag(name = "Comment API", description = "댓글 관련 API 엔드포인트")
-public class CommentController {
+@Tag(name = "Comment API V1", description = "댓글 관련 API 엔드포인트 V1")
+public class CommentControllerV1 {
 	private final CommentService commentService;
 
 	@Operation(summary = "댓글 목록 조회")

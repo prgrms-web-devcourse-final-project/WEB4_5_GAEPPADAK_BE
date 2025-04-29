@@ -34,9 +34,9 @@ import site.kkokkio.domain.comment.service.CommentService;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.global.config.SecurityConfig;
 
-@WebMvcTest(CommentController.class)
+@WebMvcTest(CommentControllerV1.class)
 @Import(SecurityConfig.class)
-class CommentControllerTest {
+class CommentControllerV1Test {
 
 	@Autowired
 	private MockMvc mockMvc;

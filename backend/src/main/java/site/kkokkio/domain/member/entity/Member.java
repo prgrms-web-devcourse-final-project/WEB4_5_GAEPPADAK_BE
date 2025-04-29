@@ -29,42 +29,43 @@ import site.kkokkio.global.util.BaseTimeEntity;
 @Getter
 public class Member extends BaseTimeEntity {
 
-    @Id
-    @GeneratedValue
-    @UuidGenerator
-    @Column(name = "member_id")
-    private UUID id;
+	@Id
+	@GeneratedValue
+	@UuidGenerator
+	@Column(name = "member_id")
+	private UUID id;
 
-    @Column(nullable = false, unique = true)
-    private String email;
+	@Column(nullable = false, unique = true)
+	private String email;
 
-    @Column(name = "password_hash", nullable = false)
-    private String passwordHash;
+	@Column(name = "password_hash", nullable = false)
+	private String passwordHash;
 
-    @Column(nullable = false, unique = true)
-    private String nickname;
+	@Column(nullable = false, unique = true)
+	private String nickname;
 
-    @Column(name = "birth_date", nullable = false)
-    private LocalDate birthDate;
+	@Column(name = "birth_date", nullable = false)
+	private LocalDate birthDate;
 
-    @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private MemberRole role = MemberRole.USER;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private MemberRole role = MemberRole.USER;
 
-    @Builder.Default
 	@Column(name = "email_verified", nullable = false)
-    private boolean emailVerified = false;
+	private boolean emailVerified = false;
 
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
+	@Column(name = "deleted_at")
+	private LocalDateTime deletedAt;
 
-    public void softDelete() {
-        this.deletedAt = LocalDateTime.now();
-    }
+	public void softDelete() {
+		this.deletedAt = LocalDateTime.now();
+	}
 
-    public boolean isDeleted() {
-        return this.deletedAt != null;
-    }
+	public boolean isDeleted() {
+		return this.deletedAt != null;
+	}
 
+	public void setEmailVerified(boolean emailVerified) {
+		this.emailVerified = emailVerified;
+	}
 }

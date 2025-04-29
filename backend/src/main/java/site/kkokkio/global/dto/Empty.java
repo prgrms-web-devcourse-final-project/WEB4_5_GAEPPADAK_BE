@@ -1,4 +1,4 @@
 package site.kkokkio.global.dto;
 
-public class Empty {
+public record Empty() {
 }

@@ -1,4 +1,4 @@
-package site.kkokkio.domain.post.entity;
+package site.kkokkio.domain.source.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,7 +14,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import site.kkokkio.domain.source.entity.Source;
+import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.global.util.BaseTimeEntity;
 
 /**

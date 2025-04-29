@@ -16,7 +16,7 @@ import site.kkokkio.domain.source.service.SourceService;
 import site.kkokkio.global.dto.RsData;
 
 @RestController
-@RequestMapping("api/v1")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Tag(name = "Source API V1", description = "출처 관련 API 엔드포인트 V1")
 public class SourceControllerV1 {
@@ -26,6 +26,18 @@ public class SourceControllerV1 {
 	@GetMapping("/posts/{postId}/news")
 	public RsData<SourceListResponse> getNewsSourceList(@PathVariable("postId") Long postId) {
 		List<SourceDto> sources = sourceService.getTop10NewsSourcesByPostId(postId);
+		SourceListResponse sourceListResponse = SourceListResponse.from(sources);
+		return new RsData<>(
+			"200",
+			"성공적으로 조회되었습니다.",
+			sourceListResponse
+		);
+	}
+
+	@Operation(summary = "포스트의 출처 영상 Top 10 조회")
+	@GetMapping("/posts/{postId}/videos")
+	public RsData<SourceListResponse> getVideoSourceList(@PathVariable("postId") Long postId) {
+		List<SourceDto> sources = sourceService.getTop10VideoSourcesByPostId(postId);
 		SourceListResponse sourceListResponse = SourceListResponse.from(sources);
 		return new RsData<>(
 			"200",

@@ -89,4 +89,28 @@ class SourceControllerV1Test {
             .andExpect(jsonPath("$.code").value("404"))
             .andExpect(jsonPath("$.message").value("해당 포스트를 찾을 수 없습니다."));
     }
+
+
+    @Test
+	@DisplayName("포스트의 출처 영상 조회 - 성공")
+    void getVideoSources_Success() throws Exception {
+        // given
+        List<SourceDto> mockVideoList = List.of(
+            new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목1", LocalDateTime.parse("2024-04-29T15:30:00")),
+            new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목2", LocalDateTime.parse("2024-04-29T15:30:00")),
+            new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목3", LocalDateTime.parse("2024-04-29T15:30:00")),
+            new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목4", LocalDateTime.parse("2024-04-29T15:30:00")),
+            new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목5", LocalDateTime.parse("2024-04-29T15:30:00"))
+        );
+        given(sourceService.getTop10VideoSourcesByPostId(anyLong())).willReturn(mockVideoList);
+
+        // when & then
+        mockMvc.perform(get("/api/v1/posts/{postId}/videos", 1L))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value("200"))
+            .andExpect(jsonPath("$.message").value("성공적으로 조회되었습니다."))
+            .andExpect(jsonPath("$.data.list[0].url").value("https://youtube.com"))
+            .andExpect(jsonPath("$.data.list[0].thumbnailUrl").value("https://image.jpg"))
+            .andExpect(jsonPath("$.data.list[0].title").value("영상 제목1"));
+    }
 }

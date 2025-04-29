@@ -19,13 +19,28 @@ public class SourceService {
 	private final PostSourceRepository postSourceRepository;
 	private final PostService postService;
 
+	private static final int MAX_SOURCE_COUNT_PER_POST = 10;
+
 	public List<SourceDto> getTop10NewsSourcesByPostId(Long postId) {
 		postService.getPostById(postId);
 		Platform newsPlatform = Platform.NAVER_NEWS;
-		PageRequest pageRequest = PageRequest.of(0, 10);
+		PageRequest pageRequest = PageRequest.of(0, MAX_SOURCE_COUNT_PER_POST);
 		List<PostSource> postSources = postSourceRepository.findAllWithSourceByPostIdAndPlatform(
 			postId,
 			newsPlatform,
+			pageRequest);
+		return postSources.stream()
+			.map(ps -> SourceDto.from(ps.getSource()))
+			.toList();
+	}
+
+	public List<SourceDto> getTop10VideoSourcesByPostId(Long postId) {
+		postService.getPostById(postId);
+		Platform videoPlatform = Platform.YOUTUBE;
+		PageRequest pageRequest = PageRequest.of(0, MAX_SOURCE_COUNT_PER_POST);
+		List<PostSource> postSources = postSourceRepository.findAllWithSourceByPostIdAndPlatform(
+			postId,
+			videoPlatform,
 			pageRequest);
 		return postSources.stream()
 			.map(ps -> SourceDto.from(ps.getSource()))

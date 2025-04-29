@@ -125,4 +125,60 @@ class SourceServiceTest {
                 .isInstanceOf(ServiceException.class)
                 .hasMessage("해당 포스트를 찾을 수 없습니다.");
     }
+
+
+    @Test
+	@DisplayName("영상 출처 10개 조회 - 성공")
+    void getTop10VideoSourcesByPostId_success() {
+        // given
+        Long postId = 1L;
+        Platform platform = Platform.YOUTUBE;
+        PageRequest pageRequest = PageRequest.of(0, 10);
+
+		Post dummyPost = Post.builder().id(postId).build();
+
+        Source s1 = Source.builder()
+                .fingerprint("f1")
+                .normalizedUrl("https://youtube1")
+                .title("유튜브1")
+                .thumbnailUrl("thumb1")
+                .publishedAt(LocalDateTime.now())
+                .platform(platform)
+                .build();
+
+        Source s2 = Source.builder()
+                .fingerprint("f2")
+                .normalizedUrl("https://youtube2")
+                .title("유튜브2")
+                .thumbnailUrl("thumb2")
+                .publishedAt(LocalDateTime.now())
+                .platform(platform)
+                .build();
+
+        PostSource ps1 = PostSource.builder()
+                .id(101L)
+                .post(dummyPost)
+                .source(s1)
+                .build();
+
+        PostSource ps2 = PostSource.builder()
+                .id(102L)
+                .post(dummyPost)
+                .source(s2)
+                .build();
+
+
+        given(postService.getPostById(eq(postId))).willReturn(dummyPost);
+        given(postSourceRepository.findAllWithSourceByPostIdAndPlatform(eq(postId), eq(platform), eq(pageRequest)))
+                .willReturn(List.of(ps1, ps2));
+
+        // when
+        List<SourceDto> result = sourceService.getTop10VideoSourcesByPostId(postId);
+
+        // then
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).url()).isEqualTo("https://youtube1");
+        assertThat(result.get(1).title()).isEqualTo("유튜브2");
+    }
+
 }

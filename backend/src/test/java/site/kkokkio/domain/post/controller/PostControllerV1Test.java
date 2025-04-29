@@ -30,7 +30,7 @@ public class PostControllerV1Test {
 
 	@Test
 	@DisplayName("포스트 단건 조회 - 성공")
-	void getPostById_success() throws Exception {
+	void test1() throws Exception {
 		// given
 		PostDto postDto = PostDto.builder()
 			.postId(1L)
@@ -46,6 +46,7 @@ public class PostControllerV1Test {
 		mockMvc.perform(get("/api/v1/posts/{postId}", 1L))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").value("정상적으로 호출되었습니다."))
 			.andExpect(jsonPath("$.data.postId").value(1L))
 			.andExpect(jsonPath("$.data.keyword").value("테스트 키워드"))
 			.andExpect(jsonPath("$.data.title").value("포스트 제목"))
@@ -55,21 +56,21 @@ public class PostControllerV1Test {
 
 	@Test
 	@DisplayName("포스트 단건 조회 - 실패 (포스트 없음)")
-	void getPostById_fail() throws Exception {
+	void test2() throws Exception {
 		// given
 		given(postService.getPostWithKeywordById(1L))
-			.willThrow(new ServiceException("400", "포스트를 불러오지 못했습니다."));
+			.willThrow(new ServiceException("404", "포스트를 불러오지 못했습니다."));
 
 		// when & then
 		mockMvc.perform(get("/api/v1/posts/{postId}", 1L))
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.code").value("400"))
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.code").value("404"))
 			.andExpect(jsonPath("$.message").value("포스트를 불러오지 못했습니다."));
 	}
 
 	@Test
 	@DisplayName("Top10 포스트 조회 - 성공")
-	void getTopKeywordPosts_success() throws Exception {
+	void test3() throws Exception {
 		// given
 		List<PostDto> topPosts = List.of(
 			PostDto.builder()
@@ -94,21 +95,30 @@ public class PostControllerV1Test {
 		mockMvc.perform(get("/api/v1/posts/top"))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").value("정상적으로 호출되었습니다."))
+			.andExpect(jsonPath("$.data[0].postId").value(1))
 			.andExpect(jsonPath("$.data[0].keyword").value("키워드1"))
-			.andExpect(jsonPath("$.data[1].keyword").value("키워드2"));
+			.andExpect(jsonPath("$.data[0].title").value("제목1"))
+			.andExpect(jsonPath("$.data[0].summary").value("요약1"))
+			.andExpect(jsonPath("$.data[0].thumbnailUrl").value("https://image1.url"))
+			.andExpect(jsonPath("$.data[1].postId").value(2))
+			.andExpect(jsonPath("$.data[1].keyword").value("키워드2"))
+			.andExpect(jsonPath("$.data[1].title").value("제목2"))
+			.andExpect(jsonPath("$.data[1].summary").value("요약2"))
+			.andExpect(jsonPath("$.data[1].thumbnailUrl").value("https://image2.url"));
 	}
 
 	@Test
 	@DisplayName("Top10 포스트 조회 - 실패 (포스트 없음)")
-	void getTopKeywordPosts_fail() throws Exception {
+	void test4() throws Exception {
 		// given
 		given(postService.getTopPostsWithKeyword())
-			.willThrow(new ServiceException("400", "포스트를 불러오지 못했습니다."));
+			.willThrow(new ServiceException("404", "포스트를 불러오지 못했습니다."));
 
 		// when & then
 		mockMvc.perform(get("/api/v1/posts/top"))
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.code").value("400"))
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.code").value("404"))
 			.andExpect(jsonPath("$.message").value("포스트를 불러오지 못했습니다."));
 	}
 }

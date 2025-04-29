@@ -45,12 +45,10 @@ public class PostService {
 	@Transactional(readOnly = true)
 	public PostDto getPostWithKeywordById(Long id) {
 		Post post = postRepository.findById(id)
-			.orElseThrow(() -> new ServiceException("400", "포스트를 불러오지 못했습니다."));
+			.orElseThrow(() -> new ServiceException("404", "포스트를 불러오지 못했습니다."));
 
 		PostKeyword postKeyword = postKeywordRepository.findByPost_Id(id)
-			.orElseThrow(() -> new ServiceException("400", "포스트를 불러오지 못했습니다."));
-			//추후 에러코드 추가
-			// .orElseThrow(() -> new ServiceException("400", "포스트에 연결된 키워드를 찾을 수 없습니다."));
+			.orElseThrow(() -> new ServiceException("404", "포스트를 불러오지 못했습니다."));
 
 		String keywordText = postKeyword.getKeyword().getText();
 
@@ -66,7 +64,8 @@ public class PostService {
 			.withNano(0);
 
 		//최신 버킷 기준으로 점수 높은 순 키워드(10개)
-		List<KeywordMetricHourly> topKeywordMetrics = keywordMetricHourlyRepository.findTop10ById_BucketAtOrderByScoreDesc(now);
+		List<KeywordMetricHourly> topKeywordMetrics = keywordMetricHourlyRepository.findTop10ById_BucketAtOrderByScoreDesc(
+			now);
 
 		List<PostDto> topPosts = new ArrayList<>();
 
@@ -84,7 +83,7 @@ public class PostService {
 		}
 
 		if (topPosts.isEmpty()) {
-			throw new ServiceException("400", "포스트를 불러오지 못했습니다.");
+			throw new ServiceException("404", "포스트를 불러오지 못했습니다.");
 		}
 
 		return topPosts;
@@ -106,13 +105,14 @@ public class PostService {
 		);
 
 		// 2. KeywordMetricHourly 찾기(keywordId + bucketAt 둘 다 맞춰야 함)
-		KeywordMetricHourlyId keywordMetricHourlyId = new KeywordMetricHourlyId(bucketAt, Platform.GOOGLE_TREND, keywordId);
+		KeywordMetricHourlyId keywordMetricHourlyId = new KeywordMetricHourlyId(bucketAt, Platform.GOOGLE_TREND,
+			keywordId);
 		KeywordMetricHourly keywordMetricHourly = keywordMetricHourlyRepository.findById(keywordMetricHourlyId)
-			.orElseThrow(() -> new ServiceException("400", "KeywordMetricHourly를 찾을 수 없습니다."));
+			.orElseThrow(() -> new ServiceException("404", "KeywordMetricHourly를 찾을 수 없습니다."));
 
 		// 3. Keyword 찾기
 		Keyword keyword = keywordRepository.findById(keywordId)
-			.orElseThrow(() -> new ServiceException("400", "Keyword를 찾을 수 없습니다."));
+			.orElseThrow(() -> new ServiceException("404", "Keyword를 찾을 수 없습니다."));
 
 		// 4. KeywordPostHourly 저장
 		KeywordPostHourly keywordPostHourly = KeywordPostHourly.builder()

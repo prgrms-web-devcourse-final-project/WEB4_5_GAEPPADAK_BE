@@ -103,7 +103,7 @@ public class PostServiceTest {
 	@DisplayName("top10 키워드 포스트 조회 성공")
 	void test3() {
 		// given
-		LocalDateTime now = LocalDateTime.now().withMinute(0).withSecond(0).withNano(0);
+		LocalDateTime now = LocalDateTime.of(2025, 4, 29, 15, 0); // 고정된 시간
 
 		Keyword keyword = Keyword.builder().id(100L).text("테스트 키워드").build();
 		Post post = Post.builder().id(1L).title("포스트 제목").summary("요약").bucketAt(now).build();
@@ -119,7 +119,7 @@ public class PostServiceTest {
 			.post(post)
 			.build();
 
-		given(keywordMetricHourlyRepository.findTop10ById_BucketAtOrderByScoreDesc(any())).willReturn(List.of(metric));
+		given(keywordMetricHourlyRepository.findTop10ById_BucketAtOrderByScoreDesc(now)).willReturn(List.of(metric));
 		given(keywordPostHourlyRepository.findById_KeywordIdAndId_BucketAt(100L, now)).willReturn(
 			Optional.of(keywordPostHourly));
 

@@ -15,7 +15,7 @@ public record TopSourceListResponse(
         PaginationMeta meta
 ) {
     @Builder
-    private record PaginationMeta(
+    public record PaginationMeta(
             int page,
             int size,
             long totalElements,

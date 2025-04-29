@@ -44,8 +44,8 @@ public class NaverNewsApiAdapter implements NewsApiPort {
     private String NAVER_SEARCH_NEWS_PATH;
 
     @Retry(name = "NAVER_NEWS_RETRY")
+    @CircuitBreaker(name = "NAVER_NEWS_CIRCUIT_BREAKER")
     @RateLimiter(name = "NAVER_NEWS_RATE_LIMITER")
-    @CircuitBreaker(name = "NAVER_NEWS_CIRCUIT_BREAKER", fallbackMethod = "openCircuitFallback")
 	@Override
 	public Mono<List<NewsDto>> fetchNews(String keyword, Integer display, Integer start, String sort) {
 
@@ -56,10 +56,9 @@ public class NaverNewsApiAdapter implements NewsApiPort {
             .retrieve()
 			.onStatus(HttpStatusCode::isError, this::mapError)
             .bodyToMono(NaverNewsSearchResponse.class)
-			// 서킷 오픈 시 CallNotPermittedException → RetryableExternalApiException으로 변환
+			// 서킷 오픈 시 CallNotPermittedException → RetryableExternalApiException 변환
 			.onErrorMap(CallNotPermittedException.class,
 				ex -> new RetryableExternalApiException(503, ex.getMessage()))
-			// 5xx·429 에러(ExternalApiErrorUtil)가 이미 RetryableExternalApiException으로 Mapping됨
             .map(this::toNewsDtos);
 	}
 

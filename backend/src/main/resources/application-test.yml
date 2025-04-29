@@ -9,3 +9,48 @@ spring:
     database: h2
     hibernate:
       ddl-auto: create-drop # 테스트 시작 시 테이블 생성, 종료 시 삭제
+
+  main:
+    allow-bean-definition-overriding: true
+
+resilience4j:
+  retry:
+    configs:
+      default:
+        max-attempts: 2
+        wait-duration: 0ms
+        enable-exponential-backoff: false
+        retry-exceptions:
+          - site.kkokkio.infra.common.exception.RetryableExternalApiException
+        ignore-exceptions:
+          - site.kkokkio.infra.common.exception.ClientBadRequestException
+    instances:
+      NAVER_NEWS_RETRY:
+        base-config: default
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 2
+        failure-rate-threshold: 50
+        record-exceptions:
+          - site.kkokkio.infra.common.exception.RetryableExternalApiException
+        ignore-exceptions:
+          - site.kkokkio.infra.common.exception.ClientBadRequestException
+    instances:
+      NAVER_NEWS_CIRCUIT_BREAKER:
+        base-config: default
+  ratelimiter:
+    configs:
+      default:
+        limit-for-period: 2
+        limit-refresh-period: 1s
+        timeout-duration: 0
+    instances:
+      NAVER_NEWS_RATE_LIMITER:
+        base-config: default
+
+management:
+  observations:
+    enable:
+      http.client.requests: false

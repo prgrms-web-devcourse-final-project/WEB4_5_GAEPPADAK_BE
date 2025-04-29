@@ -31,7 +31,7 @@ jobs:
 
     env:
       SPRING_ACTIVE_PROFILES: test
-      # JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+      JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
 
     steps:
       - uses: actions/checkout@v3

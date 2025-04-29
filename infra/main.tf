@@ -298,16 +298,16 @@ CREATE USER '${var.MYSQL_USER_1}'@'127.0.0.1' IDENTIFIED WITH caching_sha2_passw
 CREATE USER '${var.MYSQL_USER_1}'@'172.18.%.%' IDENTIFIED WITH caching_sha2_password BY '1234';
 CREATE USER '${var.MYSQL_USER_2}'@'%' IDENTIFIED WITH caching_sha2_password BY '${var.PASSWORD_1}';
 
-GRANT ALL PRIVILEGES ON *.* TO '${var.MYSQL_USER_1}'@'127.0.0.1';
-GRANT ALL PRIVILEGES ON *.* TO '${var.MYSQL_USER_1}'@'172.18.%.%';
-GRANT ALL PRIVILEGES ON *.* TO '${var.MYSQL_USER_2}'@'%';
+GRANT ALL PRIVILEGES ON *.* TO '${var.mysql_user_1}'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON *.* TO '${var.mysql_user_1}'@'172.18.%.%';
+GRANT ALL PRIVILEGES ON *.* TO '${var.mysql_user_2}'@'%';
 
 CREATE DATABASE ${var.db_name};
 
 FLUSH PRIVILEGES;
 "
 
-echo "${var.GITHUB_ACCESS_TOKEN_1}" | docker login ghcr.io -u ${var.GITHUB_ACCESS_TOKEN_1_OWNER} --password-stdin
+echo "${var.github_access_token_1}" | docker login ghcr.io -u ${var.github_access_token_1_owner} --password-stdin
 
 END_OF_FILE
 }

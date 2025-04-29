@@ -4,6 +4,8 @@ import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,13 +28,18 @@ public class GoogleTrendsRssService {
 
 	private final KeywordService keywordService;
 	private final KeywordMetricHourlyService keywordMetricHourlyService;
-	private static final String GOOGLE_TRENDS_RSS_URL = "https://trends.google.co.kr/trending/rss?geo=KR";
+
+	@Value("${google.trends.rss.url}")
+	private String googleTrendsRssUrl;
+
+	@Value("${google.trends.rss.namespace}")
+	private String namespaceUrl;
 
 	@Transactional
 	public List<String> getTrendingKeywordsFromRss() {
 		List<String> trendingKeywords = new ArrayList<>();
 		try {
-			URL feedUrl = new URL(GOOGLE_TRENDS_RSS_URL);
+			URL feedUrl = new URL(googleTrendsRssUrl);
 			SyndFeedInput input = new SyndFeedInput();
 			SyndFeed feed = input.build(new XmlReader(feedUrl));
 
@@ -47,7 +54,7 @@ public class GoogleTrendsRssService {
 				String approxTraffic = "";
 				List<org.jdom2.Element> foreignMarkups = entry.getForeignMarkup();
 				for (org.jdom2.Element element : foreignMarkups) {
-					if ("approx_traffic".equals(element.getName()) && "https://trends.google.com/trending/rss".equals(element.getNamespaceURI())) {
+					if ("approx_traffic".equals(element.getName()) && namespaceUrl.equals(element.getNamespaceURI())) {
 						approxTraffic = element.getText();
 						break;
 					}
@@ -55,10 +62,14 @@ public class GoogleTrendsRssService {
 
 				int volume = parseApproxTraffic(approxTraffic);
 
+				// bucketAt 분초 제거
+				LocalDateTime now = LocalDateTime.now();
+				LocalDateTime bucketAt = now.withMinute(0).withSecond(0).withNano(0);
+
 				// KeywordMetricHourlyId 생성 및 Keyword 설정
 				KeywordMetricHourlyId id = KeywordMetricHourlyId.builder()
 					.keywordId(keyword.getId())
-					.bucketAt(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
+					.bucketAt(bucketAt)
 					.platform(Platform.GOOGLE_TREND)
 					.build();
 

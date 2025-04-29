@@ -13,5 +13,4 @@ public record KeywordMetricHourlyResponse(
 	int volume,
 	int score
 	) {
-
 }

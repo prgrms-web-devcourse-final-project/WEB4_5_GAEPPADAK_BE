@@ -33,6 +33,8 @@ jobs:
       SPRING_PROFILES_ACTIVE: test
       JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
       JWT_EXPIRATION: ${{ secrets.JWT_EXPIRATION }}
+      GOOGLE_TRENDS_RSS_URL: ${{ secrets.GOOGLE_TRENDS_RSS_URL }}
+      NAMESPACE_URL: ${{ secrets.NAMESPACE_URL }}
 
     steps:
       - uses: actions/checkout@v3

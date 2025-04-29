@@ -55,6 +55,13 @@ dependencies {
     // for googleTrend
     implementation 'com.rometools:rome:1.18.0'
 
+    // springBatch
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
+    testImplementation 'org.springframework.batch:spring-batch-test'
+
+    // test
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    runtimeOnly 'com.h2database:h2'
 }
 
 tasks.named('test') {

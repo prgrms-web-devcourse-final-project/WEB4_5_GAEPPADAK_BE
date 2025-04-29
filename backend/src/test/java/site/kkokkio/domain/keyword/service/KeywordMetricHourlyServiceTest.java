@@ -1,4 +1,4 @@
-package site.kkokkio.keyword;
+package site.kkokkio.domain.keyword.service;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -22,7 +22,6 @@ import site.kkokkio.domain.keyword.entity.Keyword;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourly;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourlyId;
 import site.kkokkio.domain.keyword.repository.KeywordMetricHourlyRepository;
-import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
 

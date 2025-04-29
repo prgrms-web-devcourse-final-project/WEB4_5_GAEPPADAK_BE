@@ -1,4 +1,4 @@
-package site.kkokkio.keyword;
+package site.kkokkio.domain.keyword.service;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -14,7 +14,6 @@ import org.springframework.test.context.ActiveProfiles;
 
 import site.kkokkio.domain.keyword.entity.Keyword;
 import site.kkokkio.domain.keyword.repository.KeywordRepository;
-import site.kkokkio.domain.keyword.service.GoogleTrendsRssService;
 
 @SpringBootTest
 @ActiveProfiles("test")

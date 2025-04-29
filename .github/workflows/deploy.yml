@@ -1,12 +1,12 @@
-name: deploy
+name: deploy-develop
 
 on:
   push:
     paths:
       - '.github/workflows/**'
       - 'backend/src/**'
-      - 'backend/build.gradle.kts'
-      - 'backend/settings.gradle.kts'
+      - 'backend/build.gradle'
+      - 'backend/settings.gradle'
       - 'backend/Dockerfile'
     branches:
       - develop

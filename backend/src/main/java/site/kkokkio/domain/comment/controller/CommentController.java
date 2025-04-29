@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.comment.controller.dto.CommentCreateRequest;
 import site.kkokkio.domain.comment.controller.dto.CommentListResponse;
@@ -54,7 +55,7 @@ public class CommentController {
 	public RsData<CommentDto> createComment(
 		@PathVariable("postId") Long postId,
 		@AuthenticationPrincipal Member member, /*TODO: 인증/인가 구현 후 UserDetails 구현체로 변경*/
-		@RequestBody CommentCreateRequest request) {
+		@Valid @RequestBody CommentCreateRequest request) {
 		CommentDto comment = commentService.createComment(postId, member, request);
 		return new RsData<>(
 			"200",
@@ -68,7 +69,7 @@ public class CommentController {
 	public RsData<CommentDto> updateComment(
 		@PathVariable("commentId") Long commentId,
 		@AuthenticationPrincipal Member member, /*TODO: 인증/인가 구현 후 UserDetails 구현체로 변경*/
-		@RequestBody CommentCreateRequest request
+		@Valid @RequestBody CommentCreateRequest request
 	) {
 		CommentDto comment = commentService.updateComment(commentId, member, request);
 		return new RsData<>(

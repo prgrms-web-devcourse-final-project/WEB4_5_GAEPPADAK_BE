@@ -30,8 +30,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      SPRING_ACTIVE_PROFILES: test
-      # JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+      SPRING_PROFILES_ACTIVE: test
+      JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+      JWT_EXPIRATION: ${{ secrets.JWT_EXPIRATION }}
 
     steps:
       - uses: actions/checkout@v3

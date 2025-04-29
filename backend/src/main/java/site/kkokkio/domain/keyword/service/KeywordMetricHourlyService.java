@@ -27,7 +27,7 @@ public class KeywordMetricHourlyService {
 	public List<KeywordMetricHourlyResponse> findHourlyMetrics() {
 		List<KeywordMetricHourly> metrics = keywordMetricHourlyRepository.findTop10ByOrderByCreatedAtDesc();
 		if(metrics == null || metrics.isEmpty()) {
-			throw new ServiceException("400", "키워드를 불러오지 못했습니다.");
+			throw new ServiceException("404", "키워드를 불러오지 못했습니다.");
 		}
 		List<KeywordMetricHourlyResponse> responses = new ArrayList<>();
 		for (KeywordMetricHourly metric : metrics) {

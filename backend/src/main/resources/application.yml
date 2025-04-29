@@ -8,6 +8,8 @@ spring:
   batch: # spring Batch 스키마 생성 설정
     jdbc:
       initialize-schema: always
+    job:
+      enabled: false
 
   profiles:
     active: ${SPRING_ACTIVE_PROFILES:dev}

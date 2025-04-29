@@ -56,11 +56,11 @@ public class KeywordMetricHourlyControllerV1Test {
 	@Test
 	@DisplayName("인기 10 키워드 조회 - 잘못된 요청")
 	public void getKeywordMetricHourly_Fail() throws Exception {
-		given(keywordMetricHourlyService.findHourlyMetrics()).willThrow(new ServiceException("400", "키워드를 불러오지 못했습니다."));
+		given(keywordMetricHourlyService.findHourlyMetrics()).willThrow(new ServiceException("404", "키워드를 불러오지 못했습니다."));
 
 		mvc.perform(get("/api/v1/keywords/top"))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.code").value("400"))
+			.andExpect(jsonPath("$.code").value("404"))
 			.andExpect(jsonPath("$.message").value("키워드를 불러오지 못했습니다."));
 	}
 }

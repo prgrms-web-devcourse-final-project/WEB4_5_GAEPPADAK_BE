@@ -15,14 +15,19 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageRequest;
 
+import reactor.core.publisher.Mono;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.service.PostService;
+import site.kkokkio.domain.source.dto.NewsDto;
 import site.kkokkio.domain.source.dto.SourceDto;
 import site.kkokkio.domain.source.entity.PostSource;
 import site.kkokkio.domain.source.entity.Source;
+import site.kkokkio.domain.source.port.out.NewsApiPort;
 import site.kkokkio.domain.source.repository.PostSourceRepository;
+import site.kkokkio.domain.source.repository.SourceRepository;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
+import site.kkokkio.infra.common.exception.RetryableExternalApiException;
 
 @ExtendWith(MockitoExtension.class)
 class SourceServiceTest {
@@ -35,6 +40,12 @@ class SourceServiceTest {
 
     @Mock
     private PostSourceRepository postSourceRepository;
+
+    @Mock
+    private SourceRepository sourceRepository;
+
+    @Mock
+    private NewsApiPort newsApi;
 
     @Test
 	@DisplayName("뉴스 출처 10개 조회 - 성공")
@@ -179,6 +190,98 @@ class SourceServiceTest {
         assertThat(result).hasSize(2);
         assertThat(result.get(0).url()).isEqualTo("https://youtube1");
         assertThat(result.get(1).title()).isEqualTo("유튜브2");
+    }
+
+
+    @Test
+    @DisplayName("뉴스 검색 - 성공")
+    void searchNews_success() {
+        // given
+        NewsDto dto = NewsDto.builder()
+                .title("제목")
+                .link("http://example.com/article")
+                .originalLink("http://example.com/original")
+                .description("설명")
+                .pubDate(LocalDateTime.of(2025, 4, 29, 12, 0))
+                .build();
+        given(newsApi.fetchNews(anyString(), anyInt(), anyInt(), anyString()))
+                .willReturn(Mono.just(List.of(dto)));
+
+        // when
+        sourceService.searchNews("키워드");
+
+        // then
+        then(sourceRepository).should().saveAll(argThat(sources -> {
+            // 검사 로직
+            assertThat(sources).hasSize(1);
+            Source src = sources.iterator().next();
+            assertThat(src.getTitle()).isEqualTo("제목");
+            assertThat(src.getNormalizedUrl()).isEqualTo("http://example.com/article");
+            assertThat(src.getPlatform()).isEqualTo(Platform.NAVER_NEWS);
+            assertThat(src.getDescription()).isEqualTo("설명");
+            assertThat(src.getPublishedAt()).isEqualTo(LocalDateTime.of(2025, 4, 29, 12, 0));
+            assertThat(src.getFingerprint()).isNotBlank();
+            return true;
+        }));
+    }
+
+    @Test
+    @DisplayName("뉴스 검색 - Empty 데이터")
+    void searchNews_empty() {
+        // given
+        given(newsApi.fetchNews(anyString(), anyInt(), anyInt(), anyString()))
+                .willReturn(Mono.empty());
+
+        // when
+        sourceService.searchNews("빈키워드");
+
+        // then
+        then(sourceRepository).should(never()).saveAll(any());}
+
+
+    @Test
+    @DisplayName("뉴스 검색 - RetryableExternalApiException 발생")
+    void searchNews_retryableApiException() {
+        // given
+        given(newsApi.fetchNews(anyString(), anyInt(), anyInt(), anyString()))
+                .willThrow(new RetryableExternalApiException(500, "서버 오류"));
+
+        Source fallback = Source.builder()
+                .fingerprint("fallback-fp")
+                .normalizedUrl("http://fallback.com")
+                .title("Fallback 제목")
+                .description("Fallback 설명")
+                .thumbnailUrl(null)
+                .publishedAt(LocalDateTime.of(2025, 4, 29, 0, 0))
+                .platform(Platform.NAVER_NEWS)
+                .build();
+
+        given(sourceRepository.findLatest10ByPlatformAndKeyword(
+                eq(Platform.NAVER_NEWS),
+                anyString(),
+                any(PageRequest.class)))
+            .willReturn(List.of(fallback));
+
+        // when
+        sourceService.searchNews("키워드");
+
+        // then
+        then(sourceRepository).should().saveAll(List.of(fallback));}
+
+    @Test
+    @DisplayName("뉴스 검색 - 이외 에러 발생")
+    void searchNews_error() {
+        // given
+        given(newsApi.fetchNews(anyString(), anyInt(), anyInt(), anyString()))
+            .willThrow(new RuntimeException("알 수 없는 오류"));
+
+        // when & then
+        assertThatThrownBy(() -> sourceService.searchNews("키워드"))
+            .isInstanceOf(RuntimeException.class)
+            .hasMessageContaining("알 수 없는 오류");
+
+        then(sourceRepository).should(never()).saveAll(any());
+
     }
 
 }

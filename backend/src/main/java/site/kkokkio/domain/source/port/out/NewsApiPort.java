@@ -10,7 +10,7 @@ import site.kkokkio.domain.source.dto.NewsDto;
  */
 public interface NewsApiPort {
     /**
-     * fetchNews
+     * fetchNews (비동기)
      * @param keyword 검색어
      * @param display 한 번에 표시할 검색 결과 개수(기본값: 10, 최댓값: 100)
      * @param start 검색 시작 위치(기본값: 1, 최댓값: 1000)

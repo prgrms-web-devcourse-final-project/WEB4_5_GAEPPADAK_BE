@@ -12,7 +12,7 @@ spring:
       enabled: false
 
   profiles:
-    active: ${SPRING_ACTIVE_PROFILES:dev}
+    active: ${SPRING_ACTIVE_PROFILES:test}
 
   data:
     redis:
@@ -42,8 +42,8 @@ spring:
     locations: classpath:db/migration # migration 스크립트 위치
 
   jwt:
-    secret-key: ${JWT_SECRET_KEY}
-    expiration: ${JWT_EXPIRATION}
+    secret-key: ${JWT_SECRET_KEY:test123}
+    expiration: ${JWT_EXPIRATION:600000}
 
   jackson:
     serialization:
@@ -110,12 +110,12 @@ management:
 google:
   trends:
     rss:
-      url: ${GOOGLE_TRENDS_RSS_URL}
-      namespace: ${NAMESPACE_URL}
+      url: ${GOOGLE_TRENDS_RSS_URL:https://trends.google.co.kr/trending/rss?geo=KR}
+      namespace: ${NAMESPACE_URL:https://trends.google.com/trending/rss}
 
 naver:
   base-url: ${NAVER_BASE_URL:https://openapi.naver.com}
-  client-id: ${NAVER_CLIENT_ID}
-  client-secret: ${NAVER_CLIENT_SECRET}
+  client-id: ${NAVER_CLIENT_ID:test-id}
+  client-secret: ${NAVER_CLIENT_SECRET:test-secret}
   search:
     news-path: ${NAVER_SEARCH_NEWS_PATH:/v1/search/news.json}

@@ -22,7 +22,7 @@ import site.kkokkio.global.util.JwtUtils;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/auth")
-public class MemberController {
+public class MemberControllerV1 {
 
 	private final MemberService memberService;
 	private final JwtUtils jwtUtils;

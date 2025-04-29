@@ -1,7 +1,6 @@
 package site.kkokkio.domain.member.controller;
 
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -59,7 +58,7 @@ public class MemberControllerV1 {
 	}
 
 	@Operation(summary = "이메일 인증 코드 전송")
-	@GetMapping("/verify-email")
+	@PostMapping("/verify-email")
 	public RsData<Void> requestAuthCode(String email) throws MessagingException {
 
 		boolean isSend = mailService.sendAuthCode(email);

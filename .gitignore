@@ -6,3 +6,7 @@
 .idea/
 
 **/mysql_logs/
+
+### custom ###
+infra/.terraform.lock.hcl
+infra/.terraform

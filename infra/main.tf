@@ -21,7 +21,9 @@ resource "aws_vpc" "vpc_1" {
   enable_dns_hostnames = true
 
   tags = {
-    Name = "${var.prefix}-vpc-1"
+    ResourceName = "${var.prefix}-vpc-1"
+    Name         = "team04-kkokkio"
+    Team         = "devcos5-team04"
   }
 }
 
@@ -32,7 +34,9 @@ resource "aws_subnet" "subnet_1" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "${var.prefix}-subnet-1"
+    ResourceName = "${var.prefix}-subnet-1"
+    Name         = "team04-kkokkio"
+    Team         = "devcos5-team04"
   }
 }
 
@@ -43,7 +47,9 @@ resource "aws_subnet" "subnet_2" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "${var.prefix}-subnet-2"
+    ResourceName = "${var.prefix}-subnet-2"
+    Name         = "team04-kkokkio"
+    Team         = "devcos5-team04"
   }
 }
 
@@ -54,7 +60,9 @@ resource "aws_subnet" "subnet_3" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "${var.prefix}-subnet-3"
+    ResourceName = "${var.prefix}-subnet-3"
+    Name         = "team04-kkokkio"
+    Team         = "devcos5-team04"
   }
 }
 
@@ -65,7 +73,9 @@ resource "aws_subnet" "subnet_4" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "${var.prefix}-subnet-4"
+    ResourceName = "${var.prefix}-subnet-4"
+    Name         = "team04-kkokkio"
+    Team         = "devcos5-team04"
   }
 }
 
@@ -73,7 +83,9 @@ resource "aws_internet_gateway" "igw_1" {
   vpc_id = aws_vpc.vpc_1.id
 
   tags = {
-    Name = "${var.prefix}-igw-1"
+    ResourceName = "${var.prefix}-igw-1"
+    Name         = "team04-kkokkio"
+    Team         = "devcos5-team04"
   }
 }
 
@@ -86,7 +98,9 @@ resource "aws_route_table" "rt_1" {
   }
 
   tags = {
-    Name = "${var.prefix}-rt-1"
+    ResourceName = "${var.prefix}-rt-1"
+    Name         = "team04-kkokkio"
+    Team         = "devcos5-team04"
   }
 }
 
@@ -111,26 +125,62 @@ resource "aws_route_table_association" "association_4" {
 }
 
 resource "aws_security_group" "sg_1" {
-  name = "${var.prefix}-sg-1"
+  name   = "${var.prefix}-sg-1"
+  vpc_id = aws_vpc.vpc_1.id
 
   ingress {
-    from_port = 0
-    to_port   = 0
-    protocol  = "all"
+    from_port = 22
+    to_port   = 22
+    protocol  = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port = 80
+    to_port   = 80
+    protocol  = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port = 443
+    to_port   = 443
+    protocol  = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port = 8080
+    to_port   = 8080
+    protocol  = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port = 3306
+    to_port   = 3306
+    protocol  = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port = 6379
+    to_port   = 6379
+    protocol  = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
     from_port = 0
     to_port   = 0
-    protocol  = "all"
+    protocol  = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  vpc_id = aws_vpc.vpc_1.id
-
   tags = {
-    Name = "${var.prefix}-sg-1"
+    ResourceName = "${var.prefix}-sg-1"
+    Name         = "team04-kkokkio"
+    Team         = "devcos5-team04"
   }
 }
 
@@ -191,13 +241,10 @@ yum install docker -y
 systemctl enable docker
 systemctl start docker
 
-# doppler CLI 설치
-curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh | sh
-
 # 도커 네트워크 생성
 docker network create common
 
-# nginx 설치
+# nginx-proxy-manager (기존 유지)
 docker run -d \
   --name npm_1 \
   --restart unless-stopped \
@@ -210,36 +257,40 @@ docker run -d \
   -v /dockerProjects/npm_1/volumes/etc/letsencrypt:/etc/letsencrypt \
   jc21/nginx-proxy-manager:latest
 
-# redis 설치
+# redis 컨테이너 (도커컴포즈 맞춤)
 docker run -d \
-  --name=redis_1 \
-  --restart unless-stopped \
+  --name redis \
+  --restart always \
   --network common \
   -p 6379:6379 \
+  -v /dockerProjects/redis_data:/data \
   -e TZ=Asia/Seoul \
-  redis --requirepass ${var.PASSWORD_1}
+  redis:alpine
 
-# mysql 설치
+# mysql 컨테이너 (도커컴포즈 맞춤)
 docker run -d \
-  --name mysql_1 \
-  --restart unless-stopped \
-  -v /dockerProjects/mysql_1/volumes/var/lib/mysql:/var/lib/mysql \
-  -v /dockerProjects/mysql_1/volumes/etc/mysql/conf.d:/etc/mysql/conf.d \
+  --name mysql \
+  --restart always \
   --network common \
   -p 3306:3306 \
-  -e MYSQL_ROOT_PASSWORD=${var.PASSWORD_1} \
+  -v /dockerProjects/db_data:/var/lib/mysql \
+  -v /dockerProjects/mysql_logs:/logs \
+  -e MYSQL_ROOT_PASSWORD=${var.DB_ROOT_PASSWORD} \
+  -e MYSQL_DATABASE=${var.DB_NAME} \
+  -e MYSQL_USER=${var.DB_USERNAME} \
+  -e MYSQL_PASSWORD=${var.DB_PASSWORD} \
   -e TZ=Asia/Seoul \
-  mysql:latest
+  mysql:8.0 --general-log=1 --general-log-file=/var/lib/mysql/general.log
 
 # MySQL 컨테이너가 준비될 때까지 대기
 echo "MySQL이 기동될 때까지 대기 중..."
-until docker exec mysql_1 mysql -uroot -p${var.PASSWORD_1} -e "SELECT 1" &> /dev/null; do
+until docker exec mysql mysql -uroot -p${var.PASSWORD_1} -e "SELECT 1" &> /dev/null; do
   echo "MySQL이 아직 준비되지 않음. 5초 후 재시도..."
   sleep 5
 done
 echo "MySQL이 준비됨. 초기화 스크립트 실행 중..."
 
-docker exec mysql_1 mysql -uroot -p${var.PASSWORD_1} -e "
+docker exec mysql mysql -uroot -p${var.PASSWORD_1} -e "
 CREATE USER '${var.MYSQL_USER_1}'@'127.0.0.1' IDENTIFIED WITH caching_sha2_password BY '1234';
 CREATE USER '${var.MYSQL_USER_1}'@'172.18.%.%' IDENTIFIED WITH caching_sha2_password BY '1234';
 CREATE USER '${var.MYSQL_USER_2}'@'%' IDENTIFIED WITH caching_sha2_password BY '${var.PASSWORD_1}';
@@ -302,7 +353,9 @@ resource "aws_instance" "ec2_1" {
 
   # 인스턴스에 태그 설정
   tags = {
-    Name = "${var.prefix}-ec2-1"
+    ResourceName = "${var.prefix}-ec2-1"
+    Name         = "team04-kkokkio"
+    Team         = "devcos5-team04"
   }
 
   # 루트 볼륨 설정

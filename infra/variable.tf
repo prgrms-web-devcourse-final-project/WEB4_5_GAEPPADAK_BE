@@ -40,3 +40,19 @@ variable "MYSQL_USER_2" {
   description = "mysql_user_2 (Provided via Doppler)"
 }
 
+variable "DB_ROOT_PASSWORD" {
+  description = "DB_ROOT_PASSWORD (Provided via Doppler)"
+}
+
+variable "DB_NAME" {
+  description = "DB_NAME (Provided via Doppler)"
+}
+
+variable "DB_USERNAME" {
+  description = "DB_USERNAME (Provided via Doppler)"
+}
+
+variable "DB_PASSWORD" {
+  description = "DB_PASSWORD (Provided via Doppler)"
+}
+

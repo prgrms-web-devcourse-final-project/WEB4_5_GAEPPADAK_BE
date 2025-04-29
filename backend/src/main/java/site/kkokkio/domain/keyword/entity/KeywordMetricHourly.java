@@ -34,9 +34,11 @@ public class KeywordMetricHourly extends BaseTimeEntity {
     @JoinColumn(name = "keyword_id", nullable = false)
     private Keyword keyword;
 
+    @Builder.Default
     @Column(nullable = false)
     private int volume = 0;
 
+    @Builder.Default
     @Column(nullable = false)
     private int score = 0;
 }

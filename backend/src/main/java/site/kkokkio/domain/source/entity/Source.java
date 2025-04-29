@@ -52,7 +52,6 @@ public class Source extends BaseTimeEntity {
     @Column(nullable = false)
     private Platform platform;
 
-
     /**
      * persist 직전에 URL을 해싱해 fingerprint를 자동 할당
      */

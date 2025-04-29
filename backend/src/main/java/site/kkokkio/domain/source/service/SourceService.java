@@ -18,7 +18,6 @@ import site.kkokkio.domain.source.port.out.NewsApiPort;
 import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.domain.source.repository.SourceRepository;
 import site.kkokkio.global.enums.Platform;
-import site.kkokkio.global.util.HashUtils;
 import site.kkokkio.infra.common.exception.RetryableExternalApiException;
 
 @Slf4j
@@ -67,7 +66,12 @@ public class SourceService {
                 log.warn("Naver API 응답이 비어있음. keyword={}", keyword);
                 return;
             }
-            saveSources(convertToSources(newsList));
+
+    		List<Source> sources = newsList.stream()
+				.map(dto -> dto.toEntity(NEWS_PLATFORM))
+				.toList();
+
+            saveSources(sources);
         } catch (RetryableExternalApiException retryEx) {
             log.warn("외부 API 실패 → DB fallback. cause={}", retryEx.getMessage());
             saveSources(fetchFallbackSources(keyword));
@@ -84,23 +88,6 @@ public class SourceService {
                )
                .orElseGet(Collections::emptyList);
     }
-
-    /** NewsDto → Source Mapping */
-    private List<Source> convertToSources(List<NewsDto> dtos) {
-        return dtos.stream()
-                   .map(dto -> Source.builder()
-                       .fingerprint(HashUtils.sha256Hex(dto.getLink()))
-                       .normalizedUrl(dto.getLink())
-                       .title(dto.getTitle())
-                       .description(dto.getDescription())
-                       .thumbnailUrl(null)
-                       .publishedAt(dto.getPubDate())
-                       .platform(NEWS_PLATFORM)
-                       .build()
-                   )
-                   .toList();
-    }
-
     /** fallback용 DB 조회 */
     private List<Source> fetchFallbackSources(String keyword) {
 		PageRequest pageRequest = PageRequest.of(0, MAX_SOURCE_COUNT_PER_POST);

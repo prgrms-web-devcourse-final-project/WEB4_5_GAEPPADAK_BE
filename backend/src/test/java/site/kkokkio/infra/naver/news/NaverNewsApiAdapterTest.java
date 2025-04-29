@@ -103,7 +103,7 @@ class NaverNewsApiAdapterTest {
         StepVerifier.create(result)
                     .assertNext(list -> {
                         assertThat(list).hasSize(1);
-                        assertThat(list.getFirst().getTitle()).isEqualTo("t");
+                        assertThat(list.getFirst().title()).isEqualTo("t");
                     })
                     .verifyComplete();
     }
@@ -140,7 +140,7 @@ class NaverNewsApiAdapterTest {
         StepVerifier.create(result)
                     .assertNext(list -> {
                         assertThat(list).hasSize(1);
-                        assertThat(list.getFirst().getTitle()).isEqualTo("s");
+                        assertThat(list.getFirst().title()).isEqualTo("s");
                     })
                     .verifyComplete();
 

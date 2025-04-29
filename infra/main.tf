@@ -217,7 +217,7 @@ docker run -d \
   --network common \
   -p 6379:6379 \
   -e TZ=Asia/Seoul \
-  redis --requirepass ${var.password_1}
+  redis --requirepass ${var.PASSWORD_1}
 
 # mysql 설치
 docker run -d \
@@ -227,33 +227,33 @@ docker run -d \
   -v /dockerProjects/mysql_1/volumes/etc/mysql/conf.d:/etc/mysql/conf.d \
   --network common \
   -p 3306:3306 \
-  -e MYSQL_ROOT_PASSWORD=${var.password_1} \
+  -e MYSQL_ROOT_PASSWORD=${var.PASSWORD_1} \
   -e TZ=Asia/Seoul \
   mysql:latest
 
 # MySQL 컨테이너가 준비될 때까지 대기
 echo "MySQL이 기동될 때까지 대기 중..."
-until docker exec mysql_1 mysql -uroot -p${var.password_1} -e "SELECT 1" &> /dev/null; do
+until docker exec mysql_1 mysql -uroot -p${var.PASSWORD_1} -e "SELECT 1" &> /dev/null; do
   echo "MySQL이 아직 준비되지 않음. 5초 후 재시도..."
   sleep 5
 done
 echo "MySQL이 준비됨. 초기화 스크립트 실행 중..."
 
-docker exec mysql_1 mysql -uroot -p${var.password_1} -e "
-CREATE USER '${var.mysql_user_1}'@'127.0.0.1' IDENTIFIED WITH caching_sha2_password BY '1234';
-CREATE USER '${var.mysql_user_1}'@'172.18.%.%' IDENTIFIED WITH caching_sha2_password BY '1234';
-CREATE USER '${var.mysql_user_2}'@'%' IDENTIFIED WITH caching_sha2_password BY '${var.password_1}';
+docker exec mysql_1 mysql -uroot -p${var.PASSWORD_1} -e "
+CREATE USER '${var.MYSQL_USER_1}'@'127.0.0.1' IDENTIFIED WITH caching_sha2_password BY '1234';
+CREATE USER '${var.MYSQL_USER_1}'@'172.18.%.%' IDENTIFIED WITH caching_sha2_password BY '1234';
+CREATE USER '${var.MYSQL_USER_2}'@'%' IDENTIFIED WITH caching_sha2_password BY '${var.PASSWORD_1}';
 
-GRANT ALL PRIVILEGES ON *.* TO '${var.mysql_user_1}'@'127.0.0.1';
-GRANT ALL PRIVILEGES ON *.* TO '${var.mysql_user_1}'@'172.18.%.%';
-GRANT ALL PRIVILEGES ON *.* TO '${var.mysql_user_2}'@'%';
+GRANT ALL PRIVILEGES ON *.* TO '${var.MYSQL_USER_1}'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON *.* TO '${var.MYSQL_USER_1}'@'172.18.%.%';
+GRANT ALL PRIVILEGES ON *.* TO '${var.MYSQL_USER_2}'@'%';
 
 CREATE DATABASE ${var.db_name};
 
 FLUSH PRIVILEGES;
 "
 
-echo "${var.github_access_token_1}" | docker login ghcr.io -u ${var.github_access_token_1_owner} --password-stdin
+echo "${var.GITHUB_ACCESS_TOKEN_1}" | docker login ghcr.io -u ${var.GITHUB_ACCESS_TOKEN_1_OWNER} --password-stdin
 
 END_OF_FILE
 }

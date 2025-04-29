@@ -64,8 +64,8 @@ public class MemberControllerV1 {
 
 		boolean isSend = mailService.sendAuthCode(email);
 		return isSend
-			? new RsData<>("200-1", "인증 코드가 전송되었습니다.")
-			: new RsData<>("500-1", "인증 코드 전송이 실패하였습니다.");
+			? new RsData<>("200", "인증 코드가 전송되었습니다.")
+			: new RsData<>("500", "인증 코드 전송이 실패하였습니다.");
 	}
 
 	@Operation(summary = "이메일 인증")
@@ -74,8 +74,8 @@ public class MemberControllerV1 {
 
 		boolean isSuccess = mailService.validationAuthCode(emailVerificationRequestDto);
 		return isSuccess
-			? new RsData<>("200-1", "이메일 인증에 성공하였습니다.")
-			: new RsData<>("400-1", "이메일 인증에 실패하였습니다.");
+			? new RsData<>("200", "이메일 인증에 성공하였습니다.")
+			: new RsData<>("400", "이메일 인증에 실패하였습니다.");
 	}
 
 }

@@ -1,8 +1,8 @@
 package site.kkokkio.domain.member.service;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.member.dto.EmailVerificationRequest;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.repository.MemberRepository;
+import site.kkokkio.global.exception.ServiceException;
 
 @Service
 @RequiredArgsConstructor
@@ -108,8 +109,7 @@ public class MailService {
 			String key = EMAIL_AUTH_PREFIX + email;
 
 			// Redis에 저장하고 만료 시간 설정 (밀리초를 초 단위로 변환)
-			values.set(key, authCode);
-			redisTemplate.expire(key, 300, TimeUnit.SECONDS); // 5분
+			values.set(key, authCode, Duration.ofSeconds(300)); // 5분
 
 			return true;
 		}
@@ -117,6 +117,7 @@ public class MailService {
 	}
 
 	// 인증 코드 검증
+	@Transactional
 	public boolean validationAuthCode(EmailVerificationRequest emailVerificationRequest) {
 		String email = emailVerificationRequest.getEmail();
 		String authCode = emailVerificationRequest.getAuthCode();
@@ -128,9 +129,12 @@ public class MailService {
 
 		// 인증 코드 검증
 		if (storedAuthCode != null && storedAuthCode.equals(authCode)) {
-			// 인증 성공 시 Member 엔티티의 verified 필드 업데이트
-			Member member = memberRepository.findByEmail(email).orElse(null);
+			// 이메일 확인
+			Member member = memberRepository.findByEmail(email).orElseThrow(() ->
+				new ServiceException("404", "존재하지 않는 이메일입니다.")
+			);
 
+			// 인증 성공 시 Member 엔티티의 verified 필드 업데이트
 			if (member != null) {
 				member.setEmailVerified(true);
 				memberRepository.save(member);

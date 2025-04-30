@@ -18,6 +18,7 @@ import site.kkokkio.domain.member.controller.dto.MemberLoginResponse;
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
 import site.kkokkio.domain.member.dto.EmailVerificationRequest;
+import site.kkokkio.domain.member.service.AuthService;
 import site.kkokkio.domain.member.service.MailService;
 import site.kkokkio.domain.member.service.MemberService;
 import site.kkokkio.global.dto.RsData;
@@ -32,6 +33,7 @@ import site.kkokkio.global.util.JwtUtils;
 public class MemberControllerV1 {
 
 	private final MemberService memberService;
+	private final AuthService authService;
 	private final JwtUtils jwtUtils;
 	private final MailService mailService;
 
@@ -54,10 +56,12 @@ public class MemberControllerV1 {
 	) {
 
 		// 로그인 서비스 호출
-		MemberLoginResponse loginResponse = memberService.loginMember(request.email(), request.passwordHash());
+		MemberLoginResponse loginResponse = authService.login(request.email(), request.passwordHash(), response);
 
 		// JWT 토큰 쿠키에 설정
 		jwtUtils.setJwtInCookie(loginResponse.token(), response);
+		//
+		jwtUtils.setRefreshTokenInCookie(loginResponse.refreshToken(), response);
 
 		return new RsData<>("200", "로그인 성공", loginResponse);
 	}

@@ -15,10 +15,12 @@ public record MemberLoginResponse(
 	LocalDateTime deleteAt,
 	MemberRole role,
 	@JsonIgnore
-	String token
+	String token,
+	@JsonIgnore
+	String refreshToken
 ) {
-	public static MemberLoginResponse of(Member member, String token) {
+	public static MemberLoginResponse of(Member member, String token, String refreshToken) {
 		return new MemberLoginResponse(member.getNickname(), member.getEmail(),
-			member.getDeletedAt(), member.getRole(), token);
+			member.getDeletedAt(), member.getRole(), token, refreshToken);
 	}
 }

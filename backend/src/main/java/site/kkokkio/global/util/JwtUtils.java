@@ -37,8 +37,32 @@ public class JwtUtils {
 	@Value("${spring.jwt.expiration}")
 	private Long expiration;// dev 환경 10분
 
-	@Value("${spring.jwt.refresh-expiration}")
-	private Long refreshTokenExpiration;
+	private final Long refreshTokenExpiration = 7 * 24 * 60 * 60 * 1000L; // 리프레시 토큰 만료일 7일
+
+	// token 만료 시간 반환
+	public long getAccessTokenExpiration() {
+		return expiration;
+	}
+
+	public Date getExpiration(String token) {
+		try {
+			SecretKey key = getSecretKey();
+			return Jwts.parser()
+				.verifyWith(key)
+				.build()
+				.parseSignedClaims(token)
+				.getPayload()
+				.getExpiration();
+		} catch (JwtException | IllegalArgumentException e) {
+			handleAuthException(e);
+			throw e; // 위에서 예외 처리하므로 실질적으로 실행되지 않음 (명시용)
+		}
+	}
+
+	// Refresh Token 만료 시간 반환
+	public long getRefreshTokenExpiration() {
+		return refreshTokenExpiration;
+	}
 
 	// JWT 생성
 	public String createToken(Map<String, Object> claims) {
@@ -103,7 +127,7 @@ public class JwtUtils {
 			.httpOnly(true) // 자바스크립트 접근 차단 (XSS 방지)
 			.path("/") // 전체 사이트에서 접근 가능
 			.sameSite("None") // 외부 사이트 요청 차단 (CSRF 방지)
-			.maxAge(Duration.ofDays(1)) // Access Token 만료 시간
+			.maxAge(Duration.ofMinutes(10)) // Access Token 만료 시간 : 10분
 			.secure(true) // HTTPS 통신 시에만 전송
 			.build();
 
@@ -117,7 +141,7 @@ public class JwtUtils {
 			.httpOnly(true)     // 자바스크립트 접근 차단 (XSS 방지)
 			.path("/auth")      // 인증 경로에서만 접근 가능
 			.sameSite("None")   // 외부 사이트 요청 허용 (CORS 환경 대응)
-			.maxAge(Duration.ofMillis(refreshTokenExpiration)) // Refresh Token 만료 시간
+			.maxAge(Duration.ofMillis(refreshTokenExpiration)) // Refresh Token 만료 시간 : 7일
 			.secure(true)       // HTTPS 통신 시에만 전송
 			.build();
 
@@ -156,7 +180,6 @@ public class JwtUtils {
 			.findFirst();
 	}
 
-	// 쿠키 삭제(로그아웃)
 	// 쿠키 삭제 (로그아웃 시 사용)
 	public void clearAuthCookies(HttpServletResponse response) {
 		// 액세스 토큰 쿠키 삭제
@@ -181,6 +204,7 @@ public class JwtUtils {
 		response.addHeader("Set-Cookie", refreshCookie.toString());
 	}
 
+	// 시크릿 키 생성
 	private SecretKey getSecretKey() {
 		SecretKey key = Keys.hmacShaKeyFor(HexFormat.of().parseHex(secretKey)); // 16진수 문자열 → 바이트 배열
 		return key;

@@ -254,10 +254,6 @@ yum install -y --allowerasing gnupg2
 # 도플러 CLI 설치
 curl -Ls https://cli.doppler.com/install.sh | sudo DOPPLER_INSTALL_DIR=/usr/local/bin sh
 
-# .env 파일 생성 및 DOPPLER_TOKEN 작성
-echo "DOPPLER_TOKEN=${var.DOPPLER_SERVICE_TOKEN}" > /home/ec2-user/.env
-echo "export DOPPLER_TOKEN=${var.DOPPLER_SERVICE_TOKEN}" >> /etc/profile # 필요하다면 /etc/profile에도 추가
-
 # 도커 네트워크 생성
 docker network create common
 
@@ -322,6 +318,9 @@ FLUSH PRIVILEGES;
 "
 
 echo "${var.GITHUB_ACCESS_TOKEN_1}" | docker login ghcr.io -u ${var.GITHUB_ACCESS_TOKEN_1_OWNER} --password-stdin
+
+# app1 컨테이너 실행 (Doppler 사용)
+DOPPLER_TOKEN=${var.DOPPLER_SERVICE_TOKEN} doppler run -- docker run -d --name app1 --network common -p 8080:8080 ghcr.io/prgrms-web-devcourse-final-project/team04-kkokkio:latest
 
 END_OF_FILE
 }

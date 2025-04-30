@@ -143,6 +143,13 @@ resource "aws_security_group" "sg_1" {
   }
 
   ingress {
+    from_port = 81
+    to_port   = 81
+    protocol  = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
     from_port = 443
     to_port   = 443
     protocol  = "tcp"
@@ -246,6 +253,7 @@ yum install -y --allowerasing gnupg2
 
 # 도플러 CLI 설치
 curl -Ls https://cli.doppler.com/install.sh | sudo DOPPLER_INSTALL_DIR=/usr/local/bin sh
+
 # 도커 네트워크 생성
 docker network create common
 
@@ -310,6 +318,9 @@ FLUSH PRIVILEGES;
 "
 
 echo "${var.GITHUB_ACCESS_TOKEN_1}" | docker login ghcr.io -u ${var.GITHUB_ACCESS_TOKEN_1_OWNER} --password-stdin
+
+# app1 컨테이너 실행 (Doppler 사용)
+DOPPLER_TOKEN=${var.DOPPLER_SERVICE_TOKEN} doppler run -- docker run -d --name app1 --network common -p 8080:8080 ghcr.io/prgrms-web-devcourse-final-project/team04-kkokkio:latest
 
 END_OF_FILE
 }

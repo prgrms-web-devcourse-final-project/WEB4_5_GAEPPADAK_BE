@@ -18,10 +18,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import site.kkokkio.domain.member.controller.dto.MemberLoginResponse;
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
+import site.kkokkio.domain.member.dto.TokenResponse;
+import site.kkokkio.domain.member.service.AuthService;
 import site.kkokkio.domain.member.service.MailService;
 import site.kkokkio.domain.member.service.MemberService;
 import site.kkokkio.global.aspect.ResponseAspect;
@@ -46,6 +49,9 @@ class MemberControllerV1Test {
 
 	@MockitoBean
 	private MailService mailService;
+
+	@MockitoBean
+	private AuthService authService;
 
 	@Test
 	@DisplayName("회원가입 - 성공")
@@ -94,7 +100,7 @@ class MemberControllerV1Test {
 			.role(MemberRole.USER)
 			.token("tokenTest")
 			.build();
-		given(memberService.loginMember("test@test.com", "passHash"))
+		given(authService.login(eq("test@test.com"), eq("passHash"), any(HttpServletResponse.class)))
 			.willReturn(loginResponse);
 		willDoNothing().given(jwtUtils)
 			.setJwtInCookie(eq("tokenTest"), any(HttpServletResponse.class));
@@ -122,7 +128,7 @@ class MemberControllerV1Test {
 	@DisplayName("로그인 - 실패 (인증 오류)")
 	void loginFailure() throws Exception {
 		// given
-		given(memberService.loginMember(anyString(), anyString()))
+		given(authService.login(anyString(), anyString(), any(HttpServletResponse.class)))
 			.willThrow(new ServiceException("401", "로그인에 실패했습니다."));
 
 		String loginJson = """
@@ -139,6 +145,38 @@ class MemberControllerV1Test {
 			.andExpect(status().isUnauthorized())
 			.andExpect(jsonPath("$.code").value("401"))
 			.andExpect(jsonPath("$.message").value("로그인에 실패했습니다."));
+	}
+
+	@Test
+	@DisplayName("토큰 재발급 - 성공")
+	void refreshTokenSuccess() throws Exception {
+		// given
+		TokenResponse tokenResponse = new TokenResponse("newAccessToken", "existingRefreshToken");
+
+		given(authService.refreshToken(any(HttpServletRequest.class), any(HttpServletResponse.class)))
+			.willReturn(tokenResponse);
+
+		// when & then
+		mockMvc.perform(post("/api/v1/auth/refresh"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").value("토큰이 재발급되었습니다."))
+			.andExpect(jsonPath("$.data.accessToken").value("newAccessToken"))
+			.andExpect(jsonPath("$.data.refreshToken").value("existingRefreshToken"));
+	}
+
+	@Test
+	@DisplayName("로그아웃 - 성공")
+	void logoutSuccess() throws Exception {
+		// given
+		willDoNothing().given(authService)
+			.logout(any(HttpServletRequest.class), any(HttpServletResponse.class));
+
+		// when & then
+		mockMvc.perform(post("/api/v1/auth/logout"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").value("로그아웃 되었습니다."));
 	}
 
 	@Test

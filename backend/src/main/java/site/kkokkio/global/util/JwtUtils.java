@@ -123,7 +123,7 @@ public class JwtUtils {
 
 	//JWT -> 쿠키에 저장
 	public void setJwtInCookie(String token, HttpServletResponse response) {
-		ResponseCookie cookie = ResponseCookie.from("token", token)
+		ResponseCookie cookie = ResponseCookie.from("access-token", token)
 			.httpOnly(true) // 자바스크립트 접근 차단 (XSS 방지)
 			.path("/") // 전체 사이트에서 접근 가능
 			.sameSite("None") // 외부 사이트 요청 차단 (CSRF 방지)
@@ -161,7 +161,7 @@ public class JwtUtils {
 			.forEach(cookie -> log.info("Cookie Name: {}, Value: {}", cookie.getName(), cookie.getValue()));
 
 		return Arrays.stream(cookies)
-			.filter(cookie -> "token".equals(cookie.getName()))
+			.filter(cookie -> "access-token".equals(cookie.getName()))
 			.map(Cookie::getValue)
 			.findFirst();
 	}
@@ -183,7 +183,7 @@ public class JwtUtils {
 	// 쿠키 삭제 (로그아웃 시 사용)
 	public void clearAuthCookies(HttpServletResponse response) {
 		// 액세스 토큰 쿠키 삭제
-		ResponseCookie accessCookie = ResponseCookie.from("token", "")
+		ResponseCookie accessCookie = ResponseCookie.from("access-token", "")
 			.httpOnly(true)
 			.path("/")
 			.maxAge(0) // 즉시 만료

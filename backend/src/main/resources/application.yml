@@ -52,8 +52,8 @@ spring:
   mail:
     host: smtp.gmail.com            # SMTP 서버 호스트 (Gmail)
     port: 587                       # TLS 사용할 때 포트
-    username: ${MAIL_USERNAME}      # 환경 변수로부터 가져올 Gmail 계정
-    password: ${MAIL_PASSWORD}      # 환경 변수로부터 가져올 앱 비밀번호
+    username: ${MAIL_USERNAME:test@test.com}      # 환경 변수로부터 가져올 Gmail 계정
+    password: ${MAIL_PASSWORD:test123!}      # 환경 변수로부터 가져올 앱 비밀번호
     protocol: smtp                  # 프로토콜 (기본값 smtp)
     default-encoding: UTF-8         # 메일 본문 인코딩
     test-connection: false          # 애플리케이션 구동 시 메일 서버 연결 테스트 여부

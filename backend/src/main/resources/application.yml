@@ -56,22 +56,22 @@ spring:
       FAIL_ON_EMPTY_BEANS: false # 빈 객체도 직렬화가 가능하도록 설정 (Empty)
 
   mail:
-    host: smtp.gmail.com            # SMTP 서버 호스트 (Gmail)
-    port: 587                       # TLS 사용할 때 포트
-    username: ${MAIL_USERNAME:test@test.com}      # 환경 변수로부터 가져올 Gmail 계정
-    password: ${MAIL_PASSWORD:test123!}      # 환경 변수로부터 가져올 앱 비밀번호
-    protocol: smtp                  # 프로토콜 (기본값 smtp)
-    default-encoding: UTF-8         # 메일 본문 인코딩
-    test-connection: false          # 애플리케이션 구동 시 메일 서버 연결 테스트 여부
+    host: smtp.gmail.com # SMTP 서버 호스트 (Gmail)
+    port: 587 # TLS 사용할 때 포트
+    username: ${MAIL_USERNAME:test@test.com} # 환경 변수로부터 가져올 Gmail 계정
+    password: ${MAIL_PASSWORD:test123!} # 환경 변수로부터 가져올 앱 비밀번호
+    protocol: smtp # 프로토콜 (기본값 smtp)
+    default-encoding: UTF-8 # 메일 본문 인코딩
+    test-connection: false # 애플리케이션 구동 시 메일 서버 연결 테스트 여부
     properties:
-      mail.smtp.auth: true                  # SMTP 인증 사용
-      mail.smtp.starttls.enable: true       # STARTTLS 사용 (TLS)
-      mail.smtp.starttls.required: true     # TLS 필수
-      mail.smtp.connectiontimeout: 5000     # 서버 연결 제한 시간(ms)
-      mail.smtp.timeout: 5000               # 응답 대기 제한 시간(ms)
-      mail.smtp.writetimeout: 5000          # 데이터 전송 제한 시간(ms)
-      mail.smtp.ssl.trust: smtp.gmail.com   # SSL 인증서 검증 대상
-      mail.debug: false                     # 디버그 로깅 (true로 켜면 javax.mail 디버그 로그 출력)
+      mail.smtp.auth: true # SMTP 인증 사용
+      mail.smtp.starttls.enable: true # STARTTLS 사용 (TLS)
+      mail.smtp.starttls.required: true # TLS 필수
+      mail.smtp.connectiontimeout: 5000 # 서버 연결 제한 시간(ms)
+      mail.smtp.timeout: 5000 # 응답 대기 제한 시간(ms)
+      mail.smtp.writetimeout: 5000 # 데이터 전송 제한 시간(ms)
+      mail.smtp.ssl.trust: smtp.gmail.com # SSL 인증서 검증 대상
+      mail.debug: false # 디버그 로깅 (true로 켜면 javax.mail 디버그 로그 출력)
 
 custom:
   mail:
@@ -113,7 +113,8 @@ resilience4j:
       default:
         limit-for-period: 8 # 초당 8 건
         limit-refresh-period: 1s
-        timeout-duration: 0 # 대기 없이 즉시 실패
+        timeout-duration: 1s
+        subscribe-for-events: true
     instances:
       NAVER_NEWS_RATE_LIMITER:
         base-config: default

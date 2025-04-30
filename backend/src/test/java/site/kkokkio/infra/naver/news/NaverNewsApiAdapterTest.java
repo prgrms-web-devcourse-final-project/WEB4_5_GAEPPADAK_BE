@@ -19,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.ExchangeFunction;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
@@ -35,6 +36,9 @@ import site.kkokkio.infra.common.exception.RetryableExternalApiException;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@TestPropertySource(properties = {
+    "mock.enabled=false"
+})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class NaverNewsApiAdapterTest {
 

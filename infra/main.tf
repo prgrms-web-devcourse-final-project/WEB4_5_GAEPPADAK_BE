@@ -320,7 +320,7 @@ FLUSH PRIVILEGES;
 echo "${var.GITHUB_ACCESS_TOKEN_1}" | docker login ghcr.io -u ${var.GITHUB_ACCESS_TOKEN_1_OWNER} --password-stdin
 
 # app1 컨테이너 실행 (Doppler 사용)
-DOPPLER_TOKEN=${var.DOPPLER_SERVICE_TOKEN} doppler run -- docker run -d --name app1 --network common -p 8080:8080 ghcr.io/prgrms-web-devcourse-final-project/team04-kkokkio:latest
+docker run -e DOPPLER_TOKEN=${var.DOPPLER_SERVICE_TOKEN} -d --name app1 --network common -p 8080:8080 ghcr.io/prgrms-web-devcourse-final-project/team04-kkokkio:latest
 
 END_OF_FILE
 }

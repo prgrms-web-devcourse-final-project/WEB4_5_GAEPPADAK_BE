@@ -4,7 +4,7 @@ import site.kkokkio.global.dto.RsData;
 
 public class ServiceException extends RuntimeException {
 
-	private RsData<?> rsData;
+	private final RsData<?> rsData;
 	
 	public ServiceException(String code, String message) {
 		super(message);

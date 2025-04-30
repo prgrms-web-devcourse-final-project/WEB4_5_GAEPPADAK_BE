@@ -91,6 +91,7 @@ CREATE TABLE source (
   fingerprint VARCHAR(64) PRIMARY KEY,
   normalized_url VARCHAR(500) NOT NULL,
   title VARCHAR(255),
+  description TEXT,
   thumbnail_url TEXT,
   published_at DATETIME NOT NULL,
   platform VARCHAR(30) NOT NULL,

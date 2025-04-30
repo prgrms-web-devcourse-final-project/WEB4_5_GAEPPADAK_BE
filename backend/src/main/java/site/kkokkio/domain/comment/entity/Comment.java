@@ -44,9 +44,11 @@ public class Comment extends BaseTimeEntity {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String body;
 
+	@Builder.Default
     @Column(name = "like_count", nullable = false)
     private int likeCount = 0;
 
+	@Builder.Default
     @Column(name = "is_hidden", nullable = false)
     private boolean hidden = false;
 

@@ -41,9 +41,11 @@ public class PostMetricHourly extends BaseTimeEntity {
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
 
+    @Builder.Default
     @Column(name = "click_count", nullable = false)
     private int clickCount = 0;
 
+    @Builder.Default
     @Column(name = "like_count", nullable = false)
     private int likeCount = 0;
 }

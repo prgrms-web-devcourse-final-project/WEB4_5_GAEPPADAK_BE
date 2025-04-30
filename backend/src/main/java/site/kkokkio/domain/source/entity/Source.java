@@ -7,6 +7,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -15,6 +16,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.util.BaseTimeEntity;
+import site.kkokkio.global.util.HashUtils;
 
 /**
  * INDEX (platform, fetched_at)
@@ -37,6 +39,9 @@ public class Source extends BaseTimeEntity {
     @Column
     private String title;
 
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @Column(name = "thumbnail_url", columnDefinition = "TEXT")
     private String thumbnailUrl;
 
@@ -46,4 +51,14 @@ public class Source extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Platform platform;
+
+    /**
+     * persist 직전에 URL을 해싱해 fingerprint를 자동 할당
+     */
+    @PrePersist
+    public void calculateFingerprint() {
+        if (this.fingerprint == null && this.normalizedUrl != null) {
+            this.fingerprint = HashUtils.sha256Hex(this.normalizedUrl);
+        }
+    }
 }

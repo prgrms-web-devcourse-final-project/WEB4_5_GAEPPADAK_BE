@@ -83,7 +83,7 @@ public class SwaggerConfig {
 
 		return ExampleHolder.builder()
 			.example(example)
-			.code(Integer.parseInt(errorCode.getCode()))
+			.code(Integer.parseInt(errorCode.getCode().split("-")[0]))
 			.name(errorCode.name())
 			.build();
 	}

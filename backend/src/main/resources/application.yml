@@ -12,7 +12,7 @@ spring:
       enabled: false
 
   profiles:
-    active: ${SPRING_ACTIVE_PROFILES:test}
+    active: ${SPRING_ACTIVE_PROFILES:dev}
 
   data:
     redis:

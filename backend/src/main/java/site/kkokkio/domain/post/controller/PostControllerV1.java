@@ -15,6 +15,8 @@ import site.kkokkio.domain.post.controller.dto.TopPostResponse;
 import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.service.PostService;
 import site.kkokkio.global.dto.RsData;
+import site.kkokkio.global.exception.doc.ApiErrorCodeExamples;
+import site.kkokkio.global.exception.doc.ErrorCode;
 
 @RestController
 @RequestMapping("/api/v1/posts")
@@ -24,6 +26,7 @@ public class PostControllerV1 {
 	private final PostService postService;
 
 	@Operation(summary = "포스트 조회")
+	@ApiErrorCodeExamples({ErrorCode.POST_NOT_FOUND_2})
 	@GetMapping("/{postId}")
 	public RsData<PostDetailResponse> getPostById(@PathVariable Long postId) {
 		PostDto postDto = postService.getPostWithKeywordById(postId);
@@ -43,6 +46,7 @@ public class PostControllerV1 {
 	}
 
 	@Operation(summary = "실시간 키워드에 해당하는 포스트 리스트 조회")
+	@ApiErrorCodeExamples({ErrorCode.POST_NOT_FOUND_2})
 	@GetMapping("/top")
 	public RsData<List<TopPostResponse>> getTopKeywordPosts() {
 		List<PostDto> postDtos = postService.getTopPostsWithKeyword();

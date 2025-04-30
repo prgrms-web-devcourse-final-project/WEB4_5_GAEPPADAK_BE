@@ -1,8 +1,7 @@
 package site.kkokkio.domain.source.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -11,13 +10,17 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.source.controller.dto.SourceListResponse;
 import site.kkokkio.domain.source.controller.dto.TopSourceListResponse;
 import site.kkokkio.domain.source.dto.SourceDto;
 import site.kkokkio.domain.source.service.SourceService;
 import site.kkokkio.global.dto.RsData;
-
-import java.util.List;
+import site.kkokkio.global.exception.doc.ApiErrorCodeExamples;
+import site.kkokkio.global.exception.doc.ErrorCode;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -27,6 +30,7 @@ public class SourceControllerV1 {
     private final SourceService sourceService;
 
     @Operation(summary = "포스트의 출처 뉴스 Top 10 조회")
+	@ApiErrorCodeExamples({ErrorCode.POST_NOT_FOUND_1})
     @GetMapping("/posts/{postId}/news")
     public RsData<SourceListResponse> getNewsSourceList(@PathVariable("postId") Long postId) {
         List<SourceDto> sources = sourceService.getTop10NewsSourcesByPostId(postId);
@@ -39,6 +43,7 @@ public class SourceControllerV1 {
     }
 
     @Operation(summary = "포스트의 출처 영상 Top 10 조회")
+	@ApiErrorCodeExamples({ErrorCode.POST_NOT_FOUND_1})
     @GetMapping("/posts/{postId}/videos")
     public RsData<SourceListResponse> getVideoSourceList(@PathVariable("postId") Long postId) {
         List<SourceDto> sources = sourceService.getTop10VideoSourcesByPostId(postId);
@@ -54,6 +59,7 @@ public class SourceControllerV1 {
             summary = "실시간 인기 유튜브 비디오 목록 조회 (페이지네이션)",
             description = "키워드를 통해 YouTube Data API를 호출하여 현재 한국에서 인기 있는 YouTube 비디오 목록을 가져옵니다."
     )
+	@ApiErrorCodeExamples({ErrorCode.KEYWORDS_NOT_FOUND_1})
     @GetMapping("/videos/top")
     public RsData<TopSourceListResponse> getTopYoutubeSources(
             @ParameterObject @PageableDefault(
@@ -75,6 +81,7 @@ public class SourceControllerV1 {
             summary = "실시간 인기 네이버 뉴스 목록 조회 (페이지네이션)",
             description = "키워드를 통해 네이버 뉴스 API를 호출하여 현재 한국에서 인기 있는 네이버 뉴스 목록을 가져옵니다."
     )
+	@ApiErrorCodeExamples({ErrorCode.KEYWORDS_NOT_FOUND_1})
     @GetMapping("/news/top")
     public RsData<TopSourceListResponse> getTopNaverNewsSources(
             @ParameterObject @PageableDefault(

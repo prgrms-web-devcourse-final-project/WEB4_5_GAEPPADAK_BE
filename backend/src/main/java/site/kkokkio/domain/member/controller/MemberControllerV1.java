@@ -4,6 +4,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -59,7 +60,7 @@ public class MemberControllerV1 {
 
 	@Operation(summary = "이메일 인증 코드 전송")
 	@PostMapping("/verify-email")
-	public RsData<Void> requestAuthCode(String email) throws MessagingException {
+	public RsData<Void> requestAuthCode(@RequestParam String email) throws MessagingException {
 
 		boolean isSend = mailService.sendAuthCode(email);
 		return isSend

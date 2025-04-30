@@ -13,10 +13,14 @@ import reactor.core.publisher.Mono;
 import site.kkokkio.domain.source.dto.VideoDto;
 import site.kkokkio.domain.source.port.out.VideoApiPort;
 import site.kkokkio.infra.common.exception.RetryableExternalApiException;
-import site.kkokkio.infra.youtube.video.dto.YoutubeVideosSearchResponse;
+import site.kkokkio.infra.youtube.video.dto.*;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -59,7 +63,7 @@ public class YoutubeVideoApiAdapter implements VideoApiPort {
                 // 서킷 오픈 시 예외 처리
                 .onErrorMap(CallNotPermittedException.class, ex -> new RetryableExternalApiException(503, ex.getMessage()))
                 // Youtube API 응답 DTO를 VideoDTo 목록으로 변환
-                .map(this::toVedioDtos);
+                .map(this::toVideoDtos);
     }
 
     // Youtube API 요청 URI를 빌드하는 헬퍼 메소드
@@ -81,5 +85,92 @@ public class YoutubeVideoApiAdapter implements VideoApiPort {
                 .queryParam("key", YOUTUBE_API_KEY);
 
         return ub.build();
+    }
+
+    /**
+     * Youtube API 응답 DTO (YoutubeVideosSearchResponse)를
+     * 내부 DTO (List<VideoDto>) 목록으로 변환합니다.
+     *
+     * @param response Youtube API 검색 응답 DTO
+     * @return VideoDto 목록
+     */
+    private List<VideoDto> toVideoDtos(YoutubeVideosSearchResponse response) {
+
+        // API 응답이 null이거나 items 리스트가 null 또는 비어있는 경우 빈 리스트 반환
+        if (response == null || response.getItems() == null || response.getItems().isEmpty()) {
+            log.warn("Youtube API 응답이 비어있음.");
+            return Collections.emptyList();
+        }
+
+        // YoutubeSearchItem 리스트를 순회하며 VideoDto로 변환
+        return response.getItems().stream()
+                // 각 YoutubeSearchItem을 VideoDto로 변환하는 헬퍼 메소드 호출
+                .map(this::toVideoDto)
+                // 변환 중 실패하여 Optional.empty()가 된 항목 제거
+                .filter(Optional::isPresent)
+                // Optional에서 실제 VideoDto 객체 추출
+                .map(Optional::get)
+                // List로 수집
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 단일 YoutubeSearchItem 객체를 VideoDto로 변환합니다.
+     * 유효하지 않은 항목은 Optional.empty()를 반환합니다.
+     *
+     * @param item YoutubeSearchItem 객체
+     * @return VideoDto 객체를 담은 Optional (변환 실패 시 Optional.empty())
+     */
+    private Optional<VideoDto> toVideoDto(YoutubeSearchItem item) {
+
+        // YoutubeSearchItem의 필수 필드 (id, snippet) 및
+        // 그 하위 필드(videoId, title, publishedAt)가 null이 아닌지 검증
+        if (
+                item == null ||
+                        item.getId() == null ||
+                        item.getId().getVideoId() == null ||
+                        item.getSnippet() == null ||
+                        item.getSnippet().getTitle() == null ||
+                        item.getSnippet().getPublishedAt() == null
+        ) {
+            log.warn("Youtube Item 변환 실패: 필수 필드 누락 또는 null. item={}", item);
+            return Optional.empty();
+        }
+
+        SearchSnippet snippet = item.getSnippet();
+        ResourceId id = item.getId();
+
+        // 썸네일 URL 가져오기: 여러 사이즈 중 하나 선택 (default / medium)
+        String thumbnailUrl = null;
+
+        if (snippet.getThumbnails() != null) {
+            ThumbnailDetails defaultThumbnail = snippet.getThumbnails().get("default");
+
+            if (defaultThumbnail != null && defaultThumbnail.getUrl() != null) {
+                thumbnailUrl = defaultThumbnail.getUrl();
+            } else {
+                // default 썸네일이 없으면 다른 사이즈 시도
+                ThumbnailDetails mediumThumbnail = snippet.getThumbnails().get("medium");
+
+                if (mediumThumbnail != null && mediumThumbnail.getUrl() != null) {
+                    thumbnailUrl = mediumThumbnail.getUrl();
+                }
+
+                // 다른 사이즈도 없으면 thumbnailUrl은 null 유지
+            }
+        }
+
+        try {
+            return Optional.of(VideoDto.builder()
+                    .id(id.getVideoId())
+                    .title(snippet.getTitle())
+                    .description(snippet.getDescription())
+                    .thumbnailUrl(thumbnailUrl)
+                    .publishedAt(snippet.getPublishedAt().toLocalDateTime())
+                    .build());
+        } catch (Exception e) {
+            log.error("Youtube Item -> VideoDto 변환 중 예외 발생. item={}", item, e);
+            return Optional.empty();
+        }
     }
 }

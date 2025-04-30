@@ -147,3 +147,7 @@ naver:
   client-secret: ${NAVER_CLIENT_SECRET:test-secret}
   search:
     news-path: ${NAVER_SEARCH_NEWS_PATH:/v1/search/news.json}
+
+mock:
+  enabled: true
+  news-file: naver-news-search.json

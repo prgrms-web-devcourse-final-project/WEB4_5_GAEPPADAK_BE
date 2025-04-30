@@ -1,5 +1,8 @@
 package site.kkokkio.infra.naver.news;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -12,6 +15,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriBuilder;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -34,14 +39,22 @@ public class NaverNewsApiAdapter implements NewsApiPort {
     @Qualifier("naverWebClient")
 	private final WebClient naverWebClient;
 
+    @Value("${mock.enabled}")
+	private Boolean mockEnabled;
+
+    @Value("${mock.news-file}")
+	private String mockFile;
+
 	@Value("${naver.client-id}")
-	private String NAVER_CLIENT_ID;
+	private String naverClientId;
 
     @Value("${naver.client-secret}")
-    private String NAVER_CLIENT_SECRET;
+    private String naverClientSecret;
 
     @Value("${naver.search.news-path}")
-    private String NAVER_SEARCH_NEWS_PATH;
+    private String naverSearchNewsPath;
+
+    private final ObjectMapper objectMapper;
 
     @Retry(name = "NAVER_NEWS_RETRY")
     @CircuitBreaker(name = "NAVER_NEWS_CIRCUIT_BREAKER")
@@ -49,22 +62,28 @@ public class NaverNewsApiAdapter implements NewsApiPort {
 	@Override
 	public Mono<List<NewsDto>> fetchNews(String keyword, Integer display, Integer start, String sort) {
 
-        return naverWebClient.get()
-            .uri(uri -> buildUri(uri, keyword, display, start, sort))
-            .header("X-Naver-Client-Id", NAVER_CLIENT_ID)
-            .header("X-Naver-Client-Secret", NAVER_CLIENT_SECRET)
-            .retrieve()
-			.onStatus(HttpStatusCode::isError, this::mapError)
-            .bodyToMono(NaverNewsSearchResponse.class)
-			// 서킷 오픈 시 CallNotPermittedException → RetryableExternalApiException 변환
-			.onErrorMap(CallNotPermittedException.class,
-				ex -> new RetryableExternalApiException(503, ex.getMessage()))
-            .map(this::toNewsDtos);
+    	Mono<NaverNewsSearchResponse> responseMono;
+
+		if (mockEnabled) {
+			responseMono = loadMockNewsResponse();
+		} else {
+			responseMono = naverWebClient.get()
+				.uri(uri -> buildUri(uri, keyword, display, start, sort))
+				.header("X-Naver-Client-Id", naverClientId)
+				.header("X-Naver-Client-Secret", naverClientSecret)
+				.retrieve()
+				.onStatus(HttpStatusCode::isError, this::mapError)
+				.bodyToMono(NaverNewsSearchResponse.class)
+				// 서킷 오픈 시 CallNotPermittedException → RetryableExternalApiException 변환
+				.onErrorMap(CallNotPermittedException.class,
+					ex -> new RetryableExternalApiException(503, ex.getMessage()));
+		}
+    	return responseMono.map(this::toNewsDtos);
 	}
 
 	private URI buildUri(UriBuilder uriBuilder, String query, Integer display, Integer start, String sort) {
 		String encoded = encode(query);
-		UriBuilder ub = uriBuilder.path(NAVER_SEARCH_NEWS_PATH).queryParam("query", encoded);
+		UriBuilder ub = uriBuilder.path(naverSearchNewsPath).queryParam("query", encoded);
 		if (display != null) {
 			ub.queryParam("display", display);
 		}
@@ -104,4 +123,15 @@ public class NaverNewsApiAdapter implements NewsApiPort {
         return URLEncoder.encode(text, StandardCharsets.UTF_8);
 	}
 
+    private Mono<NaverNewsSearchResponse> loadMockNewsResponse() {
+		try (InputStream is = getClass().getResourceAsStream("/mock/" + mockFile)) {
+			if (is == null) {
+				return Mono.error(new FileNotFoundException("Mock file not found"));
+			}
+			NaverNewsSearchResponse response = objectMapper.readValue(is, NaverNewsSearchResponse.class);
+			return Mono.just(response);
+		} catch (IOException e) {
+			return Mono.error(new RuntimeException("Failed to load mock response", e));
+		}
+    }
 }

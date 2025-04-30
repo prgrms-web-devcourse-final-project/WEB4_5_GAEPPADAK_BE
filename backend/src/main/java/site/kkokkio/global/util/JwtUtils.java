@@ -37,6 +37,9 @@ public class JwtUtils {
 	@Value("${spring.jwt.expiration}")
 	private Long expiration;// dev 환경 10분
 
+	@Value("${spring.jwt.refresh-expiration}")
+	private Long refreshTokenExpiration;
+
 	// JWT 생성
 	public String createToken(Map<String, Object> claims) {
 		SecretKey key = getSecretKey();
@@ -47,6 +50,19 @@ public class JwtUtils {
 			.issuedAt(issuedAt) // 발급 시간
 			.expiration(new Date(issuedAt.getTime() + expiration)) // 만료 시간
 			.signWith(key) // 알고리즘 자동 인식 (HS256)
+			.compact();
+	}
+
+	// 리프레시 토큰 생성
+	public String createRefreshToken(Map<String, Object> claims) {
+		SecretKey key = getSecretKey();
+		Date issuedAt = new Date();
+
+		return Jwts.builder()
+			.claims(claims)
+			.issuedAt(issuedAt)
+			.expiration(new Date(issuedAt.getTime() + refreshTokenExpiration))
+			.signWith(key)
 			.compact();
 	}
 
@@ -95,6 +111,20 @@ public class JwtUtils {
 		log.info("cookie = {}", cookie.toString());
 	}
 
+	// 리프레시 토큰을 쿠키에 저장
+	public void setRefreshTokenInCookie(String token, HttpServletResponse response) {
+		ResponseCookie cookie = ResponseCookie.from("refresh_token", token)
+			.httpOnly(true)     // 자바스크립트 접근 차단 (XSS 방지)
+			.path("/auth")      // 인증 경로에서만 접근 가능
+			.sameSite("None")   // 외부 사이트 요청 허용 (CORS 환경 대응)
+			.maxAge(Duration.ofMillis(refreshTokenExpiration)) // Refresh Token 만료 시간
+			.secure(true)       // HTTPS 통신 시에만 전송
+			.build();
+
+		response.addHeader("Set-Cookie", cookie.toString());
+		log.info("Refresh token cookie = {}", cookie.toString());
+	}
+
 	// 쿠키에서 JWT 추출
 	public Optional<String> getJwtFromCookies(HttpServletRequest request) {
 		Cookie[] cookies = request.getCookies();
@@ -110,6 +140,45 @@ public class JwtUtils {
 			.filter(cookie -> "token".equals(cookie.getName()))
 			.map(Cookie::getValue)
 			.findFirst();
+	}
+
+	// 쿠키에서 리프레시 토큰 추출
+	public Optional<String> getRefreshTokenFromCookies(HttpServletRequest request) {
+		Cookie[] cookies = request.getCookies();
+
+		if (cookies == null || cookies.length == 0) {
+			return Optional.empty();
+		}
+
+		return Arrays.stream(cookies)
+			.filter(cookie -> "refresh_token".equals(cookie.getName()))
+			.map(Cookie::getValue)
+			.findFirst();
+	}
+
+	// 쿠키 삭제(로그아웃)
+	// 쿠키 삭제 (로그아웃 시 사용)
+	public void clearAuthCookies(HttpServletResponse response) {
+		// 액세스 토큰 쿠키 삭제
+		ResponseCookie accessCookie = ResponseCookie.from("access_token", "")
+			.httpOnly(true)
+			.path("/")
+			.maxAge(0) // 즉시 만료
+			.sameSite("None")
+			.secure(true)
+			.build();
+
+		// 리프레시 토큰 쿠키 삭제
+		ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", "")
+			.httpOnly(true)
+			.path("/auth")
+			.maxAge(0) // 즉시 만료
+			.sameSite("None")
+			.secure(true)
+			.build();
+
+		response.addHeader("Set-Cookie", accessCookie.toString());
+		response.addHeader("Set-Cookie", refreshCookie.toString());
 	}
 
 	private SecretKey getSecretKey() {

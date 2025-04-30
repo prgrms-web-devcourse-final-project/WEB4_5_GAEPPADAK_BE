@@ -7,11 +7,14 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriBuilder;
 import reactor.core.publisher.Mono;
 import site.kkokkio.domain.source.dto.VideoDto;
 import site.kkokkio.domain.source.port.out.VideoApiPort;
+import site.kkokkio.global.exception.ServiceException;
+import site.kkokkio.infra.common.exception.ExternalApiErrorUtil;
 import site.kkokkio.infra.common.exception.RetryableExternalApiException;
 import site.kkokkio.infra.youtube.video.dto.*;
 
@@ -19,7 +22,6 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -57,7 +59,7 @@ public class YoutubeVideoApiAdapter implements VideoApiPort {
 //                .header("X-API-KEY", YOUTUBE_API_KEY)
                 .retrieve()
                 // HTTP 에러 응답 처리 (4xx, 5xx)
-                .onStatus(HttpStatusCode::isError, this.mapYoutubeError)
+                .onStatus(HttpStatusCode::isError, this::mapYoutubeError)
                 // 응답 본문을 Youtube API 응답 구조 DTO로 변환
                 .bodyToMono(YoutubeVideosSearchResponse.class)
                 // 서킷 오픈 시 예외 처리
@@ -172,5 +174,73 @@ public class YoutubeVideoApiAdapter implements VideoApiPort {
             log.error("Youtube Item -> VideoDto 변환 중 예외 발생. item={}", item, e);
             return Optional.empty();
         }
+    }
+
+    /**
+     * Youtube API 에러 응답 (4xx, 5xx)을 처리하고 적절한 예외로 변환합니다.
+     * onStatus 연산자에 사용됩니다.
+     *
+     * @param response ClientResponse (HTTP 에러 응답)
+     * @return 적절한 ServiceException 하위 예외를 담은 Mono
+     */
+    private Mono<? extends Throwable> mapYoutubeError(ClientResponse response) {
+
+        // HTTP 상태 코드를 가져옵니다.
+        HttpStatusCode statusCode = response.statusCode();
+        int statusCodeValue = statusCode.value();
+
+        // 에러 응답 본문을 YoutubeErrorResponse DTO로 변환 시도
+        return response.bodyToMono(YoutubeErrorResponse.class)
+                // 응답 본문 파싱 실패나 비어있는 응답 본문의 경우 처리
+                .onErrorResume(e -> {
+                    // 파싱 실패 시 로그 기록 및 RetryableExternalApiException 반환
+                    log.error("Youtube API 에러 응답 본문 파싱 또는 처리 중 예외 발생. status={}", statusCodeValue, e);
+                    return Mono.error(new RetryableExternalApiException(
+                            statusCodeValue,
+                            "Youtube API 에러 응답 처리 중 예외 발생"
+                    ));
+                })
+                // 파싱된 YoutubeErrorResponse 객체를 사용하여 예외 생성
+                .flatMap(errorResponse -> {
+                    // 에러 정보 (error 객체) 추출
+                    YoutubeError youtubeError = errorResponse != null ?
+                            errorResponse.getError() : null;
+
+                    // 오류 코드 및 메시지 추출
+                    String vendorCode = null;
+                    String vendorMessage = null;
+
+                    if (youtubeError != null) {
+                        // 일반 에러 메시지 사용
+                        vendorMessage = youtubeError.getMessage();
+
+                        // 상세 에러 목록이 있다면 첫 번째 항목의 reason과 message를 사용
+                        // getErrors()가 null이 아니고 비어있지 않은 경우에만 getFirst 접근
+                        if (youtubeError.getErrors() != null && !youtubeError.getErrors().isEmpty()) {
+                            YoutubeErrorDetail detail = youtubeError.getErrors().getFirst();
+
+                            if (detail != null) {
+                                // 상세 에러의 'reason'을 vendorCode로 사용
+                                vendorCode = detail.getReason();
+
+                                // 상세 에러의 'message'가 있다면 사용, 없으면 일반 메시지 사용
+                                vendorMessage = (detail.getMessage() != null &&
+                                        !detail.getMessage().isBlank() ?
+                                        detail.getMessage() : vendorMessage);
+                            }
+                        }
+                    }
+
+                    // ExternalApiErrorUtil을 사용하여 적절한 ServiceException 하위 예외 생성
+                    // HTTP 상태 코드, 벤더 오류 코드, 벤더 오류 메시지를 전달
+                    ServiceException serviceException = ExternalApiErrorUtil.of(
+                            response.statusCode(),
+                            vendorCode,
+                            vendorMessage
+                    );
+
+                    // 생성된 예외를 Mono로 감싸 반환
+                    return Mono.error(serviceException);
+                });
     }
 }

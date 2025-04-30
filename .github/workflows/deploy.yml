@@ -1,4 +1,5 @@
-name: deploy-develop
+name: deploy-deploy
+#name: deploy-develop
 
 on:
   push:
@@ -9,7 +10,8 @@ on:
       - 'backend/settings.gradle'
       - 'backend/Dockerfile'
     branches:
-      - develop
+      - deploy
+#      - develop
 
 jobs:
   makeTagAndRelease:
@@ -93,9 +95,10 @@ jobs:
       - name: 인스턴스 ID 가져오기
         id: get_instance_id
         run: |
-          INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=team04-kkokkio" "Name=instance-state-name,Values=running" --query "Reservations[].Instances[].InstanceId" --output text)
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=team04-kkokkio" "Name=instance-state-name,Values=running" \
+            --query "Reservations[].Instances[].InstanceId" --output text)
           echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
-          echo $INSTANCE_ID
 
       - name: AWS SSM Send-Command
         uses: peterkimzz/aws-ssm-send-command@master
@@ -108,9 +111,14 @@ jobs:
           working-directory: /
           comment: Deploy
           command: |
+            set -e
+            export HOME=/root
+            echo "${{ secrets.TK_GITHUB_ACCESS_TOKEN }}" | docker login ghcr.io -u ${{ secrets.TK_GITHUB_ACCESS_TOKEN_OWNER }} --password-stdin
+
             docker pull ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest && \
             docker stop app1 2>/dev/null || true && \
             docker rm app1 2>/dev/null || true && \
             export DOPPLER_TOKEN=${{ secrets.DOPPLER_SERVICE_TOKEN }} && \
-            doppler run -- docker run -d --name app1 --network common -p 8080:8080 ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest && \
+            doppler run -- docker run -d --name app1 --network common -p 8080:8080 \
+              ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest && \
             docker rmi $(docker images -f "dangling=true" -q) || true

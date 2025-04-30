@@ -254,9 +254,9 @@ yum install -y --allowerasing gnupg2
 # 도플러 CLI 설치
 curl -Ls https://cli.doppler.com/install.sh | sudo DOPPLER_INSTALL_DIR=/usr/local/bin sh
 
-# DOPPLER_TOKEN 환경변수 설정
-export DOPPLER_TOKEN="${var.DOPPLER_SERVICE_TOKEN}"
-echo "export DOPPLER_TOKEN=${var.DOPPLER_SERVICE_TOKEN}" >> /etc/profile
+# .env 파일 생성 및 DOPPLER_TOKEN 작성
+echo "DOPPLER_TOKEN=${var.DOPPLER_SERVICE_TOKEN}" > /home/ec2-user/.env
+echo "export DOPPLER_TOKEN=${var.DOPPLER_SERVICE_TOKEN}" >> /etc/profile # 필요하다면 /etc/profile에도 추가
 
 # 도커 네트워크 생성
 docker network create common

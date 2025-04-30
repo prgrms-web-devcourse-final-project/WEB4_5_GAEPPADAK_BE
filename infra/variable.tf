@@ -64,3 +64,7 @@ variable "DB_PASSWORD" {
   description = "DB_PASSWORD (Provided via Doppler)"
 }
 
+variable "DOPPLER_SERVICE_TOKEN" {
+  description = "DOPPLER_SERVICE_TOKEN of backend production (Provided via Doppler)"
+}
+

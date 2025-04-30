@@ -29,7 +29,7 @@ import site.kkokkio.domain.keyword.service.KeywordService;
 import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.global.exception.ServiceException;
 
-@WebMvcTest(controllers = KeywordController.class)
+@WebMvcTest(controllers = KeywordControllerV1.class)
 @AutoConfigureMockMvc(addFilters = false)
 public class KeywordControllerTest {
 	@Autowired

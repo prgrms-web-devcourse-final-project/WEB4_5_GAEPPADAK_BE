@@ -5,23 +5,13 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 
 import lombok.Builder;
+import site.kkokkio.global.dto.PaginationMeta;
 
 @Builder
 public record PostListResponse(
 	List<PostDto> list,
 	PaginationMeta meta
 ) {
-	@Builder
-	private record PaginationMeta(
-		int page,
-		int size,
-		long totalElements,
-		int totalPages,
-		boolean hasNext,
-		boolean hasPrevious
-	) {
-	}
-
 	public static PostListResponse from(Page<PostDto> posts) {
 		PaginationMeta paginationMeta = PaginationMeta.builder()
 			.page(posts.getNumber())

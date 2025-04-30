@@ -18,16 +18,19 @@ import site.kkokkio.domain.keyword.service.KeywordService;
 import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.dto.PostListResponse;
 import site.kkokkio.global.dto.RsData;
+import site.kkokkio.global.exception.doc.ApiErrorCodeExamples;
+import site.kkokkio.global.exception.doc.ErrorCode;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/keywords")
 @Tag(name = "Keyword API", description = "Keyword 관련 API")
-public class KeywordController {
+public class KeywordControllerV1 {
 
 	private final KeywordService keywordService;
 
 	@GetMapping("/search")
+	@ApiErrorCodeExamples({ErrorCode.POST_NOT_FOUND_3})
 	@Operation(summary = "키워드 기반 Post 검색")
 	public RsData<PostListResponse> getPostListByKeyword(
 		@RequestParam String keyword,

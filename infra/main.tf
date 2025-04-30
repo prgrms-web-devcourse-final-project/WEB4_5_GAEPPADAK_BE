@@ -143,6 +143,13 @@ resource "aws_security_group" "sg_1" {
   }
 
   ingress {
+    from_port = 81
+    to_port   = 81
+    protocol  = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
     from_port = 443
     to_port   = 443
     protocol  = "tcp"
@@ -248,8 +255,8 @@ yum install -y --allowerasing gnupg2
 curl -Ls https://cli.doppler.com/install.sh | sudo DOPPLER_INSTALL_DIR=/usr/local/bin sh
 
 # DOPPLER_TOKEN 환경변수 설정
-export DOPPLER_TOKEN=${var.DOPPLER_SERVICE_TOKEN}
-export HOME=/root
+export DOPPLER_TOKEN="${var.DOPPLER_SERVICE_TOKEN}"
+echo "export DOPPLER_TOKEN=${var.DOPPLER_SERVICE_TOKEN}" >> /etc/profile
 
 # 도커 네트워크 생성
 docker network create common

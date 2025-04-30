@@ -33,6 +33,12 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
     open-in-view: false # 영속성 컨텍스트를 뷰까지 열지 않음 (성능 및 Side-effect 방지)
+    properties:
+      hibernate:
+        format_sql: true
+        highlight_sql: true
+        use_sql_comments: true
+        default_batch_fetch_size: 100
 
   flyway: # 공통 flyway 설정
     enabled: false # 기본은 꺼두고, 환경별로 override

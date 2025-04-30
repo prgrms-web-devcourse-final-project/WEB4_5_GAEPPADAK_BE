@@ -34,8 +34,8 @@ public class GoogleTrendsRssService {
 	private String namespaceUrl;
 
 	@Transactional
-	public List<String> getTrendingKeywordsFromRss() {
-		List<String> trendingKeywords = new ArrayList<>();
+	public List<Keyword> getTrendingKeywordsFromRss() {
+		List<Keyword> trendingKeywords = new ArrayList<>();
 		try {
 			URL feedUrl = new URL(googleTrendsRssUrl);
 			SyndFeedInput input = new SyndFeedInput();
@@ -48,6 +48,7 @@ public class GoogleTrendsRssService {
 						.text(entry.getTitle())
 						.build()
 				);
+				trendingKeywords.add(keyword);
 
 				String approxTraffic = "";
 				List<org.jdom2.Element> foreignMarkups = entry.getForeignMarkup();
@@ -79,8 +80,6 @@ public class GoogleTrendsRssService {
 					.build();
 
 				keywordMetricHourlyService.createKeywordMetricHourly(keywordMetricHourly);
-
-				trendingKeywords.add(entry.getTitle());
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

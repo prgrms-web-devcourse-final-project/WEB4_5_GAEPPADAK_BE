@@ -21,6 +21,8 @@ import site.kkokkio.domain.member.dto.EmailVerificationRequest;
 import site.kkokkio.domain.member.service.MailService;
 import site.kkokkio.domain.member.service.MemberService;
 import site.kkokkio.global.dto.RsData;
+import site.kkokkio.global.exception.doc.ApiErrorCodeExamples;
+import site.kkokkio.global.exception.doc.ErrorCode;
 import site.kkokkio.global.util.JwtUtils;
 
 @Tag(name = "Member API", description = "회원 관련 기능을 제공")
@@ -35,6 +37,7 @@ public class MemberControllerV1 {
 
 	// 회원가입
 	@Operation(summary = "회원가입")
+	@ApiErrorCodeExamples({ErrorCode.EMAIL_ALREADY_EXIST, ErrorCode.NICKNAME_ALREADY_EXIST})
 	@PostMapping("/signup")
 	public RsData<MemberResponse> createMember(@RequestBody @Validated MemberSignUpRequest request) {
 		MemberResponse memberResponse = memberService.createMember(request);
@@ -43,6 +46,7 @@ public class MemberControllerV1 {
 
 	// 로그인
 	@Operation(summary = "로그인")
+	@ApiErrorCodeExamples({ErrorCode.EMAIL_NOT_FOUND, ErrorCode.PASSWORD_UNAUTHORIZED})
 	@PostMapping("/login")
 	public RsData<MemberLoginResponse> login(
 		@RequestBody @Validated MemberLoginRequest request,

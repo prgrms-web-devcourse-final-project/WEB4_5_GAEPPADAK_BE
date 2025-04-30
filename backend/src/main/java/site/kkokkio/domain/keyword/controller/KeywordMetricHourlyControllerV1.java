@@ -14,6 +14,8 @@ import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyResponse;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
 import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.exception.ServiceException;
+import site.kkokkio.global.exception.doc.ApiErrorCodeExamples;
+import site.kkokkio.global.exception.doc.ErrorCode;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,6 +25,7 @@ public class KeywordMetricHourlyControllerV1 {
 	private final KeywordMetricHourlyService keywordMetricHourlyService;
 
 	@GetMapping("/top")
+	@ApiErrorCodeExamples({ErrorCode.KEYWORDS_NOT_FOUND_1})
 	@Operation(summary = "실시간 키워드 리스트", description = "실시간 키워드 Top 10개 보기")
 	public RsData<List<KeywordMetricHourlyResponse>> getHourlyMetrics() {
 		try {

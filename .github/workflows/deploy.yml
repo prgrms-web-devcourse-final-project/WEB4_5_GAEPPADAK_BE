@@ -1,5 +1,4 @@
-name: deploy-deploy
-#name: deploy-develop
+name: deploy-develop
 
 on:
   push:
@@ -10,9 +9,8 @@ on:
       - 'backend/settings.gradle'
       - 'backend/Dockerfile'
     branches:
-      - deploy
-#      - develop
-#
+      - develop
+
 jobs:
   makeTagAndRelease:
     runs-on: ubuntu-latest

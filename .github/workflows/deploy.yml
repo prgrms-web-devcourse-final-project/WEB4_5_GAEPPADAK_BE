@@ -114,11 +114,10 @@ jobs:
             set -e
             export HOME=/root
             echo "${{ secrets.TK_GITHUB_ACCESS_TOKEN }}" | docker login ghcr.io -u ${{ secrets.TK_GITHUB_ACCESS_TOKEN_OWNER }} --password-stdin
-
+            
             docker pull ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest && \
             docker stop app1 2>/dev/null || true && \
             docker rm app1 2>/dev/null || true && \
-            export DOPPLER_TOKEN=${{ secrets.DOPPLER_SERVICE_TOKEN }} && \
-            doppler run -- docker run -d --name app1 --network common -p 8080:8080 \
+            DOPPLER_TOKEN=${{ secrets.DOPPLER_SERVICE_TOKEN }} doppler run -- docker run -d --name app1 --network common -p 8080:8080 \
               ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest && \
             docker rmi $(docker images -f "dangling=true" -q) || true

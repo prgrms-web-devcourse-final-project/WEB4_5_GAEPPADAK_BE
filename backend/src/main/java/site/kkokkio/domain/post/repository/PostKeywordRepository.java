@@ -29,4 +29,5 @@ public interface PostKeywordRepository extends JpaRepository<PostKeyword, Long> 
                    """)
 	Page<PostKeyword> findByKeywordTextWithPostAndKeyword(@Param("keywordText") String keywordText, Pageable pageable);
 	Optional<PostKeyword> findByPost_Id(Long postId);
+	Optional<PostKeyword> findTopByKeywordIdOrderByPost_BucketAtDesc(Long keywordId);
 }

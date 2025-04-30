@@ -15,19 +15,23 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class HourScheduler {
 	private final JobLauncher jobLauncher;
 	private final Job trendingKeywordsJob;
 
-	@Scheduled(cron = "0 0 * * * *")
+	@Scheduled(cron = "0 * * * * *")
 	public void runTrendingKeywordsJob() throws
 		JobExecutionAlreadyRunningException,
 		JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException {
+		LocalDateTime bucketAt = LocalDateTime.now(ZoneId.of("Asia/Seoul"))
+			.withMinute(0).withSecond(0).withNano(0);
 		JobParameters jobParameters = new JobParametersBuilder()
-			.addString("runTime", LocalDateTime.now(ZoneId.of("Asia/Seoul")).toString())
+			.addString("runTime", bucketAt.toString())
 			.toJobParameters();
 		jobLauncher.run(trendingKeywordsJob, jobParameters);
 	}

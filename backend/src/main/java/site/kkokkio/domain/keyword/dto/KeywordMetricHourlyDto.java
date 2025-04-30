@@ -11,6 +11,7 @@ public record KeywordMetricHourlyDto(
 	@NonNull Platform platform,
 	@NonNull LocalDateTime bucketAt,
 	int volume,
-	int score
+	int score,
+	boolean lowVariation
 	) {
 }

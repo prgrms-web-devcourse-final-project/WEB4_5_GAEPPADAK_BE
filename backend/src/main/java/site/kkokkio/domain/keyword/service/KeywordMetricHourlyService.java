@@ -37,7 +37,8 @@ public class KeywordMetricHourlyService {
 				metric.getId().getPlatform(),
 				metric.getId().getBucketAt(),
 				metric.getVolume(),
-				metric.getScore()
+				metric.getScore(),
+				metric.isLowVariation()
 			));
 		}
 		return responses;

@@ -183,7 +183,7 @@ public class JwtUtils {
 	// 쿠키 삭제 (로그아웃 시 사용)
 	public void clearAuthCookies(HttpServletResponse response) {
 		// 액세스 토큰 쿠키 삭제
-		ResponseCookie accessCookie = ResponseCookie.from("access_token", "")
+		ResponseCookie accessCookie = ResponseCookie.from("token", "")
 			.httpOnly(true)
 			.path("/")
 			.maxAge(0) // 즉시 만료

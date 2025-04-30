@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.mail.MessagingException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import site.kkokkio.domain.member.controller.dto.MemberLoginResponse;
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
 import site.kkokkio.domain.member.dto.EmailVerificationRequest;
+import site.kkokkio.domain.member.dto.TokenResponse;
 import site.kkokkio.domain.member.service.AuthService;
 import site.kkokkio.domain.member.service.MailService;
 import site.kkokkio.domain.member.service.MemberService;
@@ -64,6 +66,20 @@ public class MemberControllerV1 {
 		jwtUtils.setRefreshTokenInCookie(loginResponse.refreshToken(), response);
 
 		return new RsData<>("200", "로그인 성공", loginResponse);
+	}
+
+	@Operation(summary = "토큰 재발급")
+	@PostMapping("/refresh")
+	public RsData<TokenResponse> refreshToken(HttpServletRequest request, HttpServletResponse response) {
+		TokenResponse tokenResponse = authService.refreshToken(request, response);
+		return new RsData<>("200", "토큰이 재발급되었습니다.", tokenResponse);
+	}
+
+	@Operation(summary = "로그아웃")
+	@PostMapping("/logout")
+	public RsData<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+		authService.logout(request, response);
+		return new RsData<>("200", "로그아웃 되었습니다.");
 	}
 
 	@Operation(summary = "이메일 인증 코드 전송")

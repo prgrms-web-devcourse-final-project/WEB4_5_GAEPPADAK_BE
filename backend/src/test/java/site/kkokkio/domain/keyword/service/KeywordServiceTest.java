@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -82,18 +83,15 @@ public class KeywordServiceTest {
 	void findKeywordTest_Default(){
 		// Given
 		String keywordText = "테스트 키워드";
-		Pageable pageable = PageRequest.of(0, 10, Sort.by("createdAt").descending());
+		Pageable pageable = PageRequest.of(0, 10, Sort.by("post.createdAt").descending()); // 변경
 		LocalDateTime now = LocalDateTime.now();
-		List<Post> posts = Arrays.asList(
-			createPost(1L, "제목1", now),
-			createPost(2L, "제목2", now.minusDays(1)),
-			createPost(3L, "제목3", now.minusDays(2))
+		List<PostKeyword> postKeywords = Arrays.asList(
+			createPostKeyword(createPost(1L, "제목1", now), keywordText),
+			createPostKeyword(createPost(2L, "제목2", now.minusDays(1)), keywordText),
+			createPostKeyword(createPost(3L, "제목3", now.minusDays(2)), keywordText)
 		);
-
-		Page<Post> postPage = new PageImpl<>(posts, pageable, posts.size());
-		when(postRepository.findPostsByKeywordText(keywordText, pageable)).thenReturn(postPage);
-		when(postKeywordRepository.findByPost_Id(any(Long.class)))
-			.thenReturn(Optional.of(PostKeyword.builder().keyword(Keyword.builder().text(keywordText).build()).build()));
+		Page<PostKeyword> postKeywordPage = new PageImpl<>(postKeywords, pageable, postKeywords.size());
+		when(postKeywordRepository.findByKeywordTextWithPostAndKeyword(keywordText, pageable)).thenReturn(postKeywordPage);
 
 		// When
 		Page<PostDto> postDtoPage = keywordService.getPostListByKeyword(keywordText, pageable);
@@ -109,16 +107,16 @@ public class KeywordServiceTest {
 	void findKeywordTest_TitleAsc() {
 		// Given
 		String keywordText = "테스트 키워드";
-		Pageable pageable = PageRequest.of(0, 10, Sort.by("title").ascending());
-		List<Post> posts = Arrays.asList(
-			createPost(1L, "제목1", LocalDateTime.now().minusDays(2)),
-			createPost(2L, "제목2", LocalDateTime.now()),
-			createPost(3L, "제목3", LocalDateTime.now().minusDays(1))
+		Pageable pageable = PageRequest.of(0, 10, Sort.by("post.title").ascending()); // 변경
+		List<PostKeyword> postKeywords = Arrays.asList(
+			createPostKeyword(createPost(1L, "제목1", LocalDateTime.now().minusDays(2)), keywordText),
+			createPostKeyword(createPost(2L, "제목2", LocalDateTime.now()), keywordText),
+			createPostKeyword(createPost(3L, "제목3", LocalDateTime.now().minusDays(1)), keywordText)
 		);
-		Page<Post> postPage = new PageImpl<>(posts, pageable, posts.size());
-		when(postRepository.findPostsByKeywordText(keywordText, pageable)).thenReturn(postPage);
-		when(postKeywordRepository.findByPost_Id(any(Long.class)))
-			.thenReturn(Optional.of(PostKeyword.builder().keyword(Keyword.builder().text(keywordText).build()).build()));
+		// 제목 오름차순으로 정렬
+		postKeywords.sort(Comparator.comparing(pk -> pk.getPost().getTitle()));
+		Page<PostKeyword> postKeywordPage = new PageImpl<>(postKeywords, pageable, postKeywords.size());
+		when(postKeywordRepository.findByKeywordTextWithPostAndKeyword(keywordText, pageable)).thenReturn(postKeywordPage);
 
 		// When
 		Page<PostDto> postDtoPage = keywordService.getPostListByKeyword(keywordText, pageable);
@@ -130,20 +128,19 @@ public class KeywordServiceTest {
 	}
 
 	@Test
-	@DisplayName("키워드 조회 - 포스트가 없는 경우 ServiceException 발생")
+	@DisplayName("키워드 조회 - 포스트가 없는 경우 Page.empty() 반환")
 	void findKeywordTest_NoPosts() {
 		// Given
 		String keywordText = "존재하지 않는 키워드";
 		Pageable pageable = PageRequest.of(0, 10);
-		Page<Post> emptyPage = Page.empty();
-		when(postRepository.findPostsByKeywordText(keywordText, pageable)).thenReturn(emptyPage);
+		Page<PostKeyword> emptyPage = Page.empty();
+		when(postKeywordRepository.findByKeywordTextWithPostAndKeyword(keywordText, pageable)).thenReturn(emptyPage);
 
-		// When & Then
-		ServiceException exception = assertThrows(ServiceException.class, () ->
-			keywordService.getPostListByKeyword(keywordText, pageable)
-		);
-		assertThat(exception.getCode()).isEqualTo("404");
-		assertThat(exception.getMessage()).isEqualTo("포스트가 존재하지 않습니다.");
+		// When
+		Page<PostDto> postDtoPage = keywordService.getPostListByKeyword(keywordText, pageable);
+
+		// Then
+		assertThat(postDtoPage.isEmpty()).isTrue();
 	}
 
 	private Post createPost(Long id, String title, LocalDateTime createdAt) {
@@ -154,6 +151,13 @@ public class KeywordServiceTest {
 			.bucketAt(createdAt)
 			.reportCount(0)
 			.thumbnailUrl(null)
+			.build();
+	}
+
+	private PostKeyword createPostKeyword(Post post, String keywordText) {
+		return PostKeyword.builder()
+			.post(post)
+			.keyword(Keyword.builder().text(keywordText).build())
 			.build();
 	}
 }

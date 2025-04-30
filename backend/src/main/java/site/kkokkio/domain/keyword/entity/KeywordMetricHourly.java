@@ -13,6 +13,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.global.util.BaseTimeEntity;
 
 /**
@@ -34,6 +36,11 @@ public class KeywordMetricHourly extends BaseTimeEntity {
     @JoinColumn(name = "keyword_id", nullable = false)
     private Keyword keyword;
 
+    @Setter
+	@ManyToOne(fetch = FetchType.LAZY) // ON DELETE SET NULL
+    @JoinColumn(name = "post_id")
+    private Post post;
+
     @Builder.Default
     @Column(nullable = false)
     private int volume = 0;
@@ -41,4 +48,25 @@ public class KeywordMetricHourly extends BaseTimeEntity {
     @Builder.Default
     @Column(nullable = false)
     private int score = 0;
+
+    @Builder.Default
+    @Column(name = "rank_delta", nullable = false)
+    private double rankDelta = -1.0;
+
+    @Builder.Default
+    @Column(name = "novelty_ratio", nullable = false)
+    private double noveltyRatio = -1.0;
+
+    @Builder.Default
+    @Column(name = "weighted_novelty", nullable = false)
+    private double weightedNovelty = -1.0;
+
+    @Builder.Default
+    @Column(name = "no_post_streak", nullable = false)
+    private int noPostStreak = -1;
+
+    @Builder.Default
+    @Column(name = "low_variation", nullable = false)
+    private boolean lowVariation = false;
+
 }

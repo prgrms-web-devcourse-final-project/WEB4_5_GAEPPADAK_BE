@@ -2,7 +2,6 @@ package site.kkokkio.domain.post.service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -12,10 +11,7 @@ import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.keyword.entity.Keyword;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourly;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourlyId;
-import site.kkokkio.domain.keyword.entity.KeywordPostHourly;
-import site.kkokkio.domain.keyword.entity.KeywordPostHourlyId;
 import site.kkokkio.domain.keyword.repository.KeywordMetricHourlyRepository;
-import site.kkokkio.domain.keyword.repository.KeywordPostHourlyRepository;
 import site.kkokkio.domain.keyword.repository.KeywordRepository;
 import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.entity.Post;
@@ -33,7 +29,6 @@ public class PostService {
 	private final PostRepository postRepository;
 	private final KeywordRepository keywordRepository;
 	private final KeywordMetricHourlyRepository keywordMetricHourlyRepository;
-	private final KeywordPostHourlyRepository keywordPostHourlyRepository;
 	private final PostKeywordRepository postKeywordRepository;
 	private final PostMetricHourlyRepository postMetricHourlyRepository;
 
@@ -67,20 +62,10 @@ public class PostService {
 		List<KeywordMetricHourly> topKeywordMetrics = keywordMetricHourlyRepository.findTop10ById_BucketAtOrderByScoreDesc(
 			now);
 
-		List<PostDto> topPosts = new ArrayList<>();
-
-		for (KeywordMetricHourly metric : topKeywordMetrics) {
-			Long keywordId = metric.getId().getKeywordId();
-
-			// 키워드 id와 버킷시간으로 KeywordPostHourly에서 포스트 찾기
-			keywordPostHourlyRepository.findById_KeywordIdAndId_BucketAt(keywordId, now)
-				.ifPresent(keywordPostHourly -> {
-					Post post = keywordPostHourly.getPost();
-					String keywordText = metric.getKeyword().getText();
-
-					topPosts.add(PostDto.from(post, keywordText));
-				});
-		}
+		List<PostDto> topPosts = topKeywordMetrics.stream()
+			.filter(metric -> metric.getPost() != null)
+			.map(metric -> PostDto.from(metric.getPost(), metric.getKeyword().getText()))
+			.toList();
 
 		if (topPosts.isEmpty()) {
 			throw new ServiceException("404", "포스트를 불러오지 못했습니다.");
@@ -114,18 +99,8 @@ public class PostService {
 		Keyword keyword = keywordRepository.findById(keywordId)
 			.orElseThrow(() -> new ServiceException("404", "Keyword를 찾을 수 없습니다."));
 
-		// 4. KeywordPostHourly 저장
-		KeywordPostHourly keywordPostHourly = KeywordPostHourly.builder()
-			.id(new KeywordPostHourlyId(
-				keywordMetricHourly.getId().getBucketAt(),
-				keywordMetricHourly.getId().getPlatform(),
-				keywordId,
-				post.getId()
-			))
-			.keywordMetricHourly(keywordMetricHourly)
-			.post(post)
-			.build();
-		keywordPostHourlyRepository.save(keywordPostHourly);
+		// 4. KeywordMetricHourly에 post 업데이트
+		keywordMetricHourly.setPost(post);
 
 		// 5. PostKeyword 저장
 		PostKeyword postKeyword = PostKeyword.builder()

@@ -9,21 +9,20 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.transaction.annotation.Transactional;
 import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyResponse;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
 import site.kkokkio.domain.post.service.PostService;
-import site.kkokkio.domain.source.dto.NewsDto;
 import site.kkokkio.domain.source.controller.dto.TopSourceListResponse;
+import site.kkokkio.domain.source.dto.NewsDto;
 import site.kkokkio.domain.source.dto.SourceDto;
 import site.kkokkio.domain.source.dto.TopSourceItemDto;
 import site.kkokkio.domain.source.entity.PostSource;
 import site.kkokkio.domain.source.entity.Source;
 import site.kkokkio.domain.source.port.out.NewsApiPort;
-import site.kkokkio.domain.source.entity.Source;
 import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.domain.source.repository.SourceRepository;
 import site.kkokkio.global.enums.Platform;
@@ -111,6 +110,10 @@ public class SourceService {
             sourceRepository.saveAll(sources);
         }
     }
+
+	public void searchYoutube() {
+		// TODO: need to implements
+	}
 
 	/**
 	 * 실시간 인기 키워드와 관련된 Youtube Source 목록을 페이지네이션하여 조회

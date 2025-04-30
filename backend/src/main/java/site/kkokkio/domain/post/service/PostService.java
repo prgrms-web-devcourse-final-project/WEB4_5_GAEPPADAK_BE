@@ -120,4 +120,8 @@ public class PostService {
 
 		return post;
 	}
+
+	public void generatePosts() {
+		// TODO: need to implements
+	}
 }

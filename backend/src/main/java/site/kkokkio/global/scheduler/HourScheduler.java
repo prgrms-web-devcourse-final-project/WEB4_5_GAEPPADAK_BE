@@ -22,7 +22,7 @@ public class HourScheduler {
 	private final JobLauncher jobLauncher;
 	private final Job trendingKeywordsJob;
 
-	@Scheduled(cron = "0 0 * * * *") //
+	@Scheduled(cron = "0 0 * * * *")
 	public void runTrendingKeywordsJob() throws
 		JobExecutionAlreadyRunningException,
 		JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException {

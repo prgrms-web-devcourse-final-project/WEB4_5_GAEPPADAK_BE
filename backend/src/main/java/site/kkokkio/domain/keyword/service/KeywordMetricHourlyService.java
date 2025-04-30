@@ -42,4 +42,8 @@ public class KeywordMetricHourlyService {
 		}
 		return responses;
 	}
+
+	public void evaluateNovelty() {
+		// TODO: need to implement
+	}
 }

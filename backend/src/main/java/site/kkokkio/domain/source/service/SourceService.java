@@ -1,5 +1,6 @@
 package site.kkokkio.domain.source.service;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -13,20 +14,21 @@ import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyResponse;
+import reactor.core.publisher.Mono;
+import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
 import site.kkokkio.domain.post.service.PostService;
 import site.kkokkio.domain.source.controller.dto.TopSourceListResponse;
 import site.kkokkio.domain.source.dto.NewsDto;
 import site.kkokkio.domain.source.dto.SourceDto;
 import site.kkokkio.domain.source.dto.TopSourceItemDto;
+import site.kkokkio.domain.source.dto.VideoDto;
 import site.kkokkio.domain.source.entity.PostSource;
 import site.kkokkio.domain.source.entity.Source;
 import site.kkokkio.domain.source.port.out.NewsApiPort;
 import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.domain.source.repository.SourceRepository;
 import site.kkokkio.global.enums.Platform;
-import site.kkokkio.infra.common.exception.RetryableExternalApiException;
 
 @Slf4j
 @Service
@@ -37,12 +39,12 @@ public class SourceService {
 	private final PostSourceRepository postSourceRepository;
     private final SourceRepository sourceRepository;
 	private final PostService postService;
+	private final KeywordMetricHourlyService keywordMetricHourlyService;
 	private final NewsApiPort newsApi;
 
 	private static final int MAX_SOURCE_COUNT_PER_POST = 10;
 	private final Platform NEWS_PLATFORM = Platform.NAVER_NEWS;
 	private final Platform VIDEO_PLATFORM = Platform.YOUTUBE;
-	private final KeywordMetricHourlyService keywordMetricHourlyService;
 
 	public List<SourceDto> getTop10NewsSourcesByPostId(Long postId) {
 		postService.getPostById(postId);
@@ -68,52 +70,58 @@ public class SourceService {
 			.toList();
 	}
 
-	public void searchNews(String keyword) {
-		try {
-            List<NewsDto> newsList = fetchNewsBlocking(keyword);
-
-            if (newsList.isEmpty()) {
-                log.warn("Naver API 응답이 비어있음. keyword={}", keyword);
-                return;
-            }
-
-    		List<Source> sources = newsList.stream()
-				.map(dto -> dto.toEntity(NEWS_PLATFORM))
-				.toList();
-
-            saveSources(sources);
-        } catch (RetryableExternalApiException retryEx) {
-            log.warn("외부 API 실패 → DB fallback. cause={}", retryEx.getMessage());
-            saveSources(fetchFallbackSources(keyword));
-        }
-    }
-
-    /** Naver News API 호출
-	 * null/empty 시 빈 리스트로 반환
+	/**
+	 * Naver News API를 호출하여 현재 실시간 키워드 Top10에 대한 뉴스 소스를 검색하고, DB에 저장합니다.
 	 */
-    private List<NewsDto> fetchNewsBlocking(String keyword) {
-        return Optional.ofNullable(
-                   newsApi.fetchNews(keyword, MAX_SOURCE_COUNT_PER_POST, 1, "sim")
-                          .block()
-               )
-               .orElseGet(Collections::emptyList);
-    }
-    /** fallback용 DB 조회 */
-    private List<Source> fetchFallbackSources(String keyword) {
-		PageRequest pageRequest = PageRequest.of(0, MAX_SOURCE_COUNT_PER_POST);
-        return sourceRepository
-                .findLatest10ByPlatformAndKeyword(NEWS_PLATFORM, keyword, pageRequest);
-    }
+	public void searchNews() {
+		List<KeywordMetricHourlyDto> topKeywords = keywordMetricHourlyService.findHourlyMetrics();
+		List<Source> sources = new ArrayList<>();
+		topKeywords.forEach(metric -> {
+			String keyword = metric.text();
+			List<NewsDto> newsList = Optional.ofNullable(
+				newsApi.fetchNews(keyword, MAX_SOURCE_COUNT_PER_POST, 1, "sim")
+					.onErrorResume(e -> {
+						log.error("Naver API 실패. keyword={}, error={}", keyword, e.toString());
+						return Mono.just(Collections.emptyList());
+					})
+					.block()
+			).orElseGet(Collections::emptyList);
 
-    private void saveSources(List<Source> sources) {
+			if (newsList.isEmpty()) {
+				log.warn("Naver API 응답이 비어있음. keyword={}", keyword);
+				return;
+			}
+
+			sources.addAll(newsList.stream()
+				.map(dto -> dto.toEntity(NEWS_PLATFORM))
+				.toList());
+		});
+
         if (!sources.isEmpty()) {
             sourceRepository.saveAll(sources);
         }
     }
 
+	/**
+	 * Youtube API를 호출하여 현재 실시간 키워드 Top10에 대한 영상 소스를 검색하고, DB에 저장합니다.
+	 */
 	public void searchYoutube() {
-		// TODO: need to implements
-	}
+		List<KeywordMetricHourlyDto> topKeywords = keywordMetricHourlyService.findHourlyMetrics();
+		List<Source> sources = new ArrayList<>();
+		topKeywords.forEach(metric -> {
+			String keyword = metric.text();
+			// TODO: fix to youtube api
+			List<VideoDto> youtubeList = Collections.emptyList();
+
+			sources.addAll(youtubeList.stream()
+				.map(dto -> dto.toEntity(VIDEO_PLATFORM))
+				.toList());
+		});
+
+        if (!sources.isEmpty()) {
+            sourceRepository.saveAll(sources);
+        }
+    }
 
 	/**
 	 * 실시간 인기 키워드와 관련된 Youtube Source 목록을 페이지네이션하여 조회
@@ -123,9 +131,9 @@ public class SourceService {
 	public TopSourceListResponse getTopYoutubeSources(Pageable pageable) {
 
 		// 현재 시스템의 실시간 인기 키워드 목록(ID)을 가져옵니다. (데이터 파이프라인의 Task 2 결과물)
-		List<KeywordMetricHourlyResponse> topKeywords = keywordMetricHourlyService.findHourlyMetrics();
+		List<KeywordMetricHourlyDto> topKeywords = keywordMetricHourlyService.findHourlyMetrics();
 		List<Long> topKeywordIds = topKeywords.stream()
-				.map(KeywordMetricHourlyResponse::keywordId)
+				.map(KeywordMetricHourlyDto::keywordId)
 				.collect(Collectors.toList());
 
 		// 인기 키워드가 없으면 빈 페이지 반환
@@ -155,9 +163,9 @@ public class SourceService {
 	public TopSourceListResponse getTopNaverNewsSources(Pageable pageable) {
 
 		// 현재 시스템의 실시간 인기 키워드 목록(ID)을 가져옵니다. (데이터 파이프라인의 Task 2 결과물)
-		List<KeywordMetricHourlyResponse> topKeywords = keywordMetricHourlyService.findHourlyMetrics();
+		List<KeywordMetricHourlyDto> topKeywords = keywordMetricHourlyService.findHourlyMetrics();
 		List<Long> topKeywordIds = topKeywords.stream()
-				.map(KeywordMetricHourlyResponse::keywordId)
+				.map(KeywordMetricHourlyDto::keywordId)
 				.collect(Collectors.toList());
 
 		// 인기 키워드가 없으면 빈 페이지 반환

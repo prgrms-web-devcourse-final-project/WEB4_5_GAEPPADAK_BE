@@ -1,14 +1,33 @@
 package site.kkokkio.domain.source.service;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.anyInt;
+import static org.mockito.BDDMockito.anyString;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.eq;
+import static org.mockito.BDDMockito.*;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+
 import reactor.core.publisher.Mono;
-import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyResponse;
+import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.service.PostService;
@@ -24,16 +43,6 @@ import site.kkokkio.domain.source.repository.SourceRepository;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.infra.common.exception.RetryableExternalApiException;
-
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SourceServiceTest {
@@ -206,6 +215,11 @@ class SourceServiceTest {
     @DisplayName("뉴스 검색 - 성공")
     void searchNews_success() {
         // given
+        KeywordMetricHourlyDto metric = new KeywordMetricHourlyDto(1L, "키워드",
+            Platform.NAVER_NEWS, LocalDateTime.of(2025, 4, 29, 12, 0), 0, 0);
+        given(keywordMetricHourlyService.findHourlyMetrics())
+                .willReturn(List.of(metric));
+
         NewsDto dto = NewsDto.builder()
                 .title("제목")
                 .link("http://example.com/article")
@@ -213,11 +227,11 @@ class SourceServiceTest {
                 .description("설명")
                 .pubDate(LocalDateTime.of(2025, 4, 29, 12, 0))
                 .build();
-        given(newsApi.fetchNews(anyString(), anyInt(), anyInt(), anyString()))
+        given(newsApi.fetchNews(eq("키워드"), anyInt(), anyInt(), anyString()))
                 .willReturn(Mono.just(List.of(dto)));
 
         // when
-        sourceService.searchNews("키워드");
+        sourceService.searchNews();
 
         // then
         then(sourceRepository).should().saveAll(argThat(sources -> {
@@ -238,59 +252,55 @@ class SourceServiceTest {
     @DisplayName("뉴스 검색 - Empty 데이터")
     void searchNews_empty() {
         // given
+        KeywordMetricHourlyDto metric = new KeywordMetricHourlyDto(1L, "키워드",
+            Platform.NAVER_NEWS, LocalDateTime.of(2025, 4, 29, 12, 0), 0, 0);
+        given(keywordMetricHourlyService.findHourlyMetrics())
+                .willReturn(List.of(metric));
+
         given(newsApi.fetchNews(anyString(), anyInt(), anyInt(), anyString()))
                 .willReturn(Mono.empty());
 
         // when
-        sourceService.searchNews("빈키워드");
+        sourceService.searchNews();
 
         // then
         then(sourceRepository).should(never()).saveAll(any());}
 
 
     @Test
-    @DisplayName("뉴스 검색 - RetryableExternalApiException 발생")
-    void searchNews_retryableApiException() {
-        // given
-        given(newsApi.fetchNews(anyString(), anyInt(), anyInt(), anyString()))
-                .willThrow(new RetryableExternalApiException(500, "서버 오류"));
-
-        Source fallback = Source.builder()
-                .fingerprint("fallback-fp")
-                .normalizedUrl("http://fallback.com")
-                .title("Fallback 제목")
-                .description("Fallback 설명")
-                .thumbnailUrl(null)
-                .publishedAt(LocalDateTime.of(2025, 4, 29, 0, 0))
-                .platform(Platform.NAVER_NEWS)
-                .build();
-
-        given(sourceRepository.findLatest10ByPlatformAndKeyword(
-                eq(Platform.NAVER_NEWS),
-                anyString(),
-                any(PageRequest.class)))
-            .willReturn(List.of(fallback));
-
-        // when
-        sourceService.searchNews("키워드");
-
-        // then
-        then(sourceRepository).should().saveAll(List.of(fallback));}
-
-    @Test
-    @DisplayName("뉴스 검색 - 이외 에러 발생")
+    @DisplayName("뉴스 검색 - 에러 발생")
     void searchNews_error() {
         // given
-        given(newsApi.fetchNews(anyString(), anyInt(), anyInt(), anyString()))
-            .willThrow(new RuntimeException("알 수 없는 오류"));
+        KeywordMetricHourlyDto metric1 = new KeywordMetricHourlyDto(1L, "실패키워드",
+            Platform.NAVER_NEWS, LocalDateTime.of(2025, 4, 29, 12, 0), 0, 0);
+        KeywordMetricHourlyDto metric2 = new KeywordMetricHourlyDto(2L, "정상키워드",
+            Platform.NAVER_NEWS, LocalDateTime.of(2025, 4, 29, 12, 0), 0, 0);
+        given(keywordMetricHourlyService.findHourlyMetrics())
+                .willReturn(List.of(metric1, metric2));
 
-        // when & then
-        assertThatThrownBy(() -> sourceService.searchNews("키워드"))
-            .isInstanceOf(RuntimeException.class)
-            .hasMessageContaining("알 수 없는 오류");
+        NewsDto dto = NewsDto.builder()
+                .title("제목1")
+                .link("http://example.com/article")
+                .originalLink("http://example.com/original")
+                .description("설명")
+                .pubDate(LocalDateTime.of(2025, 4, 29, 12, 0))
+                .build();
 
-        then(sourceRepository).should(never()).saveAll(any());
+        given(newsApi.fetchNews(eq("실패키워드"), anyInt(), anyInt(), anyString()))
+            .willReturn(Mono.error(new RetryableExternalApiException(503, "서버 오류")));
 
+        given(newsApi.fetchNews(eq("정상키워드"), anyInt(), anyInt(), anyString()))
+            .willReturn(Mono.just(List.of(dto)));
+
+        // when
+        sourceService.searchNews();
+
+        // then
+        then(sourceRepository).should().saveAll(argThat(sources -> {
+            assertThat(sources).hasSize(1);
+            assertThat(sources.iterator().next().getTitle()).isEqualTo("제목1");
+            return true;
+        }));
     }
 
     @Test
@@ -299,26 +309,26 @@ class SourceServiceTest {
 
         /// given
         // Mocking할 인기 키워드 목록 생성
-        List<KeywordMetricHourlyResponse> mockTopKeywords = Arrays.asList(
-                new KeywordMetricHourlyResponse(1L, "키워드 1", Platform.GOOGLE_TREND,
+        List<KeywordMetricHourlyDto> mockTopKeywords = Arrays.asList(
+                new KeywordMetricHourlyDto(1L, "키워드 1", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 1000, 90),
-                new KeywordMetricHourlyResponse(2L, "키워드 2", Platform.GOOGLE_TREND,
+                new KeywordMetricHourlyDto(2L, "키워드 2", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 800, 70),
-                new KeywordMetricHourlyResponse(3L, "키워드 3", Platform.GOOGLE_TREND,
+                new KeywordMetricHourlyDto(3L, "키워드 3", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 300, 30),
-                new KeywordMetricHourlyResponse(4L, "키워드 4", Platform.GOOGLE_TREND,
+                new KeywordMetricHourlyDto(4L, "키워드 4", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 50, 77),
-                new KeywordMetricHourlyResponse(5L, "키워드 5", Platform.GOOGLE_TREND,
+                new KeywordMetricHourlyDto(5L, "키워드 5", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 650, 70),
-                new KeywordMetricHourlyResponse(6L, "키워드 6", Platform.GOOGLE_TREND,
+                new KeywordMetricHourlyDto(6L, "키워드 6", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 70, 86),
-                new KeywordMetricHourlyResponse(7L, "키워드 7", Platform.GOOGLE_TREND,
+                new KeywordMetricHourlyDto(7L, "키워드 7", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 120, 43),
-                new KeywordMetricHourlyResponse(8L, "키워드 8", Platform.GOOGLE_TREND,
+                new KeywordMetricHourlyDto(8L, "키워드 8", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 665, 86),
-                new KeywordMetricHourlyResponse(9L, "키워드 9", Platform.GOOGLE_TREND,
+                new KeywordMetricHourlyDto(9L, "키워드 9", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 505, 42),
-                new KeywordMetricHourlyResponse(10L, "키워드 10", Platform.GOOGLE_TREND,
+                new KeywordMetricHourlyDto(10L, "키워드 10", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 404, 55)
         );
 
@@ -461,8 +471,8 @@ class SourceServiceTest {
 
         /// given
         // Mocking할 인기 키워드 목록 생성
-        List<KeywordMetricHourlyResponse> mockTopKeywords = List.of(
-                new KeywordMetricHourlyResponse(1L, "키워드 1", Platform.GOOGLE_TREND,
+        List<KeywordMetricHourlyDto> mockTopKeywords = List.of(
+                new KeywordMetricHourlyDto(1L, "키워드 1", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 1000, 90)
         );
 
@@ -516,26 +526,26 @@ class SourceServiceTest {
 
         /// given
         // Mocking할 인기 키워드 목록 생성
-        List<KeywordMetricHourlyResponse> mockTopKeywords = Arrays.asList(
-                new KeywordMetricHourlyResponse(1L, "키워드 1", Platform.GOOGLE_TREND,
+        List<KeywordMetricHourlyDto> mockTopKeywords = Arrays.asList(
+                new KeywordMetricHourlyDto(1L, "키워드 1", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 1000, 90),
-                new KeywordMetricHourlyResponse(2L, "키워드 2", Platform.GOOGLE_TREND,
+                new KeywordMetricHourlyDto(2L, "키워드 2", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 800, 70),
-                new KeywordMetricHourlyResponse(3L, "키워드 3", Platform.GOOGLE_TREND,
+                new KeywordMetricHourlyDto(3L, "키워드 3", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 300, 30),
-                new KeywordMetricHourlyResponse(4L, "키워드 4", Platform.GOOGLE_TREND,
+                new KeywordMetricHourlyDto(4L, "키워드 4", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 50, 77),
-                new KeywordMetricHourlyResponse(5L, "키워드 5", Platform.GOOGLE_TREND,
+                new KeywordMetricHourlyDto(5L, "키워드 5", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 650, 70),
-                new KeywordMetricHourlyResponse(6L, "키워드 6", Platform.GOOGLE_TREND,
+                new KeywordMetricHourlyDto(6L, "키워드 6", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 70, 86),
-                new KeywordMetricHourlyResponse(7L, "키워드 7", Platform.GOOGLE_TREND,
+                new KeywordMetricHourlyDto(7L, "키워드 7", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 120, 43),
-                new KeywordMetricHourlyResponse(8L, "키워드 8", Platform.GOOGLE_TREND,
+                new KeywordMetricHourlyDto(8L, "키워드 8", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 665, 86),
-                new KeywordMetricHourlyResponse(9L, "키워드 9", Platform.GOOGLE_TREND,
+                new KeywordMetricHourlyDto(9L, "키워드 9", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 505, 42),
-                new KeywordMetricHourlyResponse(10L, "키워드 10", Platform.GOOGLE_TREND,
+                new KeywordMetricHourlyDto(10L, "키워드 10", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 404, 55)
         );
 
@@ -678,8 +688,8 @@ class SourceServiceTest {
 
         /// given
         // Mocking할 인기 키워드 목록 생성
-        List<KeywordMetricHourlyResponse> mockTopKeywords = List.of(
-                new KeywordMetricHourlyResponse(1L, "키워드 1", Platform.GOOGLE_TREND,
+        List<KeywordMetricHourlyDto> mockTopKeywords = List.of(
+                new KeywordMetricHourlyDto(1L, "키워드 1", Platform.GOOGLE_TREND,
                         LocalDateTime.now(), 1000, 90)
         );
 

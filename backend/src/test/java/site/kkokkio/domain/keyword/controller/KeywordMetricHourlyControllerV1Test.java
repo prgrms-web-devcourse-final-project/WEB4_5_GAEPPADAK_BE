@@ -16,7 +16,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyResponse;
+import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
@@ -33,11 +33,11 @@ public class KeywordMetricHourlyControllerV1Test {
 	@Test
 	@DisplayName("인기 10 키워드 조회 - 성공")
 	public void getKeywordMetricHourly_Success() throws Exception {
-		List<KeywordMetricHourlyResponse> mockKeywordList = new ArrayList<>();
+		List<KeywordMetricHourlyDto> mockKeywordList = new ArrayList<>();
 		LocalDateTime now = LocalDateTime.now();
 		for (long i = 1; i <= 10; i++) {
 			mockKeywordList.add(
-				new KeywordMetricHourlyResponse(i, "키워드 " + i, Platform.GOOGLE_TREND, now, 100, 100)
+				new KeywordMetricHourlyDto(i, "키워드 " + i, Platform.GOOGLE_TREND, now, 100, 100)
 			);
 		}
 

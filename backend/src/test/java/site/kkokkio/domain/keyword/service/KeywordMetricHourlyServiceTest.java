@@ -17,7 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ActiveProfiles;
 
-import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyResponse;
+import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.entity.Keyword;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourly;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourlyId;
@@ -57,12 +57,12 @@ public class KeywordMetricHourlyServiceTest {
 		when(keywordMetricHourlyRepository.findTop10ByOrderByCreatedAtDesc()).thenReturn(mockMetrics);
 
 		// when
-		List<KeywordMetricHourlyResponse> responses = keywordMetricHourlyService.findHourlyMetrics();
+		List<KeywordMetricHourlyDto> responses = keywordMetricHourlyService.findHourlyMetrics();
 
 		// then
 		assertThat(responses).hasSize(10);
 		for (int i = 0; i < 10; i++) {
-			KeywordMetricHourlyResponse response = responses.get(i);
+			KeywordMetricHourlyDto response = responses.get(i);
 			assertThat(response.volume()).isEqualTo((i + 1) * 10);
 			assertThat(response.score()).isEqualTo((i+ 1) * 10);
 			assertThat(response.platform()).isEqualTo(Platform.GOOGLE_TREND);

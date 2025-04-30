@@ -6,7 +6,7 @@
 
 variable "prefix" {
   description = "Prefix for all resources"
-  default     = "kkokkio"
+  default     = "team04"
 }
 
 variable "region" {

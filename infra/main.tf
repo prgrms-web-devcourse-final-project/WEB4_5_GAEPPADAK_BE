@@ -241,10 +241,15 @@ yum install docker -y
 systemctl enable docker
 systemctl start docker
 
+# gnupg2 설치 (doppler CLI용)
+yum install -y --allowerasing gnupg2
+
+# 도플러 CLI 설치
+curl -Ls https://cli.doppler.com/install.sh | sudo DOPPLER_INSTALL_DIR=/usr/local/bin sh
 # 도커 네트워크 생성
 docker network create common
 
-# nginx-proxy-manager (기존 유지)
+# nginx-proxy-manager
 docker run -d \
   --name npm_1 \
   --restart unless-stopped \

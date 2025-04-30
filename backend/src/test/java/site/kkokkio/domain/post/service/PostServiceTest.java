@@ -120,8 +120,8 @@ public class PostServiceTest {
 			.build();
 
 		given(keywordMetricHourlyRepository.findTop10ById_BucketAtOrderByScoreDesc(any())).willReturn(List.of(metric));
-		given(keywordPostHourlyRepository.findById_KeywordIdAndId_BucketAt(100L, now)).willReturn(
-			Optional.of(keywordPostHourly));
+		given(keywordPostHourlyRepository.findById_KeywordIdAndId_BucketAt(eq(100L), any(LocalDateTime.class)))
+			.willReturn(Optional.of(keywordPostHourly));
 
 		// when
 		List<PostDto> result = postService.getTopPostsWithKeyword();

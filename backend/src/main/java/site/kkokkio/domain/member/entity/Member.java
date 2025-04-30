@@ -47,10 +47,12 @@ public class Member extends BaseTimeEntity {
     @Column(name = "birth_date", nullable = false)
     private LocalDate birthDate;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MemberRole role = MemberRole.USER;
 
+    @Builder.Default
 	@Column(name = "email_verified", nullable = false)
     private boolean emailVerified = false;
 

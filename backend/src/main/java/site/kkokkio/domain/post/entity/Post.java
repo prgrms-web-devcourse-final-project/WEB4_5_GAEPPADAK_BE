@@ -40,6 +40,7 @@ public class Post extends BaseTimeEntity {
     @Column(name = "bucket_at", nullable = false)
     private LocalDateTime bucketAt;
 
+	@Builder.Default
     @Column(name = "report_count", nullable = false)
     private int reportCount = 0;
 }

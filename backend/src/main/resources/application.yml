@@ -12,7 +12,7 @@ spring:
       enabled: false
 
   profiles:
-    active: ${SPRING_ACTIVE_PROFILES:dev}
+    active: ${SPRING_ACTIVE_PROFILES:test}
 
   data:
     redis:
@@ -42,15 +42,80 @@ spring:
     locations: classpath:db/migration # migration 스크립트 위치
 
   jwt:
-    secret-key: ${JWT_SECRET_KEY}
-    expiration: ${JWT_EXPIRATION}
+    secret-key: ${JWT_SECRET_KEY:test123}
+    expiration: ${JWT_EXPIRATION:600000}
 
   jackson:
     serialization:
       FAIL_ON_EMPTY_BEANS: false # 빈 객체도 직렬화가 가능하도록 설정 (Empty)
 
+resilience4j:
+  retry:
+    configs:
+      default:
+        max-attempts: 3 # 최대 재시도 수
+        wait-duration: 1s # 재시도 할 때마다 기다리는 고정시간
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - site.kkokkio.infra.common.exception.RetryableExternalApiException
+        ignore-exceptions:
+          - site.kkokkio.infra.common.exception.ClientBadRequestException
+    instances:
+      NAVER_NEWS_RETRY:
+        base-config: default
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-type: COUNT_BASED # COUNT_BASED: sliding-window-size 만큼의 마지막 call들이 기록되고 집계된다
+        sliding-window-size: 10 # CLOSED 상태에서 집계되는 슬라이딩 윈도우 크기
+        failure-rate-threshold: 50 # 실패 비율 임계치를 백분율로 설정
+        wait-duration-in-open-state: 20s # OPEN에서 HALF_OPEN 상태로 전환하기 전 기다리는 시간
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: true
+        record-exceptions:
+          - site.kkokkio.infra.common.exception.RetryableExternalApiException
+        ignore-exceptions:
+          - site.kkokkio.infra.common.exception.ClientBadRequestException
+    instances:
+      NAVER_NEWS_CIRCUIT_BREAKER:
+        base-config: default
+  ratelimiter:
+    configs:
+      default:
+        limit-for-period: 8 # 초당 8 건
+        limit-refresh-period: 1s
+        timeout-duration: 0 # 대기 없이 즉시 실패
+    instances:
+      NAVER_NEWS_RATE_LIMITER:
+        base-config: default
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /api/actuator
+  endpoint:
+    health:
+      probes:
+        enabled: true # readiness/liveness 포함
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true
+  server:
+    port: 8081
+
 google:
   trends:
     rss:
-      url: ${GOOGLE_TRENDS_RSS_URL}
-      namespace: ${NAMESPACE_URL}
+      url: ${GOOGLE_TRENDS_RSS_URL:https://trends.google.co.kr/trending/rss?geo=KR}
+      namespace: ${NAMESPACE_URL:https://trends.google.com/trending/rss}
+
+naver:
+  base-url: ${NAVER_BASE_URL:https://openapi.naver.com}
+  client-id: ${NAVER_CLIENT_ID:test-id}
+  client-secret: ${NAVER_CLIENT_SECRET:test-secret}
+  search:
+    news-path: ${NAVER_SEARCH_NEWS_PATH:/v1/search/news.json}

@@ -28,7 +28,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
+    runtimeOnly 'io.netty:netty-resolver-dns-native-macos:4.1.68.Final:osx-aarch_64'
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
@@ -39,13 +41,8 @@ dependencies {
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.flywaydb:flyway-mysql'
 
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.security:spring-security-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
     // redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-
 
     // JWT
     implementation("io.jsonwebtoken:jjwt-api:0.12.6")
@@ -55,13 +52,26 @@ dependencies {
     // for googleTrend
     implementation 'com.rometools:rome:1.18.0'
 
+    // resilience4j
+    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
+    implementation 'io.github.resilience4j:resilience4j-reactor:2.2.0'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
     // springBatch
     implementation 'org.springframework.boot:spring-boot-starter-batch'
     testImplementation 'org.springframework.batch:spring-batch-test'
 
     // test
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     runtimeOnly 'com.h2database:h2'
+    testImplementation 'io.projectreactor:reactor-test:3.6.5'
+    testImplementation 'org.mockito:mockito-core:4.6.1'
+
 }
 
 tasks.named('test') {

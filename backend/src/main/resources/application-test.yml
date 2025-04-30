@@ -27,6 +27,8 @@ resilience4j:
     instances:
       NAVER_NEWS_RETRY:
         base-config: default
+      YOUTUBE_VIDEO_RETRY: # 유튜브 재시도 인스턴스
+        base-config: default
   circuitbreaker:
     configs:
       default:
@@ -40,6 +42,8 @@ resilience4j:
     instances:
       NAVER_NEWS_CIRCUIT_BREAKER:
         base-config: default
+      YOUTUBE_NEWS_CIRCUIT_BREAKER: # 유튜브 서킷 브레이커 인스턴스
+        base-config: default
   ratelimiter:
     configs:
       default:
@@ -48,6 +52,8 @@ resilience4j:
         timeout-duration: 0
     instances:
       NAVER_NEWS_RATE_LIMITER:
+        base-config: default
+      YOUTUBE_VIDEO_RATE_LIMITER: # 유튜브 레이트 리미터 인스턴스
         base-config: default
 
 management:

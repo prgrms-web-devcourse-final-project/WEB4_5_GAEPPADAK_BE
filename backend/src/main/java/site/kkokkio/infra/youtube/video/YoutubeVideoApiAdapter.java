@@ -1,6 +1,9 @@
 package site.kkokkio.infra.youtube.video;
 
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -47,9 +50,9 @@ public class YoutubeVideoApiAdapter implements VideoApiPort {
 
     // VideoApiPort 인터페이스의 메소드 구현
     @Override
-//    @Retry(name = "YOUTUBE_RETRY") // Resilience4j 애노테이션 (나중에 설정 추가 후 활성화)
-//    @CircuitBreaker(name = "YOUTUBE_CIRCUIT_BREAKER") // Resilience4j 애노테이션 (나중에 설정 추가 후 활성화)
-//    @RateLimiter(name = "YOUTUBE_RATE_LIMITER") // Resilience4j 애노테이션 (나중에 설정 추가 후 활성화)
+    @Retry(name = "YOUTUBE_VIDEO_RETRY") // Resilience4j 애노테이션 (나중에 설정 추가 후 활성화)
+    @CircuitBreaker(name = "YOUTUBE_VIDEO_CIRCUIT_BREAKER") // Resilience4j 애노테이션 (나중에 설정 추가 후 활성화)
+    @RateLimiter(name = "YOUTUBE_VIDEO_RATE_LIMITER") // Resilience4j 애노테이션 (나중에 설정 추가 후 활성화)
     public Mono<List<VideoDto>> fetchVideos(String keyword, int count) {
 
         // WebClient를 사용하여 YouTube API 호출

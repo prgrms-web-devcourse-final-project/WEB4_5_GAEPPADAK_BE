@@ -1,24 +1,23 @@
 package site.kkokkio.domain.source.controller;
 
-import java.util.List;
-
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.source.controller.dto.SourceListResponse;
 import site.kkokkio.domain.source.controller.dto.TopSourceListResponse;
 import site.kkokkio.domain.source.dto.SourceDto;
-import site.kkokkio.domain.source.dto.TopSourceItemDto;
 import site.kkokkio.domain.source.service.SourceService;
 import site.kkokkio.global.dto.RsData;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -60,7 +59,7 @@ public class SourceControllerV1 {
             @ParameterObject @PageableDefault(
                     size = 5,
                     sort = "score",
-                    direction = org.springframework.data.domain.Sort.Direction.DESC
+                    direction = Sort.Direction.DESC
             ) Pageable pageable
     ) {
         TopSourceListResponse topYoutubeSources = sourceService.getTopYoutubeSources(pageable);
@@ -81,7 +80,7 @@ public class SourceControllerV1 {
             @ParameterObject @PageableDefault(
                     size = 5,
                     sort = "score",
-                    direction = org.springframework.data.domain.Sort.Direction.DESC
+                    direction = Sort.Direction.DESC
             ) Pageable pageable
     ) {
         TopSourceListResponse topNewsSources = sourceService.getTopNaverNewsSources(pageable);

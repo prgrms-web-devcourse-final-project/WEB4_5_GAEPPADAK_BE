@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
-import site.kkokkio.domain.member.dto.EmailVerificationRequest;
+import site.kkokkio.domain.member.controller.dto.EmailVerificationRequest;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.repository.MemberRepository;
 import site.kkokkio.global.exception.ServiceException;

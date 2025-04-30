@@ -127,7 +127,7 @@ public class JwtUtils {
 			.httpOnly(true) // 자바스크립트 접근 차단 (XSS 방지)
 			.path("/") // 전체 사이트에서 접근 가능
 			.sameSite("None") // 외부 사이트 요청 차단 (CSRF 방지)
-			.maxAge(Duration.ofMinutes(10)) // Access Token 만료 시간 : 10분
+			.maxAge(Duration.ofMillis(expiration)) // Access Token 만료 시간 : 10분
 			.secure(true) // HTTPS 통신 시에만 전송
 			.build();
 

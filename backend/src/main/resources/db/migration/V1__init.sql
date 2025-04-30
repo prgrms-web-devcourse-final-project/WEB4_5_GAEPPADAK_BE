@@ -21,20 +21,6 @@ CREATE TABLE keyword (
   CONSTRAINT uq_keyword_text UNIQUE (text)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-CREATE TABLE keyword_metric_hourly (
-  bucket_at DATETIME NOT NULL,
-  platform VARCHAR(30) NOT NULL,
-  keyword_id BIGINT NOT NULL,
-  volume INT NOT NULL DEFAULT 0,
-  score INT NOT NULL DEFAULT 0,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (bucket_at, platform, keyword_id),
-  FOREIGN KEY (keyword_id) REFERENCES keyword(keyword_id)
-      ON DELETE CASCADE,
-  INDEX idx_kmh_bucket_at_score (bucket_at, score)
-) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
 CREATE TABLE post (
   post_id BIGINT AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
@@ -46,19 +32,26 @@ CREATE TABLE post (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-CREATE TABLE keyword_post_hourly (
+CREATE TABLE keyword_metric_hourly (
   bucket_at DATETIME NOT NULL,
   platform VARCHAR(30) NOT NULL,
   keyword_id BIGINT NOT NULL,
-  post_id BIGINT NOT NULL,
+  post_id BIGINT,
+  volume INT NOT NULL DEFAULT 0,
+  score INT NOT NULL DEFAULT 0,
+  rank_delta DOUBLE DEFAULT 0.0,
+  novelty_ratio DOUBLE DEFAULT -1.0,
+  weighted_novelty DOUBLE DEFAULT -1.0,
+  no_post_streak INT DEFAULT -1,
+  low_variation BOOLEAN DEFAULT FALSE,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (bucket_at, platform, keyword_id, post_id),
-  FOREIGN KEY (bucket_at, platform, keyword_id)
-    REFERENCES keyword_metric_hourly(bucket_at, platform, keyword_id)
+  PRIMARY KEY (bucket_at, platform, keyword_id),
+  FOREIGN KEY (keyword_id) REFERENCES keyword(keyword_id)
       ON DELETE CASCADE,
   FOREIGN KEY (post_id) REFERENCES post(post_id)
-      ON DELETE CASCADE
+      ON DELETE SET NULL,
+  INDEX idx_kmh_bucket_at_score (bucket_at, score)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE post_keyword (
@@ -98,6 +91,19 @@ CREATE TABLE source (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_source_platform_published (platform, published_at)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE keyword_source (
+  keyword_source_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  keyword_id BIGINT NOT NULL,
+  fingerprint VARCHAR(64) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT uq_ps_keyword_fingerprint UNIQUE (keyword_id, fingerprint),
+  FOREIGN KEY (keyword_id) REFERENCES keyword(keyword_id)
+      ON DELETE CASCADE,
+  FOREIGN KEY (fingerprint) REFERENCES source(fingerprint)
+      ON DELETE CASCADE
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE post_source (

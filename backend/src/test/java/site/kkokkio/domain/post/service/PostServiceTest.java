@@ -18,10 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import site.kkokkio.domain.keyword.entity.Keyword;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourly;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourlyId;
-import site.kkokkio.domain.keyword.entity.KeywordPostHourly;
-import site.kkokkio.domain.keyword.entity.KeywordPostHourlyId;
 import site.kkokkio.domain.keyword.repository.KeywordMetricHourlyRepository;
-import site.kkokkio.domain.keyword.repository.KeywordPostHourlyRepository;
 import site.kkokkio.domain.keyword.repository.KeywordRepository;
 import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.entity.Post;
@@ -43,8 +40,6 @@ public class PostServiceTest {
 	private KeywordRepository keywordRepository;
 	@Mock
 	private KeywordMetricHourlyRepository keywordMetricHourlyRepository;
-	@Mock
-	private KeywordPostHourlyRepository keywordPostHourlyRepository;
 	@Mock
 	private PostKeywordRepository postKeywordRepository;
 	@Mock
@@ -112,16 +107,10 @@ public class PostServiceTest {
 			.keyword(keyword)
 			.volume(100)
 			.score(100)
-			.build();
-		KeywordPostHourly keywordPostHourly = KeywordPostHourly.builder()
-			.id(new KeywordPostHourlyId(now, Platform.GOOGLE_TREND, 100L, 1L))
-			.keywordMetricHourly(metric)
 			.post(post)
 			.build();
 
 		given(keywordMetricHourlyRepository.findTop10ById_BucketAtOrderByScoreDesc(any())).willReturn(List.of(metric));
-		given(keywordPostHourlyRepository.findById_KeywordIdAndId_BucketAt(eq(100L), any(LocalDateTime.class)))
-			.willReturn(Optional.of(keywordPostHourly));
 
 		// when
 		List<PostDto> result = postService.getTopPostsWithKeyword();

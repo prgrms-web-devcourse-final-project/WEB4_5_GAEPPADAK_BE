@@ -23,6 +23,14 @@ variable "PASSWORD_1" {
   description = "password_1 (Provided via Doppler)"
 }
 
+variable "PASSWORD_2" {
+  description = "password_2 (Provided via Doppler)"
+}
+
+variable "PASSWORD_3" {
+  description = "password_3 (Provided via Doppler)"
+}
+
 variable "GITHUB_ACCESS_TOKEN_1" {
   description = "github_access_token_1, read:packages only (Provided via Doppler)"
 }

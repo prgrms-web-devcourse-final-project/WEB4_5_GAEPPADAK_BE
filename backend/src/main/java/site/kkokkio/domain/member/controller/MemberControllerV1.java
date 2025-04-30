@@ -14,12 +14,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import site.kkokkio.domain.member.controller.dto.EmailVerificationRequest;
 import site.kkokkio.domain.member.controller.dto.MemberLoginRequest;
 import site.kkokkio.domain.member.controller.dto.MemberLoginResponse;
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
-import site.kkokkio.domain.member.dto.EmailVerificationRequest;
-import site.kkokkio.domain.member.dto.TokenResponse;
+import site.kkokkio.domain.member.dto.TokenDto;
 import site.kkokkio.domain.member.service.AuthService;
 import site.kkokkio.domain.member.service.MailService;
 import site.kkokkio.domain.member.service.MemberService;
@@ -72,9 +72,9 @@ public class MemberControllerV1 {
 	@PostMapping("/refresh")
 	@ApiErrorCodeExamples({ErrorCode.REFRESH_TOKEN_NOT_FOUND,
 		ErrorCode.REFRESH_TOKEN_MISMATCH, ErrorCode.REFRESH_TOKEN_INTERNAL_ERROR})
-	public RsData<TokenResponse> refreshToken(HttpServletRequest request, HttpServletResponse response) {
-		TokenResponse tokenResponse = authService.refreshToken(request, response);
-		return new RsData<>("200", "토큰이 재발급되었습니다.", tokenResponse);
+	public RsData<TokenDto> refreshToken(HttpServletRequest request, HttpServletResponse response) {
+		TokenDto tokenDto = authService.refreshToken(request, response);
+		return new RsData<>("200", "토큰이 재발급되었습니다.", tokenDto);
 	}
 
 	@Operation(summary = "로그아웃")

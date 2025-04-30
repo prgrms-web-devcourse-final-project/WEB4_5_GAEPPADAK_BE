@@ -23,7 +23,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import site.kkokkio.domain.member.controller.dto.MemberLoginResponse;
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
-import site.kkokkio.domain.member.dto.TokenResponse;
+import site.kkokkio.domain.member.dto.TokenDto;
 import site.kkokkio.domain.member.service.AuthService;
 import site.kkokkio.domain.member.service.MailService;
 import site.kkokkio.domain.member.service.MemberService;
@@ -151,10 +151,10 @@ class MemberControllerV1Test {
 	@DisplayName("토큰 재발급 - 성공")
 	void refreshTokenSuccess() throws Exception {
 		// given
-		TokenResponse tokenResponse = new TokenResponse("newAccessToken", "existingRefreshToken");
+		TokenDto tokenDto = new TokenDto("newAccessToken", "existingRefreshToken");
 
 		given(authService.refreshToken(any(HttpServletRequest.class), any(HttpServletResponse.class)))
-			.willReturn(tokenResponse);
+			.willReturn(tokenDto);
 
 		// when & then
 		mockMvc.perform(post("/api/v1/auth/refresh"))

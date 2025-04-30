@@ -26,7 +26,7 @@ import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import site.kkokkio.domain.member.controller.dto.MemberLoginResponse;
-import site.kkokkio.domain.member.dto.TokenResponse;
+import site.kkokkio.domain.member.dto.TokenDto;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.global.enums.MemberRole;
 import site.kkokkio.global.exception.ServiceException;
@@ -144,7 +144,7 @@ class AuthServiceV1Test {
 		given(valueOperations.get("RT:" + email)).willReturn(rt);
 		given(jwtUtils.createToken(claims)).willReturn("new-access");
 
-		TokenResponse result = authService.refreshToken(request, response);
+		TokenDto result = authService.refreshToken(request, response);
 
 		assertThat(result.accessToken()).isEqualTo("new-access");
 		assertThat(result.refreshToken()).isEqualTo(rt);

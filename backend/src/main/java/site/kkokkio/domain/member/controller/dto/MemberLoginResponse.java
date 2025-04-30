@@ -4,9 +4,11 @@ import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import lombok.Builder;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.global.enums.MemberRole;
 
+@Builder
 public record MemberLoginResponse(
 	String nickname,
 	String email,

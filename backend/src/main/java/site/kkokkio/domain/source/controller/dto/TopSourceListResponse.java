@@ -1,11 +1,13 @@
 package site.kkokkio.domain.source.controller.dto;
 
+import java.util.List;
+
+import org.springframework.data.domain.Page;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
-import org.springframework.data.domain.Page;
 import site.kkokkio.domain.source.dto.TopSourceItemDto;
-
-import java.util.List;
+import site.kkokkio.global.dto.PaginationMeta;
 
 @Builder
 @Schema(description = "실시간 인기 출처 목록 응답 DTO (페이지네이션 포함)")
@@ -13,26 +15,15 @@ public record TopSourceListResponse(
         List<TopSourceItemDto> list,
         PaginationMeta meta
 ) {
-    @Builder
-    public record PaginationMeta(
-            int page,
-            int size,
-            long totalElements,
-            int totalPages,
-            boolean hasNext,
-            boolean hasPrevious
-    ) {
-    }
-
-    public static TopSourceListResponse from(Page<TopSourceItemDto> topSourceItemDtoPage) {
-        PaginationMeta paginationMeta = PaginationMeta.builder()
-                .page(topSourceItemDtoPage.getNumber())
-                .size(topSourceItemDtoPage.getSize())
-                .totalElements(topSourceItemDtoPage.getTotalElements())
-                .totalPages(topSourceItemDtoPage.getTotalPages())
-                .hasNext(topSourceItemDtoPage.hasNext())
-                .hasPrevious(topSourceItemDtoPage.hasPrevious())
-                .build();
+	public static TopSourceListResponse from(Page<TopSourceItemDto> topSourceItemDtoPage) {
+		PaginationMeta paginationMeta = PaginationMeta.of(
+			topSourceItemDtoPage.getNumber(),
+			topSourceItemDtoPage.getSize(),
+			topSourceItemDtoPage.getTotalElements(),
+			topSourceItemDtoPage.getTotalPages(),
+			topSourceItemDtoPage.hasNext(),
+			topSourceItemDtoPage.hasPrevious()
+		);
 
         return TopSourceListResponse.builder()
                 .list(topSourceItemDtoPage.getContent())

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import jakarta.mail.MessagingException;
 import site.kkokkio.global.dto.RsData;
 
 @RestControllerAdvice
@@ -37,17 +38,17 @@ public class GlobalExceptionHandler {
 			);
 	}
 
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<RsData<Void>> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
-        return ResponseEntity
+	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+	public ResponseEntity<RsData<Void>> handleMethodArgumentTypeMismatchException(
+		MethodArgumentTypeMismatchException e) {
+		return ResponseEntity
 			.status(HttpStatus.BAD_REQUEST)
-            .body(
+			.body(
 				new RsData<>(
 					"400",
 					"잘못된 요청입니다."
 				));
-    }
-
+	}
 
 	// 서비스 로직에서 발생한 커스텀 예외(ServiceException) 처리
 	@ResponseStatus // ResponseEntity.status()에 우선권이 있음
@@ -60,6 +61,22 @@ public class GlobalExceptionHandler {
 				new RsData<>(
 					ex.getCode(),
 					ex.getMessage()
+				)
+			);
+	}
+
+	/**
+	 * 메일 전송(MessagingException) 에러 처리
+	 */
+	@ExceptionHandler(MessagingException.class)
+	public ResponseEntity<RsData<Void>> handleMessagingException(MessagingException e) {
+		e.printStackTrace();// 로깅
+		return ResponseEntity
+			.status(HttpStatus.INTERNAL_SERVER_ERROR)
+			.body(
+				new RsData<>(
+					"500",
+					"이메일 인증 코드 전송 중 오류가 발생했습니다."
 				)
 			);
 	}

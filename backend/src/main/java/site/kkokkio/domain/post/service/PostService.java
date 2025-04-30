@@ -110,7 +110,7 @@ public class PostService {
 
 			// Step 2. 해당 키워드 기준으로 수집된 Source 조회
 			// TODO: executionContext로 수집한 new Source Url 리스트로 대체
-			PageRequest pageRequest = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "publishedAt"));
+			PageRequest pageRequest = PageRequest.of(0, 10);
 			List<Source> sources = keywordSourceRepository.findSourcesByKeywordId(keywordId, pageRequest).getContent();
 
 			if (sources.isEmpty()) {

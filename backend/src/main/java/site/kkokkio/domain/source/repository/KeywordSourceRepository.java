@@ -13,15 +13,14 @@ import site.kkokkio.domain.source.entity.Source;
 @Repository
 public interface KeywordSourceRepository extends JpaRepository<KeywordSource, Long> {
     /**
-     * 특정 키워드에 연결된 Source 리스트 조회
+     * 특정 키워드에 연결된 Source 리스트를 최신 발행순으로 조회
      */
 	@Query(
 		value = "SELECT ks.source FROM KeywordSource ks " +
-				"JOIN ks.keyword k " +
-				"WHERE k.id = :keywordId",
+				"WHERE ks.keyword.id = :keywordId " +
+				"ORDER BY ks.source.publishedAt DESC",
 		countQuery = "SELECT COUNT(ks) FROM KeywordSource ks " +
-					 "JOIN ks.keyword k " +
-					 "WHERE k.id = :keywordId"
+					 "WHERE ks.keyword.id = :keywordId"
 	)
 	Page<Source> findSourcesByKeywordId(@Param("keywordId") Long keywordId, Pageable pageable);
 }

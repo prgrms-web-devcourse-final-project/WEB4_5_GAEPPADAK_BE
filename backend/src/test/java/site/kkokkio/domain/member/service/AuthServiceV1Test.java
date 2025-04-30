@@ -16,6 +16,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,6 +33,7 @@ import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.global.util.JwtUtils;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class AuthServiceV1Test {
 
 	@InjectMocks
@@ -60,7 +63,7 @@ class AuthServiceV1Test {
 	@BeforeEach
 	void setUp() {
 		// RedisTemplate의 opsForValue()가 반환할 mock 설정
-		given(redisTemplate.opsForValue()).willReturn(valueOperations);
+		lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
 	}
 
@@ -162,8 +165,7 @@ class AuthServiceV1Test {
 
 		willDoNothing().given(valueOperations)
 			.set(eq("BL:" + at), eq("logout"), any(Duration.class));
-
-		willDoNothing().given(redisTemplate).delete("RT:" + email);
+		given(redisTemplate.delete("RT:" + email)).willReturn(true);
 		willDoNothing().given(jwtUtils).clearAuthCookies(response);
 
 		// when & then

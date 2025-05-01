@@ -1,19 +1,12 @@
 package site.kkokkio.domain.source.service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.entity.Keyword;
@@ -24,14 +17,22 @@ import site.kkokkio.domain.source.controller.dto.TopSourceListResponse;
 import site.kkokkio.domain.source.dto.NewsDto;
 import site.kkokkio.domain.source.dto.SourceDto;
 import site.kkokkio.domain.source.dto.TopSourceItemDto;
+import site.kkokkio.domain.source.dto.VideoDto;
 import site.kkokkio.domain.source.entity.KeywordSource;
 import site.kkokkio.domain.source.entity.PostSource;
 import site.kkokkio.domain.source.entity.Source;
 import site.kkokkio.domain.source.port.out.NewsApiPort;
+import site.kkokkio.domain.source.port.out.VideoApiPort;
 import site.kkokkio.domain.source.repository.KeywordSourceRepository;
 import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.domain.source.repository.SourceRepository;
 import site.kkokkio.global.enums.Platform;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -44,6 +45,7 @@ public class SourceService {
 	private final KeywordMetricHourlyService keywordMetricHourlyService;
     private final OpenGraphService openGraphService;
 	private final NewsApiPort newsApi;
+	private final VideoApiPort videoApi;
 
 	private static final int MAX_SOURCE_COUNT_PER_POST = 10;
 	private final Platform NEWS_PLATFORM = Platform.NAVER_NEWS;
@@ -149,7 +151,98 @@ public class SourceService {
 	/**
 	 * Youtube API를 호출하여 현재 실시간 키워드 Top10에 대한 영상 소스를 검색하고, DB에 저장합니다.
 	 */
-	public void searchYoutube() { }
+	@Transactional
+	public void searchYoutube() {
+		log.info(">>>>>>> searchYoutube 메소드 시작");
+
+		// 1. 최신 Top10 키워드 조회
+		List<KeywordMetricHourlyDto> topKeywords = keywordMetricHourlyService.findHourlyMetrics();
+		List<Source> sourcesToProcess = new ArrayList<>();
+		List<KeywordSource> keywordSourcesToSave = new ArrayList<>();
+
+		// Top10 키워드가 없으면 로깅 후 종료
+		if (topKeywords == null || topKeywords.isEmpty()) {
+			log.warn("DB에서 최신 Top10 키워드를 가져오지 못했거나 비어있습니다. searchYoutube 종료");
+			return;
+		}
+
+		// 2. 키워드별 영상 검색 및 Entity 변환
+		for (KeywordMetricHourlyDto metric : topKeywords) {
+			String currentKeywordText = metric.text();
+			Long currentKeywordId = metric.keywordId();
+
+			Keyword keywordRef = Keyword.builder().id(currentKeywordId).build();
+
+			log.info("키워드 '{}' (ID: {})에 대한 Youtube 영상 검색 시작",
+					currentKeywordText, currentKeywordId);
+
+			try {
+				// Youtube 어댑터 호출 및 결과 대기 (Block)
+				// fetchVideos는 Mono<List<VideoDto>>를 반환하므로, block()으로 결과 대기
+				// onErrorResume을 사용하여 어댑터 호출 중 예외 발생 시 빈 리스트 반환하여 배치 중단 방지
+				List<VideoDto> videoDtos = Optional.ofNullable(
+						videoApi.fetchVideos(currentKeywordText, MAX_SOURCE_COUNT_PER_POST)
+								.onErrorResume(e -> {
+									log.error("Youtube API 실패. keyword={}, error={}",
+											currentKeywordText, e.toString());
+									return Mono.just(Collections.emptyList());
+								}).block()
+				).orElseGet(Collections::emptyList);
+
+				// 어댑터 호출 결과가 비어있으면 다음 키워드로
+				if (videoDtos.isEmpty()) {
+					log.info("키워드 '{}'에 대해 수집된 YouTube 영상 결과가 없습니다.",
+							currentKeywordText);
+					continue;
+				}
+
+				log.info("키워드 '{}' 에 대해 {} 개의 YouTube 영상 수집 완료.",
+						currentKeywordText, videoDtos.size());
+
+				// VideoDto 목록을 Source 엔티티 목록으로 변환
+				List<Source> sourcesFromApi = videoDtos.stream()
+						.map(videoDto -> videoDto.toEntity(VIDEO_PLATFORM))
+						.collect(Collectors.toList());
+
+				// Source <-> Keyword 매핑을 위한 리스트에 추가
+				for (Source source : sourcesFromApi) {
+					// Source 목록에 추가
+					sourcesToProcess.add(source);
+
+					// KeywordSource 엔티티 생성
+					KeywordSource keywordSource = KeywordSource.builder()
+							.keyword(keywordRef)
+							.source(source)
+							.build();
+
+					// KeywordSource 목록에 추가
+					keywordSourcesToSave.add(keywordSource);
+				}
+			} catch (Exception e) {
+				// 어댑터 호출, 블록킹, 데이터 변환 중 발생할 수 있는 예외 처리
+				log.error("키워드 '{}' (ID: {}) 에 대한 YouTube 영상 검색/처리 중 오류 발생: {}",
+						currentKeywordText, currentKeywordId, e.toString());
+
+				// TODO: 오류 발생 시 해당 키워드 처리 방식 결정 (계속 진행할지, Step 실패로 볼지 등)
+				throw e;
+			}
+		}
+
+		// TODO: (중요) INSERT IGNORE로 교체 예정
+		// 3. Source 저장
+		if (!sourcesToProcess.isEmpty()) {
+			List<Source> savedSources = sourceRepository.saveAll(sourcesToProcess);
+
+			// 4. KeywordSource 저장
+			if (!keywordSourcesToSave.isEmpty()) {
+				keywordSourceRepository.saveAll(keywordSourcesToSave);
+			}
+		} else {
+			log.info("저장할 Source 및 KeywordSource가 없습니다.");
+		}
+
+		log.info(">>>>>>> searchYoutube 메소드 완료");
+	}
 
 	/**
 	 * 실시간 인기 키워드와 관련된 Youtube Source 목록을 페이지네이션하여 조회

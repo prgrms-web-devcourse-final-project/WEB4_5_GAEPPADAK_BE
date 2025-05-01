@@ -1,7 +1,6 @@
 package site.kkokkio.domain.keyword.service;
 
 import static org.assertj.core.api.AssertionsForClassTypes.*;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.time.LocalDateTime;
@@ -15,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -29,8 +29,6 @@ import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.entity.PostKeyword;
 import site.kkokkio.domain.post.repository.PostKeywordRepository;
-import site.kkokkio.domain.post.repository.PostRepository;
-import site.kkokkio.global.exception.ServiceException;
 
 @ActiveProfiles("test")
 @ExtendWith(SpringExtension.class)
@@ -40,9 +38,6 @@ public class KeywordServiceTest {
 
 	@Mock
 	private KeywordRepository keywordRepository;
-
-	@Mock
-	private PostRepository postRepository;
 
 	@Mock
 	private PostKeywordRepository postKeywordRepository;
@@ -64,11 +59,14 @@ public class KeywordServiceTest {
 	}
 
 	@Test
-	@DisplayName("키워드 생성 - 기존 키워드")
-	void createKeywordTest_ExistingKeyword(){
+	@DisplayName("키워드 생성 - 기존 키워드 (Unique 제약 조건 위반)")
+	void createKeywordTest_ExistingKeyword_UniqueViolation(){
 		// Given
 		String keywordText = "기존 키워드";
 		Keyword existingKeyword = Keyword.builder().text(keywordText).build();
+
+		// 제약 조건 위반 시
+		when(keywordRepository.save(any(Keyword.class))).thenThrow(DataIntegrityViolationException.class);
 		when(keywordRepository.findKeywordByText(keywordText)).thenReturn(Optional.of(existingKeyword));
 
 		// When
@@ -76,6 +74,8 @@ public class KeywordServiceTest {
 
 		// Then
 		assertThat(createdKeyword).isEqualTo(existingKeyword);
+		verify(keywordRepository, times(1)).save(any(Keyword.class)); // save 메서드가 1번 호출되는지 확인
+		verify(keywordRepository, times(1)).findKeywordByText(keywordText); // findKeywordByText 메서드가 1번 호출되는지 확인
 	}
 
 	@Test

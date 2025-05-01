@@ -2,6 +2,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create # Entity ↔ DB 스키마 일치 여부만 검사, 실제 반영은 안 함
+      #ddl-auto: validate # Entity ↔ DB 스키마 일치 여부만 검사, 실제 반영은 안 함
       org.hibernate.tool.hbm2ddl: DEBUG # <<< 이 부분 추가 또는 DEBUG/TRACE로 변경
       org.springframework.orm.jpa: DEBUG # JPA 관련 로그 확인
       org.springframework.transaction: DEBUG # 트랜잭션 관련 로그 확인 (롤백 실패 원인 분석에 도움)
@@ -13,8 +14,11 @@ spring:
 
 logging:
   level:
-    root: WARN
-    org.hibernate: WARN
+    root: INFO # root 레벨을 INFO 이상으로 설정
+    org.hibernate.tool.hbm2ddl: DEBUG # <<< 이 로거 레벨을 DEBUG로 설정
+    org.springframework.orm.jpa: DEBUG # JPA 관련 로그 확인
+    #root: WARN
+    #org.hibernate: WARN
 
 mock:
   enable: false

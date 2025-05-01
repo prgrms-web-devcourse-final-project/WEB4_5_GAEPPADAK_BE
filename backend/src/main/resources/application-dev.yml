@@ -11,14 +11,14 @@ spring:
         default_batch_fetch_size: 100 # N+1 최소화를 위한 배치 fetch 사이즈 설정
 
   flyway:
-    enabled: false # 개발 중에는 flyway 끔, 배포 전엔 true로 변경
-    clean-disabled: false # 개발환경에서는 clean 허용
+    enabled: true
+    clean-disabled: false # flyway.clean()으로 전체 스키마 삭제 가능
 
 logging:
   level:
     root: INFO
-    org.hibernate.SQL: DEBUG
-    org.hibernate.orm.jdbc.bind: TRACE
-    org.hibernate.orm.jdbc.extract: TRACE
-    org.springframework.transaction.interceptor: TRACE
-    org.flywaydb.core: INFO
+    org.hibernate.SQL: DEBUG  # 쿼리 로그
+    org.hibernate.orm.jdbc.bind: DEBUG # 바인딩 파라미터 출력
+    org.hibernate.orm.jdbc.extract: DEBUG # JDBC 추출 로그
+    org.springframework.transaction.interceptor: DEBUG # 트랜잭션 경계 확인
+    org.flywaydb.core: INFO # 마이그레이션 진행 로그

@@ -297,13 +297,13 @@ docker run -d \
 
 # MySQL 컨테이너가 준비될 때까지 대기
 echo "MySQL이 기동될 때까지 대기 중..."
-until docker exec mysql mysql -u root -p${var.DB_ROOT_PASSWORD} -e "SELECT 1" &> /dev/null; do
+until docker exec mysql mysql -uroot -p${var.DB_ROOT_PASSWORD} -e "SELECT 1" &> /dev/null; do
   echo "MySQL이 아직 준비되지 않음. 5초 후 재시도..."
   sleep 5
 done
 echo "MySQL이 준비됨. 초기화 스크립트 실행 중..."
 
-docker exec mysql mysql -u root -p${var.DB_ROOT_PASSWORD} -e "
+docker exec mysql mysql -uroot -p${var.DB_ROOT_PASSWORD} -e "
 CREATE USER '${var.MYSQL_USER_1}'@'127.0.0.1' IDENTIFIED WITH caching_sha2_password BY '${var.PASSWORD_3}';
 CREATE USER '${var.MYSQL_USER_1}'@'172.18.%.%' IDENTIFIED WITH caching_sha2_password BY '${var.PASSWORD_2}';
 CREATE USER '${var.MYSQL_USER_2}'@'%' IDENTIFIED WITH caching_sha2_password BY '${var.PASSWORD_1}';

@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import site.kkokkio.domain.keyword.entity.Keyword;
 import site.kkokkio.domain.keyword.service.GoogleTrendsRssService;
 
 @RestController
@@ -19,7 +20,7 @@ public class GoogleTrendsController {
 	private final GoogleTrendsRssService googleTrendsRssService;
 
 	@GetMapping("trending-keywords")
-	public List<String> getTrendingKeywordsApi() {
+	public List<Keyword> getTrendingKeywordsApi() {
 		return googleTrendsRssService.getTrendingKeywordsFromRss();
 	}
 }

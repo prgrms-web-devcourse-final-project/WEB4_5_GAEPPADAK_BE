@@ -28,13 +28,13 @@ public class GoogleTrendsRssServiceTest {
 	@DisplayName("키워드 추출 테스트")
 	void getTrendingKeywordsFromRss_ParsesKeywords()  {
 		// when
-		List<String> trendingKeywords = googleTrendsRssService.getTrendingKeywordsFromRss();
+		List<Keyword> trendingKeywords = googleTrendsRssService.getTrendingKeywordsFromRss();
 
 		// then
 		assertThat(trendingKeywords).isNotEmpty();
-		for (String keyword : trendingKeywords) {
+		for (Keyword keyword : trendingKeywords) {
 			assertNotNull(keyword);
-			assertThat(keyword).isNotBlank();
+			assertThat(keyword.getText()).isNotBlank();
 		}
 		assertThat(trendingKeywords.size()).isEqualTo(keywordRepository.count());
 		assertThat(trendingKeywords.size()).isEqualTo(10);

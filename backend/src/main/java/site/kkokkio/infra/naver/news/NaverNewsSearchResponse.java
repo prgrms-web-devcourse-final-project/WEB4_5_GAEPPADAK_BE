@@ -19,12 +19,11 @@ public class NaverNewsSearchResponse {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class NaverNewsSearchItem {
         private String title;
+        private String description;
         private String link;
 
         @JsonProperty("originallink")
         private String originalLink;
-
-        private String description;
 
         @JsonFormat(pattern = "EEE, dd MMM yyyy HH:mm:ss Z", locale = "en")
         private OffsetDateTime pubDate;

@@ -15,11 +15,13 @@ import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import site.kkokkio.domain.keyword.entity.Keyword;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourly;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourlyId;
 import site.kkokkio.global.enums.Platform;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GoogleTrendsRssService {
@@ -33,9 +35,15 @@ public class GoogleTrendsRssService {
 	@Value("${google.trends.rss.namespace}")
 	private String namespaceUrl;
 
+	/**
+	 * Google Trends RSS를 호출해 실시간 키워드 목록을 수집하고,
+	 * 각 키워드를 keyword + keyword_metric_hourly 테이블에 저장합니다.
+	 *
+	 * @return 수집된 키워드 텍스트 리스트
+	 */
 	@Transactional
-	public List<String> getTrendingKeywordsFromRss() {
-		List<String> trendingKeywords = new ArrayList<>();
+	public List<Keyword> getTrendingKeywordsFromRss() {
+		List<Keyword> trendingKeywords = new ArrayList<>();
 		try {
 			URL feedUrl = new URL(googleTrendsRssUrl);
 			SyndFeedInput input = new SyndFeedInput();
@@ -48,6 +56,7 @@ public class GoogleTrendsRssService {
 						.text(entry.getTitle())
 						.build()
 				);
+				trendingKeywords.add(keyword);
 
 				String approxTraffic = "";
 				List<org.jdom2.Element> foreignMarkups = entry.getForeignMarkup();
@@ -79,11 +88,9 @@ public class GoogleTrendsRssService {
 					.build();
 
 				keywordMetricHourlyService.createKeywordMetricHourly(keywordMetricHourly);
-
-				trendingKeywords.add(entry.getTitle());
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error(e.getMessage(), e);
 		}
 		return trendingKeywords;
 	}

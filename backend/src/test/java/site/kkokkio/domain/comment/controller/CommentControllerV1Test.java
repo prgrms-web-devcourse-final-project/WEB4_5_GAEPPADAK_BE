@@ -22,6 +22,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -33,9 +35,11 @@ import site.kkokkio.domain.comment.dto.CommentDto;
 import site.kkokkio.domain.comment.service.CommentService;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.global.config.SecurityConfig;
+import site.kkokkio.global.security.CustomUserDetailsService;
 
 @WebMvcTest(CommentControllerV1.class)
 @Import(SecurityConfig.class)
+@WithMockUser(roles = {"USER"})
 class CommentControllerV1Test {
 
 	@Autowired
@@ -46,6 +50,9 @@ class CommentControllerV1Test {
 
 	@Autowired
 	private ObjectMapper objectMapper;
+
+	@MockitoBean
+	private CustomUserDetailsService customUserDetailsService;
 
 	@Test
 	@DisplayName("댓글 목록 조회 성공")
@@ -74,7 +81,13 @@ class CommentControllerV1Test {
 			.thenReturn(commentDto);
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/posts/1/comments")
-				.with(authentication(new UsernamePasswordAuthenticationToken(mock(Member.class), null, List.of())))
+				.with(authentication(
+					new UsernamePasswordAuthenticationToken(
+						mock(Member.class),
+						null,
+						List.of(new SimpleGrantedAuthority("ROLE_USER"))
+					)
+				))
 				.with(csrf())
 				.contentType(APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -89,7 +102,13 @@ class CommentControllerV1Test {
 		CommentCreateRequest request = new CommentCreateRequest(""); // 비어있는 body
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/posts/1/comments")
-				.with(authentication(new UsernamePasswordAuthenticationToken(mock(Member.class), null, List.of())))
+				.with(authentication(
+					new UsernamePasswordAuthenticationToken(
+						mock(Member.class),
+						null,
+						List.of(new SimpleGrantedAuthority("ROLE_USER"))
+					)
+				))
 				.with(csrf())
 				.contentType(APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -106,7 +125,13 @@ class CommentControllerV1Test {
 			.thenReturn(commentDto);
 
 		mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/comments/1")
-				.with(authentication(new UsernamePasswordAuthenticationToken(mock(Member.class), null, List.of())))
+				.with(authentication(
+					new UsernamePasswordAuthenticationToken(
+						mock(Member.class),
+						null,
+						List.of(new SimpleGrantedAuthority("ROLE_USER"))
+					)
+				))
 				.with(csrf())
 				.contentType(APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -121,7 +146,13 @@ class CommentControllerV1Test {
 		CommentCreateRequest request = new CommentCreateRequest(""); // 비어있는 body
 
 		mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/comments/1")
-				.with(authentication(new UsernamePasswordAuthenticationToken(mock(Member.class), null, List.of())))
+				.with(authentication(
+					new UsernamePasswordAuthenticationToken(
+						mock(Member.class),
+						null,
+						List.of(new SimpleGrantedAuthority("ROLE_USER"))
+					)
+				))
 				.with(csrf())
 				.contentType(APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -132,7 +163,13 @@ class CommentControllerV1Test {
 	@DisplayName("댓글 삭제 성공")
 	void test4() throws Exception {
 		mockMvc.perform(MockMvcRequestBuilders.delete("/api/v1/comments/1")
-				.with(authentication(new UsernamePasswordAuthenticationToken(mock(Member.class), null, List.of())))
+				.with(authentication(
+					new UsernamePasswordAuthenticationToken(
+						mock(Member.class),
+						null,
+						List.of(new SimpleGrantedAuthority("ROLE_USER"))
+					)
+				))
 				.with(csrf())
 				.accept(APPLICATION_JSON))
 			.andExpect(status().isOk())
@@ -149,7 +186,13 @@ class CommentControllerV1Test {
 			.thenReturn(commentDto);
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/comments/1/like")
-				.with(authentication(new UsernamePasswordAuthenticationToken(mock(Member.class), null, List.of())))
+				.with(authentication(
+					new UsernamePasswordAuthenticationToken(
+						mock(Member.class),
+						null,
+						List.of(new SimpleGrantedAuthority("ROLE_USER"))
+					)
+				))
 				.with(csrf()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("200"))

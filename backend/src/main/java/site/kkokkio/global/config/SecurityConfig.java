@@ -95,7 +95,7 @@ public class SecurityConfig {
 			"https://api.deploy.kkokkio.site" // 백엔드 API URL
 		)); // 프론트 사이트 추가
 		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // 허용 HTTP 메소드
-		configuration.setAllowedHeaders(Arrays.asList("*")); // HTTP 헤더(모두 허용)
+		// configuration.setAllowedHeaders(Arrays.asList("*")); // HTTP 헤더(모두 허용)
 		configuration.setAllowCredentials(true); // 쿠키 등 자격 증명
 		// 클라이언트 노출 헤더
 		configuration.setAllowedHeaders(List.of(

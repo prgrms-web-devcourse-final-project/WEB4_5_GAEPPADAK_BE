@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -33,6 +34,7 @@ public class SecurityConfig {
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
 		http
 			// CORS 설정 추가
 			.cors(
@@ -56,28 +58,21 @@ public class SecurityConfig {
 			// 엔드포인트별 권한 설정
 			.authorizeHttpRequests(authorize ->
 				authorize
-					// POST 요청에 대해 인증 없이 접근 허용
-					// .requestMatchers(
-					// 	HttpMethod.POST,
-					// 	getPublicPostEndpoints().toArray(String[]::new)
-					// ).permitAll()
-					//
-					// // GET 요청에 대해 인증 없이 접근 허용
-					// .requestMatchers(
-					// 	HttpMethod.GET,
-					// 	getPublicGetEndpoints().toArray(String[]::new)
-					// ).permitAll()
-					//
-					// // 모든 HTTP 메소드에 대해 인증 없이 접근 가능한 경로
-					// .requestMatchers(getPublicEndpoints().toArray(String[]::new)
-					// ).permitAll()
-					//
-					// // 그 외 모든 요청은 인증 된 사용자 필요
-					// .anyRequest().hasAnyRole("USER", "ADMIN")
+					// 모든 HTTP 메소드에 대해 인증 없이 접근 가능한 경로
+					.requestMatchers(getPublicEndpoints().toArray(String[]::new)
+					).permitAll()
 
-					// 개발을 위해 모두 오픈(운영 배포시 변경 예정)
+					// 댓글 GET 요청 허용
+					.requestMatchers(HttpMethod.GET, "/api/v1/posts/*/comments")
+					.permitAll()
+
+					// 회원 권한
+					.requestMatchers(getPubliCUserEndpoints().toArray(String[]::new)).hasRole("USER")
+					// 관리자 권한
+					.requestMatchers(getPublicAdminEndpoints().toArray(String[]::new)).hasRole("ADMIN")
+
+					// 그 외 모든 요청 허용
 					.anyRequest().permitAll()
-
 			);
 
 		return http.build();
@@ -133,11 +128,17 @@ public class SecurityConfig {
 		return new BCryptPasswordEncoder();
 	}
 
+	// 모든 사용자
 	private List<String> getPublicEndpoints() {
 		return List.of(
 
+			// root권한
+			"/",
+
 			// 로그인, 회원가입 등
 			"/api/v1/auth/**",
+
+			// Todo: 아래 엔드포인트는 개발 환경에서만, 운영 서버 반영 전 제거 필요
 
 			// Swagger UI 관련 경로 허용
 			"/swagger-ui/**",
@@ -153,15 +154,23 @@ public class SecurityConfig {
 		);
 	}
 
-	private List<String> getPublicPostEndpoints() {
+	// USER(회원) 권한
+	private List<String> getPubliCUserEndpoints() {
 		return List.of(
-
+			// 댓글 권한
+			"/api/v1/posts/*/comments",
+			"/api/v1/comments/*",
+			"/api/v1/comments/*/like"
 		);
 	}
 
-	private List<String> getPublicGetEndpoints() {
+	// ADMIN(관리자) 권한
+	private List<String> getPublicAdminEndpoints() {
 		return List.of(
-
+			// 댓글 권한
+			"/api/v1/posts/*/comments",
+			"/api/v1/comments/*",
+			"/api/v1/comments/*/like"
 		);
 	}
 

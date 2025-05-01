@@ -37,7 +37,7 @@ public class KeywordMetricHourlyControllerV1Test {
 		LocalDateTime now = LocalDateTime.now();
 		for (long i = 1; i <= 10; i++) {
 			mockKeywordList.add(
-				new KeywordMetricHourlyDto(i, "키워드 " + i, Platform.GOOGLE_TREND, now, 100, 100)
+				new KeywordMetricHourlyDto(i, "키워드 " + i, Platform.GOOGLE_TREND, now, 100, 100, false)
 			);
 		}
 

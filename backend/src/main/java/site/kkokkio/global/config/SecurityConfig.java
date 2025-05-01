@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -55,28 +56,28 @@ public class SecurityConfig {
 
 			// 엔드포인트별 권한 설정
 			.authorizeHttpRequests(authorize ->
-				authorize
-					// // POST 요청에 대해 인증 없이 접근 허용
-					// .requestMatchers(
-					// 	HttpMethod.POST,
-					// 	getPublicPostEndpoints().toArray(String[]::new)
-					// ).permitAll()
-					//
-					// // GET 요청에 대해 인증 없이 접근 허용
-					// .requestMatchers(
-					// 	HttpMethod.GET,
-					// 	getPublicGetEndpoints().toArray(String[]::new)
-					// ).permitAll()
-					//
-					// // 모든 HTTP 메소드에 대해 인증 없이 접근 가능한 경로
-					// .requestMatchers(getPublicEndpoints().toArray(String[]::new)
-					// ).permitAll()
-					//
-					// // 그 외 모든 요청은 인증 된 사용자 필요
-					// .anyRequest().hasAnyRole("USER", "ADMIN")
+					authorize
+						// POST 요청에 대해 인증 없이 접근 허용
+						.requestMatchers(
+							HttpMethod.POST,
+							getPublicPostEndpoints().toArray(String[]::new)
+						).permitAll()
 
-					// 개발을 위해 모두 오픈(운영 배포시 변경 예정)
-					.anyRequest().permitAll()
+						// GET 요청에 대해 인증 없이 접근 허용
+						.requestMatchers(
+							HttpMethod.GET,
+							getPublicGetEndpoints().toArray(String[]::new)
+						).permitAll()
+
+						// 모든 HTTP 메소드에 대해 인증 없이 접근 가능한 경로
+						.requestMatchers(getPublicEndpoints().toArray(String[]::new)
+						).permitAll()
+
+						// 그 외 모든 요청은 인증 된 사용자 필요
+						.anyRequest().hasAnyRole("USER", "ADMIN")
+
+				// 개발을 위해 모두 오픈(운영 배포시 변경 예정)
+				// .anyRequest().permitAll()
 
 			);
 

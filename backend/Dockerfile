@@ -33,5 +33,5 @@ COPY --from=builder /app/build/libs/*.jar app.jar
 # 앱 실행
 ENTRYPOINT ["doppler", "run", "--"]
 
-CMD ["java", "-jar", "-Dspring.profiles.active=prod", "app.jar"]
+CMD ["java", "-jar", "-Dspring.profiles.active=prd", "app.jar"]
 

@@ -1,6 +1,9 @@
 package site.kkokkio.global.init;
 
+import java.time.LocalDate;
+
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +19,7 @@ import site.kkokkio.global.enums.MemberRole;
 public class BaseInitData implements CommandLineRunner {
 
 	private final MemberRepository memberRepository;
+	private final PasswordEncoder passwordEncoder;
 
 	@Override
 	public void run(String... args) throws Exception {
@@ -33,8 +37,9 @@ public class BaseInitData implements CommandLineRunner {
 		// 회원1 추가
 		Member member1 = Member.builder()
 			.email("user1@example.com")
-			.passwordHash("password123!")
+			.passwordHash(passwordEncoder.encode("password123!"))
 			.nickname("user1")
+			.birthDate(LocalDate.of(1990, 1, 1))
 			.role(MemberRole.USER)
 			.deletedAt(null)
 			.emailVerified(true)
@@ -44,8 +49,9 @@ public class BaseInitData implements CommandLineRunner {
 		// 회원2 추가
 		Member member2 = Member.builder()
 			.email("user2@example.com")
-			.passwordHash("password123!")
+			.passwordHash(passwordEncoder.encode("password123!"))
 			.nickname("user2")
+			.birthDate(LocalDate.of(1990, 1, 1))
 			.role(MemberRole.USER)
 			.deletedAt(null)
 			.emailVerified(true)
@@ -55,8 +61,9 @@ public class BaseInitData implements CommandLineRunner {
 		// 회원3 추가
 		Member member3 = Member.builder()
 			.email("test3@example.com")
-			.passwordHash("password123!")
+			.passwordHash(passwordEncoder.encode("password123!"))
 			.nickname("test3")
+			.birthDate(LocalDate.of(2000, 4, 10))
 			.role(MemberRole.USER)
 			.deletedAt(null)
 			.emailVerified(true)
@@ -66,8 +73,9 @@ public class BaseInitData implements CommandLineRunner {
 		// 관리자 추가
 		Member admin1 = Member.builder()
 			.email("admin1@example.com")
-			.passwordHash("password123!")
+			.passwordHash(passwordEncoder.encode("password123!"))
 			.nickname("admin1")
+			.birthDate(LocalDate.of(2025, 5, 1))
 			.role(MemberRole.ADMIN)
 			.deletedAt(null)
 			.emailVerified(true)

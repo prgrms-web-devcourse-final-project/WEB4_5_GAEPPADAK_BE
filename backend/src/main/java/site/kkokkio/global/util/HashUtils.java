@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 public class HashUtils {
+    private static final char[] HEX_ARRAY = "0123456789abcdef".toCharArray();
+
     public static String sha256Hex(String input) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -23,10 +25,12 @@ public class HashUtils {
     }
 
     private static String bytesToHex(byte[] bytes) {
-        StringBuilder hex = new StringBuilder(2 * bytes.length);
-        for (byte b : bytes) {
-            hex.append(String.format("%02x", b));
+        char[] hexChars = new char[bytes.length * 2];
+        for (int i = 0; i < bytes.length; i++) {
+            int v = bytes[i] & 0xFF;
+            hexChars[i * 2] = HEX_ARRAY[v >>> 4];
+            hexChars[i * 2 + 1] = HEX_ARRAY[v & 0x0F];
         }
-        return hex.toString();
+        return new String(hexChars);
     }
 }

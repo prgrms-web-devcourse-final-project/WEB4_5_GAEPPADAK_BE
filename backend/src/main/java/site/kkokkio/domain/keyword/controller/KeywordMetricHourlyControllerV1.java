@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyResponse;
+import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
 import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.exception.ServiceException;
@@ -27,9 +27,9 @@ public class KeywordMetricHourlyControllerV1 {
 	@GetMapping("/top")
 	@ApiErrorCodeExamples({ErrorCode.KEYWORDS_NOT_FOUND_1})
 	@Operation(summary = "실시간 키워드 리스트", description = "실시간 키워드 Top 10개 보기")
-	public RsData<List<KeywordMetricHourlyResponse>> getHourlyMetrics() {
+	public RsData<List<KeywordMetricHourlyDto>> getHourlyMetrics() {
 		try {
-			List<KeywordMetricHourlyResponse> responses = keywordMetricHourlyService.findHourlyMetrics();
+			List<KeywordMetricHourlyDto> responses = keywordMetricHourlyService.findHourlyMetrics();
 			return new RsData<>(
 				"200",
 				"실시간 키워드를 불러왔습니다.",

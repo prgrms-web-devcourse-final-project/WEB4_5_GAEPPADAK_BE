@@ -14,6 +14,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.util.BaseTimeEntity;
 import site.kkokkio.global.util.HashUtils;
@@ -42,7 +43,8 @@ public class Source extends BaseTimeEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "thumbnail_url", columnDefinition = "TEXT")
+    @Setter
+	@Column(name = "thumbnail_url", columnDefinition = "TEXT")
     private String thumbnailUrl;
 
     @Column(name = "published_at", nullable = false)
@@ -56,9 +58,10 @@ public class Source extends BaseTimeEntity {
      * persist 직전에 URL을 해싱해 fingerprint를 자동 할당
      */
     @PrePersist
-    public void calculateFingerprint() {
+    public void ensureFingerprint() {
         if (this.fingerprint == null && this.normalizedUrl != null) {
             this.fingerprint = HashUtils.sha256Hex(this.normalizedUrl);
         }
     }
+
 }

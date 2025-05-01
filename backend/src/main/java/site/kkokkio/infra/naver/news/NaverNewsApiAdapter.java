@@ -4,8 +4,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -82,17 +80,10 @@ public class NaverNewsApiAdapter implements NewsApiPort {
 	}
 
 	private URI buildUri(UriBuilder uriBuilder, String query, Integer display, Integer start, String sort) {
-		String encoded = encode(query);
-		UriBuilder ub = uriBuilder.path(naverSearchNewsPath).queryParam("query", encoded);
-		if (display != null) {
-			ub.queryParam("display", display);
-		}
-		if (start != null) {
-			ub.queryParam("start", start);
-		}
-		if (sort != null) {
-			ub.queryParam("sort", sort);
-		}
+		UriBuilder ub = uriBuilder.path(naverSearchNewsPath).queryParam("query", query);
+		if (display != null) ub.queryParam("display", display);
+		if (start != null) ub.queryParam("start", start);
+		if (sort != null) ub.queryParam("sort", sort);
 		return ub.build();
 	}
 
@@ -118,10 +109,6 @@ public class NaverNewsApiAdapter implements NewsApiPort {
                                            .build())
                        .toList();
     }
-
-	private static String encode(String text) {
-        return URLEncoder.encode(text, StandardCharsets.UTF_8);
-	}
 
     private Mono<NaverNewsSearchResponse> loadMockNewsResponse() {
 		try (InputStream is = getClass().getResourceAsStream("/mock/" + mockFile)) {

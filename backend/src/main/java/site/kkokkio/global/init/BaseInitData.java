@@ -3,6 +3,7 @@ package site.kkokkio.global.init;
 import java.time.LocalDate;
 
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ import site.kkokkio.global.enums.MemberRole;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@Profile({"local", "dev"})
 public class BaseInitData implements CommandLineRunner {
 
 	private final MemberRepository memberRepository;

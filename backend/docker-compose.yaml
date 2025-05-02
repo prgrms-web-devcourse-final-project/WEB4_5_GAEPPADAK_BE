@@ -22,7 +22,7 @@ services:
     container_name: redis
     restart: always
     ports: # 바인딩할 포트:내부 포트
-      - "${REDIS_PORT}:${REDIS_PORT}"
+      - "6379:6379"
     volumes: # 마운트할 볼륨 설정
       - ./redis_data:/data
 

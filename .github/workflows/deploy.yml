@@ -9,9 +9,7 @@ on:
       - 'backend/settings.gradle'
       - 'backend/Dockerfile'
     branches:
-      - deploy
-#      - develop
-# DB 작동 확인을 위해 임시로 변경
+      - develop
 jobs:
   makeTagAndRelease:
     runs-on: ubuntu-latest

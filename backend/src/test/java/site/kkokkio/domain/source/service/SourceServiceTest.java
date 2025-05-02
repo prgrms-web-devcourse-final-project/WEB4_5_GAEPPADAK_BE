@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +29,7 @@ import org.springframework.data.domain.Sort;
 import reactor.core.publisher.Mono;
 import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
+import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.service.PostService;
 import site.kkokkio.domain.source.controller.dto.TopSourceListResponse;
@@ -62,56 +64,63 @@ class SourceServiceTest {
     @Mock
     private KeywordMetricHourlyService keywordMetricHourlyService;
 
+
+	private List<Source> newsSources;
+	private List<PostSource> newsPostSources;
+	private List<Source> youtubeSources;
+	private List<PostSource> youtubePostSources;
+    private Long postId = 1L;
+    private Post dummyPost;
+
+	@BeforeEach
+	void setUp() {
+        dummyPost = Post.builder().id(postId).build();
+		newsSources = Arrays.asList(
+			Source.builder().fingerprint("f1").normalizedUrl("https://news1").title("뉴스1").description("뉴스1 설명")
+                .thumbnailUrl("thumb1").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build(),
+			Source.builder().fingerprint("f2").normalizedUrl("https://news2").title("뉴스2").description("뉴스2 설명")
+                .thumbnailUrl("thumb2").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build(),
+			Source.builder().fingerprint("f3").normalizedUrl("https://news3").title("뉴스3").description("뉴스3 설명")
+                .thumbnailUrl("thumb3").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build()
+		);
+
+        newsPostSources = Arrays.asList(
+            PostSource.builder().id(101L).post(dummyPost).source(newsSources.get(0)).build(),
+            PostSource.builder().id(102L).post(dummyPost).source(newsSources.get(1)).build(),
+            PostSource.builder().id(103L).post(dummyPost).source(newsSources.get(2)).build()
+        );
+		youtubeSources = Arrays.asList(
+			Source.builder().fingerprint("f1").normalizedUrl("https://youtube1").title("유튜브1").description("유튜브1 설명")
+                .thumbnailUrl("thumb1").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build(),
+			Source.builder().fingerprint("f2").normalizedUrl("https://youtube2").title("유튜브2").description("유튜브2 설명")
+                .thumbnailUrl("thumb2").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build(),
+			Source.builder().fingerprint("f3").normalizedUrl("https://youtube3").title("유튜브3").description("유튜브3 설명")
+                .thumbnailUrl("thumb3").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build()
+		);
+
+        youtubePostSources = Arrays.asList(
+            PostSource.builder().id(104L).post(dummyPost).source(youtubeSources.get(0)).build(),
+            PostSource.builder().id(105L).post(dummyPost).source(youtubeSources.get(1)).build(),
+            PostSource.builder().id(106L).post(dummyPost).source(youtubeSources.get(2)).build()
+        );
+	}
+
     @Test
     @DisplayName("뉴스 출처 10개 조회 - 성공")
     void getTop10NewsSourcesByPostId_success() {
         // given
-        Long postId = 1L;
         Platform platform = Platform.NAVER_NEWS;
         PageRequest pageRequest = PageRequest.of(0, 10);
 
-        Post dummyPost = Post.builder().id(postId).build();
-
-        Source s1 = Source.builder()
-                .fingerprint("f1")
-                .normalizedUrl("https://news1")
-                .title("뉴스1")
-                .thumbnailUrl("thumb1")
-                .publishedAt(LocalDateTime.now())
-                .platform(platform)
-                .build();
-
-        Source s2 = Source.builder()
-                .fingerprint("f2")
-                .normalizedUrl("https://news2")
-                .title("뉴스2")
-                .thumbnailUrl("thumb2")
-                .publishedAt(LocalDateTime.now())
-                .platform(platform)
-                .build();
-
-        PostSource ps1 = PostSource.builder()
-                .id(101L)
-                .post(dummyPost)
-                .source(s1)
-                .build();
-
-        PostSource ps2 = PostSource.builder()
-                .id(102L)
-                .post(dummyPost)
-                .source(s2)
-                .build();
-
-
         given(postService.getPostById(eq(postId))).willReturn(dummyPost);
         given(postSourceRepository.findAllWithSourceByPostIdAndPlatform(eq(postId), eq(platform), eq(pageRequest)))
-                .willReturn(List.of(ps1, ps2));
+                .willReturn(newsPostSources);
 
         // when
         List<SourceDto> result = sourceService.getTop10NewsSourcesByPostId(postId);
 
         // then
-        assertThat(result).hasSize(2);
+        assertThat(result).hasSize(3);
         assertThat(result.get(0).url()).isEqualTo("https://news1");
         assertThat(result.get(1).title()).isEqualTo("뉴스2");
     }
@@ -120,11 +129,8 @@ class SourceServiceTest {
     @DisplayName("뉴스 출처 10개 조회 - 데이터 없음")
     void getTop10NewsSourcesByPostId_emptySourceList() {
         // given
-        Long postId = 1L;
         Platform platform = Platform.NAVER_NEWS;
         PageRequest pageRequest = PageRequest.of(0, 10);
-
-        Post dummyPost = Post.builder().id(postId).build();
 
         given(postService.getPostById(eq(postId))).willReturn(dummyPost);
         given(postSourceRepository.findAllWithSourceByPostIdAndPlatform(eq(postId), eq(platform), eq(pageRequest)))
@@ -157,54 +163,54 @@ class SourceServiceTest {
     @DisplayName("영상 출처 10개 조회 - 성공")
     void getTop10VideoSourcesByPostId_success() {
         // given
-        Long postId = 1L;
         Platform platform = Platform.YOUTUBE;
         PageRequest pageRequest = PageRequest.of(0, 10);
 
-        Post dummyPost = Post.builder().id(postId).build();
-
-        Source s1 = Source.builder()
-                .fingerprint("f1")
-                .normalizedUrl("https://youtube1")
-                .title("유튜브1")
-                .thumbnailUrl("thumb1")
-                .publishedAt(LocalDateTime.now())
-                .platform(platform)
-                .build();
-
-        Source s2 = Source.builder()
-                .fingerprint("f2")
-                .normalizedUrl("https://youtube2")
-                .title("유튜브2")
-                .thumbnailUrl("thumb2")
-                .publishedAt(LocalDateTime.now())
-                .platform(platform)
-                .build();
-
-        PostSource ps1 = PostSource.builder()
-                .id(101L)
-                .post(dummyPost)
-                .source(s1)
-                .build();
-
-        PostSource ps2 = PostSource.builder()
-                .id(102L)
-                .post(dummyPost)
-                .source(s2)
-                .build();
-
-
         given(postService.getPostById(eq(postId))).willReturn(dummyPost);
         given(postSourceRepository.findAllWithSourceByPostIdAndPlatform(eq(postId), eq(platform), eq(pageRequest)))
-                .willReturn(List.of(ps1, ps2));
+                .willReturn(youtubePostSources);
 
         // when
         List<SourceDto> result = sourceService.getTop10VideoSourcesByPostId(postId);
 
         // then
-        assertThat(result).hasSize(2);
+        assertThat(result).hasSize(3);
         assertThat(result.get(0).url()).isEqualTo("https://youtube1");
         assertThat(result.get(1).title()).isEqualTo("유튜브2");
+    }
+
+    @Test
+    @DisplayName("키워드 검색 소스 조회 - 성공")
+    void getTop10VideoSourcesByPostId_Success() {
+        PostDto post1 = new PostDto(1L, "키워드", "제목1", "설명1", "url1");
+        PostDto post2 = new PostDto(2L, "키워드", "제목2", "설명2", "url2");
+
+        List<PostDto> postDtos = List.of(post1, post2);
+
+        given(sourceRepository.findByPostIdsOrderByPublishedAtDesc(eq(List.of(1L, 2L)), any(PageRequest.class)))
+                .willReturn(newsSources);
+
+        // when
+        List<SourceDto> result = sourceService.getTop5SourcesByPosts(postDtos);
+
+        // then
+        assertThat(result).hasSize(3);
+        assertThat(result.get(0).title()).isEqualTo("뉴스1");
+        assertThat(result.get(1).title()).isEqualTo("뉴스2");
+
+        verify(sourceRepository).findByPostIdsOrderByPublishedAtDesc(eq(List.of(1L, 2L)), any(PageRequest.class));
+    }
+
+
+    @Test
+    @DisplayName("키워드 검색 소스 조회 - 빈 데이터")
+    void getTop10VideoSourcesByPostId_Empty() {
+        // when
+        List<SourceDto> result = sourceService.getTop5SourcesByPosts(Collections.emptyList());
+
+        // then
+        assertThat(result).isEmpty();
+        verifyNoInteractions(sourceRepository);
     }
 
 

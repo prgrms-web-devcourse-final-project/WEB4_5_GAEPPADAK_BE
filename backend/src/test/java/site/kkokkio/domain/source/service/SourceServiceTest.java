@@ -1,18 +1,5 @@
 package site.kkokkio.domain.source.service;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.anyInt;
-import static org.mockito.BDDMockito.anyString;
-import static org.mockito.BDDMockito.eq;
-import static org.mockito.BDDMockito.*;
-
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,12 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-
+import org.springframework.data.domain.*;
 import reactor.core.publisher.Mono;
 import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
@@ -36,15 +18,29 @@ import site.kkokkio.domain.source.controller.dto.TopSourceListResponse;
 import site.kkokkio.domain.source.dto.NewsDto;
 import site.kkokkio.domain.source.dto.SourceDto;
 import site.kkokkio.domain.source.dto.TopSourceItemDto;
+import site.kkokkio.domain.source.dto.VideoDto;
 import site.kkokkio.domain.source.entity.PostSource;
 import site.kkokkio.domain.source.entity.Source;
 import site.kkokkio.domain.source.port.out.NewsApiPort;
+import site.kkokkio.domain.source.port.out.VideoApiPort;
 import site.kkokkio.domain.source.repository.KeywordSourceRepository;
 import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.domain.source.repository.SourceRepository;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.infra.common.exception.RetryableExternalApiException;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SourceServiceTest {
@@ -56,6 +52,7 @@ class SourceServiceTest {
     @Mock private PostSourceRepository postSourceRepository;
     @Mock private SourceRepository sourceRepository;
     @Mock private NewsApiPort newsApi;
+    @Mock private VideoApiPort videoApi;
     @Mock private KeywordMetricHourlyService keywordMetricHourlyService;
     @Mock private OpenGraphService openGraphService;
     @Mock private KeywordSourceRepository keywordSourceRepository;
@@ -734,5 +731,199 @@ class SourceServiceTest {
 
         // keywordMetricHourlyService.findHourlyMetrics()는 1번 호출되었는지 검증
         verify(keywordMetricHourlyService, times(1)).findHourlyMetrics();
+    }
+
+    @Test
+    @DisplayName("Youtube 검색 - 성공")
+    void searchYoutube_success() {
+        /// given
+        Long keywordId1 = 1L;
+        String keywordText1 = "키워드1";
+        Long keywordId2 = 2L;
+        String keywordText2 = "키워드2";
+
+        // Mock: keywordMetricHourlyService.findHourlyMetrics()가 키워드 목록을 반환하도록 설정
+        List<KeywordMetricHourlyDto> topKeywords = Arrays.asList(
+                new KeywordMetricHourlyDto(keywordId1, keywordText1, Platform.GOOGLE_TREND,
+                        LocalDateTime.now(), 0, 0, false),
+                new KeywordMetricHourlyDto(keywordId2, keywordText2, Platform.GOOGLE_TREND,
+                        LocalDateTime.now(), 0, 0, false)
+        );
+
+        given(keywordMetricHourlyService.findHourlyMetrics()).willReturn(topKeywords);
+
+        // videoApi.fetchVideos()가 각 키워드에 대해 VideoDto 목록을 담은 Mono를 반환하도록 설정
+        // 키워드1에 대한 응답
+        List<VideoDto> video1 = Arrays.asList(
+                VideoDto.builder().id("v1_id_k1").title("영상1 제목 k1").publishedAt(
+                        LocalDateTime.now().minusDays(1)).thumbnailUrl("thumb1_k1")
+                        .description("desc1_k1").build(),
+                VideoDto.builder().id("v2_id_k1").title("영상2 제목 k1").publishedAt(
+                        LocalDateTime.now().minusDays(2)).thumbnailUrl("thumb2_k1")
+                        .description("desc2_k1").build()
+        );
+
+        given(videoApi.fetchVideos(eq(keywordText1), anyInt()))
+                .willReturn(Mono.just(video1));
+
+        // 키워드2에 대한 응답 (일부러 중복되는 영상 포함)
+        List<VideoDto> video2 = Arrays.asList(
+                VideoDto.builder().id("v3_id_k2").title("영상3 제목 k2").publishedAt(
+                        LocalDateTime.now().minusDays(3)).thumbnailUrl("thumb3_k2")
+                        .description("desc3_k2").build(),
+                // 중복 영상
+                VideoDto.builder().id("v2_id_k1").title("영상2 제목 k1").publishedAt(
+                        LocalDateTime.now().minusDays(2)).thumbnailUrl("thumb2_k1")
+                        .description("desc2_k1").build()
+        );
+
+        given(videoApi.fetchVideos(eq(keywordText2), anyInt()))
+                .willReturn(Mono.just(video2));
+
+        /// when
+        // searchYoutube 메소드 실행
+        sourceService.searchYoutube();
+
+        /// then
+        // 1. videoApi.fetchVideos가 각 키워드에 대해 호출되었는지 검증
+        then(videoApi).should().fetchVideos(eq(keywordText1), anyInt());
+        then(videoApi).should().fetchVideos(eq(keywordText2), anyInt());
+
+        // 2. sourceRepository.insertIgnoreAll 호출 검증
+        // 예상되는 Source 리스트: videos1과 videos2의 모든 VideoDto를 Source로 변환 후 중복 제거된 리스트
+        List<Source> expextedSources = new ArrayList<>();
+
+        // VideoDto의 toEntity 메소드가 정확한 Source 객체를 생성하는지 확인 필요
+        expextedSources.add(video1.get(0).toEntity(Platform.YOUTUBE));
+        expextedSources.add(video1.get(1).toEntity(Platform.YOUTUBE));
+        expextedSources.add(video2.get(0).toEntity(Platform.YOUTUBE));
+
+        // argThat을 사용하여 전달된 리스트의 크기와 내용 검증
+        then(sourceRepository).should().insertIgnoreAll(argThat(sources -> {
+            assertThat(sources).hasSize(3);
+
+            // Source 엔티티의 equals/hashCode 구현이 fingerprint 기반인지 확인 필요
+            List<String> fingerprints = sources.stream()
+                    .map(Source::getFingerprint).toList();
+            assertThat(fingerprints).containsExactlyInAnyOrder(
+                    video1.get(0).toEntity(Platform.YOUTUBE).getFingerprint(),
+                    video1.get(1).toEntity(Platform.YOUTUBE).getFingerprint(),
+                    video2.get(0).toEntity(Platform.YOUTUBE).getFingerprint()
+            );
+            return true;
+        }));
+
+        // 3. keywordSourceRepository.insertIgnoreAll 호출 검증
+        then(keywordSourceRepository).should().insertIgnoreAll(argThat(ksList -> {
+            assertThat(ksList).hasSize(4);
+
+            // 리스트에 특정 Keyword ID와 Source fingerprint 조합을 가진 KeywordSource가 포함되어 있는지 확인
+            List<String> ksCominations = ksList.stream()
+                    .map(ks -> ks.getKeyword().getId() + "-" +
+                            ks.getSource().getFingerprint())
+                    .toList();
+            assertThat(ksCominations).containsExactlyInAnyOrder(
+                    keywordId1 + "-" + video1.get(0).toEntity(Platform.YOUTUBE).getFingerprint(),
+                    keywordId1 + "-" + video1.get(1).toEntity(Platform.YOUTUBE).getFingerprint(),
+                    keywordId2 + "-" + video2.get(0).toEntity(Platform.YOUTUBE).getFingerprint(),
+                    keywordId2 + "-" + video2.get(1).toEntity(Platform.YOUTUBE).getFingerprint()
+            );
+            return true;
+        }));
+
+        // 4. openGraphService.enrichAsync 호출 검증
+        // distinctSources 리스트의 각 Source에 대해 호출되었는지 검증
+        then(openGraphService).should(times(3))
+                .enrichAsync(any(Source.class));
+    }
+
+    @Test
+    @DisplayName("Youtube 검색 - API 응답 비어있음")
+    void searchYoutube_emptyApiResponse() {
+        /// given
+        Long keywordId1 = 1L;
+        String keywordText = "빈응답키워드";
+        KeywordMetricHourlyDto metric = new KeywordMetricHourlyDto(keywordId1, keywordText,
+                Platform.GOOGLE_TREND, LocalDateTime.now(), 0, 0, false);
+        given(keywordMetricHourlyService.findHourlyMetrics()).willReturn(List.of(metric));
+
+        // videoApi.fetchVideos()가 빈 목록을 담은 Mono를 반환하도록 설정
+        given(videoApi.fetchVideos(eq(keywordText), anyInt())).willReturn(Mono.just(List.of()));
+
+        /// when
+        sourceService.searchYoutube();
+
+        /// then
+        // insertIgnoreAll 메소드들이 호출되지 않았는지 검증
+        then(sourceRepository).shouldHaveNoInteractions();
+        then(keywordSourceRepository).shouldHaveNoInteractions();
+        // API 응답 비어있으면 OpenGraph도 호출 안됨
+        then(openGraphService).shouldHaveNoInteractions();
+
+        // keywordMetricHourlyService.findHourlyMetrics()는 호출되었는지 검증
+        then(keywordMetricHourlyService).should(times(1)).findHourlyMetrics();
+        // videoApi.fetchVideos()도 호출되었는지 검증
+        then(videoApi).should(times(1)).fetchVideos(eq(keywordText), anyInt());
+    }
+
+    @Test
+    @DisplayName("Youtube 검색 - API 호출 에러 발생")
+    void searchYoutube_apiError() {
+        /// given
+        Long keywordId1 = 1L;
+        String keywordText1 = "에러키워드";
+        Long keywordId2 = 2L;
+        String keywordText2 = "정상키워드";
+
+        List<KeywordMetricHourlyDto> topKeywords = Arrays.asList(
+                new KeywordMetricHourlyDto(keywordId1, keywordText1, Platform.GOOGLE_TREND,
+                        LocalDateTime.now(), 0, 0, false),
+                new KeywordMetricHourlyDto(keywordId2, keywordText2, Platform.GOOGLE_TREND,
+                        LocalDateTime.now(), 0, 0, false)
+        );
+        given(keywordMetricHourlyService.findHourlyMetrics()).willReturn(topKeywords);
+
+        // 키워드1에 대해 API 호출 에러 발생 설정
+        given(videoApi.fetchVideos(eq(keywordText1), anyInt()))
+                .willReturn(Mono.error(
+                        new RetryableExternalApiException(503, "Youtube API Error")));
+
+        // 키워드2에 대해 정상 응답 설정
+        List<VideoDto> video2 = Arrays.asList(
+                VideoDto.builder().id("v_id_k2").title("정상 영상 제목 k2")
+                        .publishedAt(LocalDateTime.now().minusDays(1))
+                        .thumbnailUrl("thumb_k2").description("desc_k2").build()
+        );
+        given(videoApi.fetchVideos(eq(keywordText2), anyInt())).willReturn(Mono.just(video2));
+
+        /// when
+        sourceService.searchYoutube();
+
+        /// then
+        // keywordMetricHourlyService.findHourlyMetrics() 호출 검증
+        then(keywordMetricHourlyService).should(times(1)).findHourlyMetrics();
+
+        // videoApi.fetchVideos()가 각 키워드에 대해 호출되었는지 검증
+        then(videoApi).should().fetchVideos(eq(keywordText1), anyInt());
+        then(videoApi).should().fetchVideos(eq(keywordText2), anyInt());
+
+        // 에러 발생한 키워드는 건너뛰고, 정상 키워드에 대한 데이터만 처리되었는지 검증
+        then(sourceRepository).should().insertIgnoreAll(argThat(sources -> {
+            assertThat(sources).hasSize(1);
+            assertThat(sources.getFirst().getFingerprint()).isEqualTo(video2.getFirst()
+                    .toEntity(Platform.YOUTUBE).getFingerprint());
+            return true;
+        }));
+
+        then(keywordSourceRepository).should().insertIgnoreAll(argThat(ksList -> {
+            assertThat(ksList).hasSize(1);
+            assertThat(ksList.getFirst().getKeyword().getId()).isEqualTo(keywordId2);
+            assertThat(ksList.getFirst().getSource().getFingerprint()).isEqualTo(
+                    video2.getFirst().toEntity(Platform.YOUTUBE).getFingerprint());
+            return true;
+        }));
+
+        // OpenGraphService는 정상 처리된 Source 개수만큼 호출 예상 (1개)
+        then(openGraphService).should(times(1)).enrichAsync(any(Source.class));
     }
 }

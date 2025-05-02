@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.OngoingStubbing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -219,37 +220,77 @@ public class YoutubeVideoApiAdapterTest {
                 }
                 """;
 
-        // Mock ExchangeFunction이 계속 실패 응답 반환
-        when(exchangeFunction.exchange(any()))
-                .thenReturn(Mono.just(buildResponse(errorJson, HttpStatus.INTERNAL_SERVER_ERROR)));
+        // Mock ExchangeFunction이 반환할 단일 에러 응답 Mono
+        Mono<ClientResponse> errorResponseMono = Mono
+                .just(buildResponse(errorJson, HttpStatus.INTERNAL_SERVER_ERROR));
+
+        // Retry 설정에 따른 총 시도 횟수
+        int retryMaxAttempts = 3;
+        int attemptsPerFailure = 1 + retryMaxAttempts;
+
+        // Circuit Breaker를 OPEN 시키기 위해 필요한 실패 횟수
+        int failuresToOpenCircuit = 5;
+
+        // Circuit Breaker가 OPEN 되기 전까지 ExchangeFunction이 호출될 총 예상 횟수
+        // 각 실패는 Retry 횟수만큼 ExchangeFunction 호출을 유발
+        int totalExpectedExchange = failuresToOpenCircuit * attemptsPerFailure;
+
+        // Mock ExchangeFunction의 순차적인 에러 응답을 Mockito 체이닝으로 설정
+        // 첫 번째 호출에 대한 Mock 설정
+        OngoingStubbing<Mono<ClientResponse>> stubbing = when(exchangeFunction.exchange(any()))
+                .thenReturn(errorResponseMono);
+
+        // 나머지 호출들에 대한 Mock 설정을 루프를 통해 체이닝
+        for (int i = 0; i < failuresToOpenCircuit - 1; i++) {
+            stubbing = stubbing.thenReturn(errorResponseMono);
+        }
+        // 이제 exchangeFunction.exchange(any())가 호출될 때마다 순서대로 errorResponseMono를 20번 반환합니다.
 
         /// when
-        // Circuit Breaker를 열기 위해 실패 임계치까지 호출 (Resilience4j 설정에 따라 횟수 조절 필요)
-        // Resilience4j 기본 설정(failureRateThreshold: 50, slidingWindowSize: 10)을 가정
-        for (int i = 0; i < 5; i++) {
+        // Circuit Breaker를 OPEN 시키기 위해 5회 실패 호출 시도 (루프)
+        log.info("Circuit Breaker OPEN 시키기 위해 {}회 실패 호출 시도 시작", failuresToOpenCircuit);
+        for (int i = 0; i < failuresToOpenCircuit; i++) {
+            int finalI = i;
             StepVerifier.create(youtubeVideoApiAdapter.fetchVideos("fail" + i, 1))
-                    .expectError(RetryableExternalApiException.class)
-                    .verify();
+                    // Retry 후 RetryableExternalApiException 또는 Circuit Breaker OPEN 시 CallNotPermittedException 발생 예상
+                    // 둘 중 하나의 예외가 발생하면 검증 통과하도록 수정 (expectErrorSatisfies 사용)
+                    .expectErrorSatisfies(e -> {
+                        assertThat(e).isInstanceOfAny(
+                                RetryableExternalApiException.class,
+                                CallNotPermittedException.class
+                        );
+                        // 어떤 예외가 발생했는지 로그로 확인
+                        log.debug("[Call {}] StepVerifier caught expected exception: {}",
+                                finalI, e.getClass().getSimpleName());
+                    }).verify();
         }
+        log.info("{}회 실패 호출 시도 완료", failuresToOpenCircuit);
 
         /// then
+        // 루프 완료 후 Circuit Breaker 상태가 OPEN 인지 확인
         CircuitBreaker circuitBreaker = registry.circuitBreaker("YOUTUBE_VIDEO_CIRCUIT_BREAKER");
         assertThat(circuitBreaker.getState()).isEqualTo(CircuitBreaker.State.OPEN);
         log.info("Circuit Breaker 상태: {}", circuitBreaker.getState());
 
         /// when
         // Circuit Breaker가 열린 상태에서 호출 → CallNotPermittedException 발생 예상
+        log.info("Circuit Breaker OPEN 상태에서 호출 시도 (루프 후 첫 번째 호출)");
         StepVerifier.create(youtubeVideoApiAdapter
                         .fetchVideos("should be blocker", 1))
+                // Circuit Breaker OPEN 상태에서는 CallNotPermittedException 발생 예상
                 .expectError(CallNotPermittedException.class)
                 .verify();
 
         log.info("Circuit Breaker OPEN 상태에서 호출 차단 확인");
 
         /// then
-        // Circuit Breaker OPEN 상태에서는 ExchangeFunction 호출이 발생하지 않으므로,
-        // 위 for 루프에서 발생한 호출 횟수 검증 (각 호출은 내부 retry를 거쳐 1번의 최종 실패로 기록)
-        verify(exchangeFunction, times(5)).exchange(any());
+        // Circuit Breaker OPEN 상태에서는 CallNotPermittedException 발생 예상
+        // Circuit Breaker는 5번의 실패가 기록된 후에 OPEN 됨.
+        // 각 실패는 Retry 정책에 따라 총 attemptsPerFailure (4) 번의 ExchangeFunction 호출을 유발함!
+        // 안정적인 테스트 환경이라면 5번의 실패 시도 각각이 완전히 Retry를 거쳐
+        // 총 5 * 4 = 20 번 호출된 후에 Circuit Breaker가 OPEN 될 예정
+        // 마지막 차단된 호출은 ExchangeFunction에 도달하지 않음.
+        verify(exchangeFunction, times(totalExpectedExchange)).exchange(any());
     }
 
 

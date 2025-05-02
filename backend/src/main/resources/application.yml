@@ -16,8 +16,8 @@ spring:
 
   data:
     redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT}
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
 
   config:
     import: optional:file:./.env[.properties]
@@ -140,7 +140,7 @@ google:
   trends:
     rss:
       url: ${GOOGLE_TRENDS_RSS_URL:https://trends.google.co.kr/trending/rss?geo=KR}
-      namespace: ${NAMESPACE_URL:https://trends.google.com/trending/rss}
+      namespace: ${GOOGLE_TRENDS_NAMESPACE_URL:https://trends.google.com/trending/rss}
 
 naver:
   base-url: ${NAVER_BASE_URL:https://openapi.naver.com}

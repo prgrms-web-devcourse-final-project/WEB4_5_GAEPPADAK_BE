@@ -4,8 +4,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
@@ -30,6 +30,7 @@ import site.kkokkio.domain.post.entity.PostMetricHourly;
 import site.kkokkio.domain.post.repository.PostKeywordRepository;
 import site.kkokkio.domain.post.repository.PostMetricHourlyRepository;
 import site.kkokkio.domain.post.repository.PostRepository;
+import site.kkokkio.domain.source.entity.KeywordSource;
 import site.kkokkio.domain.source.entity.PostSource;
 import site.kkokkio.domain.source.entity.Source;
 import site.kkokkio.domain.source.repository.KeywordSourceRepository;
@@ -101,23 +102,25 @@ public class PostService {
 	public void generatePosts() {
 		// Step 1. 현재 Top10 키워드 전체 조회
 		List<KeywordMetricHourlyDto> allTopKeywords = keywordMetricHourlyService.findHourlyMetrics();
+		List<Long> keywordIds = allTopKeywords.stream().map(KeywordMetricHourlyDto::keywordId).toList();
+
+    	// Step 2. Top10 keywords → sources 맵 조회
+		// TODO: executionContext로 수집한 new Source Url 리스트로 대체
+		List<KeywordSource> keywordSources = keywordSourceRepository.findTopSourcesByKeywordIdsLimited(keywordIds, 10);
+    	Map<Long, List<Source>> keywordToSources = KeywordSource.groupByKeywordId(keywordSources);
 
 		for (KeywordMetricHourlyDto metric : allTopKeywords) {
 			Long keywordId = metric.keywordId();
 			String keywordText = metric.text();
 			LocalDateTime bucketAt = metric.bucketAt();
 
-			// Step 2. 해당 키워드 기준으로 수집된 Source 조회
-			// TODO: executionContext로 수집한 new Source Url 리스트로 대체
-			PageRequest pageRequest = PageRequest.of(0, 10);
-			List<Source> sources = keywordSourceRepository.findSourcesByKeywordId(keywordId, pageRequest).getContent();
-
+			List<Source> sources = keywordToSources.getOrDefault(keywordId, List.of());
 			if (sources.isEmpty()) {
 				log.warn("Source 없음 → keyword={} 스킵", keywordText);
 				continue;
 			}
 
-			// Step 3A. low_variation=true → 포스트 생성 스킵 + 기존 포스트 연결 처리
+			// Step 3A. low_variation=true → 포스트 생성 스킵 + 기존 포스트 연결
 			if (metric.lowVariation()) {
 				Post existingPost = getMostRecentPostByKeyword(keywordId);
 				if (existingPost == null) {
@@ -141,20 +144,16 @@ public class PostService {
 
 			// Step 3B. low_variation=false → 신규 Post 생성
 			// TODO: AI 연결 전이므로 임시로 특정 Source의 Title, Description으로 작성
-			String title = sources.getFirst().getTitle();
-			String summary = sources.getFirst().getDescription();
-			String thumbnailUrl = sources.getFirst().getThumbnailUrl();
+			Source temp = sources.getFirst();
+			Post post = postRepository.save(Post.builder()
+				.title(temp.getTitle())
+				.summary(temp.getDescription())
+				.thumbnailUrl(temp.getThumbnailUrl())
+				.bucketAt(bucketAt)
+				.reportCount(0)
+				.build());
 
-			Post post = postRepository.save(
-				Post.builder()
-					.title(title)
-					.summary(summary)
-					.thumbnailUrl(thumbnailUrl)
-					.bucketAt(bucketAt)
-					.reportCount(0)
-					.build()
-			);
-
+			// Step 4. 신규 Post 연결
 			// Source ↔ Post 매핑
 			linkSourcesToPost(post, sources);
 
@@ -163,16 +162,12 @@ public class PostService {
 				keywordId);
 			KeywordMetricHourly keywordMetricHourly = keywordMetricHourlyRepository.findById(keywordMetricHourlyId)
 				.orElseThrow(() -> new ServiceException("404", "KeywordMetricHourly를 찾을 수 없습니다."));
-
 			keywordMetricHourly.setPost(post);
 
 			// Keyword ↔ Post 매핑
 			Keyword keyword = keywordRepository.findById(keywordId)
 				.orElseThrow(() -> new ServiceException("404", "Keyword를 찾을 수 없습니다."));
-			PostKeyword postKeyword = PostKeyword.builder()
-				.post(post)
-				.keyword(keyword)
-				.build();
+			PostKeyword postKeyword = PostKeyword.builder().post(post).keyword(keyword).build();
 			postKeywordRepository.insertIgnoreAll(List.of(postKeyword));
 
 			// PostMetricHourly 생성
@@ -201,10 +196,7 @@ public class PostService {
 	// Source 리스트 ↔ Post 매핑 저장
 	public void linkSourcesToPost(Post post, List<Source> sources) {
 		List<PostSource> mappings = sources.stream()
-			.map(source -> PostSource.builder()
-				.post(post)
-				.source(source)
-				.build())
+			.map(source -> PostSource.builder().post(post).source(source).build())
 			.toList();
 		postSourceRepository.insertIgnoreAll(mappings);
 	}

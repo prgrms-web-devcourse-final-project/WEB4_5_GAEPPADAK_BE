@@ -1,5 +1,9 @@
 package site.kkokkio.domain.source.entity;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -44,4 +48,12 @@ public class KeywordSource extends BaseTimeEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false) // ON DELETE CASCADE
     @JoinColumn(name = "fingerprint", nullable = false)
     private Source source;
+
+    public static Map<Long, List<Source>> groupByKeywordId(List<KeywordSource> list) {
+        return list.stream()
+            .collect(Collectors.groupingBy(
+                ks -> ks.getKeyword().getId(),
+                Collectors.mapping(KeywordSource::getSource, Collectors.toList())
+            ));
+    }
 }

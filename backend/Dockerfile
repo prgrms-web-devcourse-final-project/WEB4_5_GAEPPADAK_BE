@@ -33,5 +33,6 @@ COPY --from=builder /app/build/libs/*.jar app.jar
 # 앱 실행
 ENTRYPOINT ["doppler", "run", "--"]
 
-CMD ["java", "-jar", "-Dspring.profiles.active=prd", "app.jar"]
+# 배포 환경 변경 시 active를 변경할 것 (prd, dev)
+CMD ["java", "-jar", "-Dspring.profiles.active=dev", "app.jar"]
 

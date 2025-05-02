@@ -126,6 +126,8 @@ public class JwtUtils {
 		ResponseCookie cookie = ResponseCookie.from("access-token", token)
 			.httpOnly(true) // 자바스크립트 접근 차단 (XSS 방지)
 			.path("/") // 전체 사이트에서 접근 가능
+
+			// Todo: 프론트, 백엔드 도메인 일치 후(Strict)적용
 			.sameSite("None") // 외부 사이트 요청 차단 (CSRF 방지)
 			.maxAge(Duration.ofMillis(expiration)) // Access Token 만료 시간 : 10분
 			.secure(true) // HTTPS 통신 시에만 전송
@@ -140,6 +142,8 @@ public class JwtUtils {
 		ResponseCookie cookie = ResponseCookie.from("refresh_token", token)
 			.httpOnly(true)     // 자바스크립트 접근 차단 (XSS 방지)
 			.path("/auth")      // 인증 경로에서만 접근 가능
+
+			// Todo: 프론트, 백엔드 도메인 일치 후(Strict)적용
 			.sameSite("None")   // 외부 사이트 요청 허용 (CORS 환경 대응)
 			.maxAge(Duration.ofMillis(refreshTokenExpiration)) // Refresh Token 만료 시간 : 7일
 			.secure(true)       // HTTPS 통신 시에만 전송

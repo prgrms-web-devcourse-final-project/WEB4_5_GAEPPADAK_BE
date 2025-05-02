@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -17,12 +18,15 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import lombok.RequiredArgsConstructor;
+import site.kkokkio.global.filter.JWTAuthenticationFilter;
 import site.kkokkio.global.security.CustomUserDetailsService;
+import site.kkokkio.global.util.JwtUtils;
 
 @Configuration
 @EnableWebSecurity
@@ -31,9 +35,10 @@ import site.kkokkio.global.security.CustomUserDetailsService;
 public class SecurityConfig {
 
 	private final CustomUserDetailsService customUserDetailsService;
+	private final RedisTemplate<String, String> redisTemplate;
 
 	@Bean
-	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+	public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtUtils jwtUtils) throws Exception {
 
 		http
 			// CORS 설정 추가
@@ -53,7 +58,13 @@ public class SecurityConfig {
 			.sessionManagement(session -> session
 				.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
 			)
+
+			// 인증 제공자 설정
 			.authenticationProvider(authenticationProvider())
+
+			// JWT 인증 필터 추가
+			.addFilterBefore(new JWTAuthenticationFilter(jwtUtils, customUserDetailsService, redisTemplate),
+				UsernamePasswordAuthenticationFilter.class)
 
 			// 엔드포인트별 권한 설정
 			.authorizeHttpRequests(authorize ->

@@ -12,7 +12,7 @@ import org.springframework.stereotype.Repository;
 import site.kkokkio.domain.post.entity.PostKeyword;
 
 @Repository
-public interface PostKeywordRepository extends JpaRepository<PostKeyword, Long> {
+public interface PostKeywordRepository extends JpaRepository<PostKeyword, Long>, PostKeywordRepositoryCustom {
 
 	@Query(value = """
            SELECT pk

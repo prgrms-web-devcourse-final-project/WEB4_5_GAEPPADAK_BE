@@ -99,7 +99,7 @@ public class PostService {
 	 */
 	@Transactional
 	public void generatePosts() {
-		// Step 1. 최신 시간대 기준 Top10 키워드 전체 조회
+		// Step 1. 현재 Top10 키워드 전체 조회
 		List<KeywordMetricHourlyDto> allTopKeywords = keywordMetricHourlyService.findHourlyMetrics();
 
 		for (KeywordMetricHourlyDto metric : allTopKeywords) {
@@ -173,7 +173,7 @@ public class PostService {
 				.post(post)
 				.keyword(keyword)
 				.build();
-			postKeywordRepository.save(postKeyword);
+			postKeywordRepository.insertIgnoreAll(List.of(postKeyword));
 
 			// PostMetricHourly 생성
 			PostMetricHourly postMetricHourly = PostMetricHourly.builder()

@@ -134,14 +134,16 @@ public class SourceService {
             return;
         }
 
+		sources = sources.stream().distinct().toList();
+
         // 3. Source 저장
-        List<Source> saved = sourceRepository.saveAll(sources);
+        sourceRepository.insertIgnoreAll(sources);
 
         // 4. KeywordSource 저장
-        keywordSourceRepository.saveAll(keywordSources);
+        keywordSourceRepository.insertIgnoreAll(keywordSources);
 
 		// 5. 비동기로 OpenGraph 정보 보강
-        saved.forEach(openGraphService::enrichAsync);
+        sources.forEach(openGraphService::enrichAsync);
     }
 
 	/**

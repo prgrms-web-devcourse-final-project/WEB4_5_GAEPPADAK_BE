@@ -12,6 +12,7 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import site.kkokkio.domain.keyword.entity.Keyword;
@@ -25,6 +26,7 @@ import site.kkokkio.global.util.BaseTimeEntity;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
 @Table(name = "keyword_source")
 public class KeywordSource extends BaseTimeEntity {
 
@@ -33,10 +35,12 @@ public class KeywordSource extends BaseTimeEntity {
     @Column(name = "keyword_source_id")
     private Long id;
 
+    @EqualsAndHashCode.Include
     @ManyToOne(fetch = FetchType.LAZY, optional = false) // ON DELETE CASCADE
     @JoinColumn(name = "keyword_id", nullable = false)
     private Keyword keyword;
 
+    @EqualsAndHashCode.Include
     @ManyToOne(fetch = FetchType.LAZY, optional = false) // ON DELETE CASCADE
     @JoinColumn(name = "fingerprint", nullable = false)
     private Source source;

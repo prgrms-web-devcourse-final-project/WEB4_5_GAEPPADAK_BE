@@ -11,8 +11,7 @@ import org.springframework.stereotype.Repository;
 import site.kkokkio.domain.source.entity.Source;
 
 @Repository
-public interface SourceRepository extends JpaRepository<Source, String> {
-
+public interface SourceRepository extends JpaRepository<Source, String>, SourceRepositoryCustom {
 	@Query("""
 		SELECT ps.source
 		FROM PostSource ps

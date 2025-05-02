@@ -11,7 +11,7 @@ import site.kkokkio.domain.source.entity.KeywordSource;
 import site.kkokkio.domain.source.entity.Source;
 
 @Repository
-public interface KeywordSourceRepository extends JpaRepository<KeywordSource, Long> {
+public interface KeywordSourceRepository extends JpaRepository<KeywordSource, Long>, KeywordSourceRepositoryCustom {
     /**
      * 특정 키워드에 연결된 Source 리스트를 최신 발행순으로 조회
      */

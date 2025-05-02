@@ -78,7 +78,7 @@ custom:
     auth-code-expiration-millis: 300000 # 인증시간(5분)
 
 schedule:
-  cron: 0 * * * * * # 낮 12시에 실행 0 0 12 * * *
+  cron: 0 0 12 * * * # 낮 12시에 실행 0 0 12 * * *
 
 resilience4j:
   retry:

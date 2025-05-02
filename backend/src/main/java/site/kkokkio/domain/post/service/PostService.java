@@ -146,8 +146,8 @@ public class PostService {
 			// TODO: AI 연결 전이므로 임시로 특정 Source의 Title, Description으로 작성
 			Source temp = sources.getFirst();
 			Post post = postRepository.save(Post.builder()
-				.title(temp.getTitle())
-				.summary(temp.getDescription())
+				.title(temp.getTitle() != null ? temp.getTitle() : "제목 없음")
+				.summary(temp.getDescription() != null ? temp.getDescription() : "내용 없음")
 				.thumbnailUrl(temp.getThumbnailUrl())
 				.bucketAt(bucketAt)
 				.reportCount(0)

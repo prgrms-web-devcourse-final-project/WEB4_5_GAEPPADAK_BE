@@ -38,14 +38,12 @@ public class AuthService {
 		}
 
 		Map<String, Object> claims = new HashMap<>();
-		claims.put("id", member.getId());
-		claims.put("email", member.getEmail());
-		claims.put("nickname", member.getNickname());
+		claims.put("isEmailVerified", member.isEmailVerified());
 		claims.put("role", member.getRole());
 
 		// token, refreshToken 생성
-		String accessToken = jwtUtils.createToken(claims);
-		String refreshToken = jwtUtils.createRefreshToken(claims);
+		String accessToken = jwtUtils.createToken(member.getEmail(), claims);
+		String refreshToken = jwtUtils.createRefreshToken(member.getEmail(), claims);
 
 		// Redis에 Refresh Token 저장 (키: "refreshToken:<email>")
 		Duration rtTtl = Duration.ofMillis(jwtUtils.getRefreshTokenExpiration());
@@ -76,7 +74,7 @@ public class AuthService {
 
 		// 새로운 토큰 발급
 		Map<String, Object> claims = jwtUtils.getPayload(rt);
-		String newAt = jwtUtils.createToken(claims);
+		String newAt = jwtUtils.createToken(email, claims);
 
 		// 쿠키에도 업데이트
 		jwtUtils.setJwtInCookie(newAt, response);

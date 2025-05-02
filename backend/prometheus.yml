@@ -1,0 +1,8 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'mysql_exporter'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['mysql-exporter:9104']

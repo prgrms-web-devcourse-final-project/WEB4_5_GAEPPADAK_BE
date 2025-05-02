@@ -92,6 +92,8 @@ resilience4j:
     instances:
       NAVER_NEWS_RETRY:
         base-config: default
+      YOUTUBE_VIDEO_RETRY: # 유튜브 재시도 인스턴스
+        base-config: default
   circuitbreaker:
     configs:
       default:
@@ -108,6 +110,8 @@ resilience4j:
     instances:
       NAVER_NEWS_CIRCUIT_BREAKER:
         base-config: default
+      YOUTUBE_VIDEO_CIRCUIT_BREAKER: # 유튜브 서킷 브레이커 인스턴스
+        base-config: default
   ratelimiter:
     configs:
       default:
@@ -117,6 +121,8 @@ resilience4j:
         subscribe-for-events: true
     instances:
       NAVER_NEWS_RATE_LIMITER:
+        base-config: default
+      YOUTUBE_VIDEO_RATE_LIMITER: # 유튜브 레이트 리미터 인스턴스
         base-config: default
 
 management:
@@ -148,6 +154,13 @@ naver:
   client-secret: ${NAVER_CLIENT_SECRET:test-secret}
   search:
     news-path: ${NAVER_SEARCH_NEWS_PATH:/v1/search/news.json}
+
+youtube:
+  api:
+    key: ${YOUTUBE_API_KEY:test-id}
+    base-url: ${YOUTUBE_BASE_URL:https://www.googleapis.com}
+    search:
+      path: ${YOUTUBE_PATH:/youtube/v3/search}
 
 mock:
   enabled: true

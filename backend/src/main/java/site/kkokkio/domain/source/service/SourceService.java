@@ -18,6 +18,7 @@ import reactor.core.publisher.Mono;
 import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.entity.Keyword;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
+import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.service.PostService;
 import site.kkokkio.domain.source.controller.dto.TopSourceListResponse;
 import site.kkokkio.domain.source.dto.NewsDto;
@@ -73,6 +74,19 @@ public class SourceService {
 		return postSources.stream()
 			.map(ps -> SourceDto.from(ps.getSource()))
 			.toList();
+	}
+
+	@Transactional(readOnly = true)
+	public List<SourceDto> getTop5SourcesByPosts(List<PostDto> postDtoList) {
+		if (postDtoList == null || postDtoList.isEmpty()) {
+			return Collections.emptyList();
+		}
+		List<Long> postIds = postDtoList.stream().map(PostDto::postId).toList();
+
+		PageRequest pageRequest = PageRequest.of(0, 5); // 5개 고정
+		List<Source> top5SourcesByPostIds = sourceRepository.findByPostIdsOrderByPublishedAtDesc(postIds, pageRequest);
+
+		return top5SourcesByPostIds.stream().map(SourceDto::from).toList();
 	}
 
 	/**

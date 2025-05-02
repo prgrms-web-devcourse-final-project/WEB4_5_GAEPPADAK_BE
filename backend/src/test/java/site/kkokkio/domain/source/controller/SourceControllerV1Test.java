@@ -1,28 +1,32 @@
 package site.kkokkio.domain.source.controller;
 
+import static org.mockito.BDDMockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
 import site.kkokkio.domain.source.controller.dto.TopSourceListResponse;
 import site.kkokkio.domain.source.dto.SourceDto;
 import site.kkokkio.domain.source.dto.TopSourceItemDto;
 import site.kkokkio.domain.source.service.SourceService;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
-
-import java.time.LocalDateTime;
-import java.util.List;
-
-import static org.mockito.BDDMockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = SourceControllerV1.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -39,11 +43,11 @@ class SourceControllerV1Test {
     void getNewsSources_Success() throws Exception {
         // given
         List<SourceDto> mockNewsList = List.of(
-                new SourceDto("https://news.com", "https://image.jpg", "뉴스 제목1", LocalDateTime.parse("2024-04-29T15:30:00")),
-                new SourceDto("https://news.com", "https://image.jpg", "뉴스 제목2", LocalDateTime.parse("2024-04-29T15:30:00")),
-                new SourceDto("https://news.com", "https://image.jpg", "뉴스 제목3", LocalDateTime.parse("2024-04-29T15:30:00")),
-                new SourceDto("https://news.com", "https://image.jpg", "뉴스 제목4", LocalDateTime.parse("2024-04-29T15:30:00")),
-                new SourceDto("https://news.com", "https://image.jpg", "뉴스 제목5", LocalDateTime.parse("2024-04-29T15:30:00"))
+                new SourceDto("https://news.com", "https://image.jpg", "뉴스 제목1", LocalDateTime.parse("2024-04-29T15:30:00"), Platform.NAVER_NEWS),
+                new SourceDto("https://news.com", "https://image.jpg", "뉴스 제목2", LocalDateTime.parse("2024-04-29T15:30:00"), Platform.NAVER_NEWS),
+                new SourceDto("https://news.com", "https://image.jpg", "뉴스 제목3", LocalDateTime.parse("2024-04-29T15:30:00"), Platform.NAVER_NEWS),
+                new SourceDto("https://news.com", "https://image.jpg", "뉴스 제목4", LocalDateTime.parse("2024-04-29T15:30:00"), Platform.NAVER_NEWS),
+                new SourceDto("https://news.com", "https://image.jpg", "뉴스 제목5", LocalDateTime.parse("2024-04-29T15:30:00"), Platform.NAVER_NEWS)
         );
         given(sourceService.getTop10NewsSourcesByPostId(anyLong())).willReturn(mockNewsList);
 
@@ -101,11 +105,11 @@ class SourceControllerV1Test {
     void getVideoSources_Success() throws Exception {
         // given
         List<SourceDto> mockVideoList = List.of(
-                new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목1", LocalDateTime.parse("2024-04-29T15:30:00")),
-                new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목2", LocalDateTime.parse("2024-04-29T15:30:00")),
-                new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목3", LocalDateTime.parse("2024-04-29T15:30:00")),
-                new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목4", LocalDateTime.parse("2024-04-29T15:30:00")),
-                new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목5", LocalDateTime.parse("2024-04-29T15:30:00"))
+                new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목1", LocalDateTime.parse("2024-04-29T15:30:00"), Platform.YOUTUBE),
+                new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목2", LocalDateTime.parse("2024-04-29T15:30:00"), Platform.YOUTUBE),
+                new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목3", LocalDateTime.parse("2024-04-29T15:30:00"), Platform.YOUTUBE),
+                new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목4", LocalDateTime.parse("2024-04-29T15:30:00"), Platform.YOUTUBE),
+                new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목5", LocalDateTime.parse("2024-04-29T15:30:00"), Platform.YOUTUBE)
         );
         given(sourceService.getTop10VideoSourcesByPostId(anyLong())).willReturn(mockVideoList);
 

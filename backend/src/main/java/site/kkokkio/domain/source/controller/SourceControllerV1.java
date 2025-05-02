@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import site.kkokkio.domain.post.service.PostService;
 import site.kkokkio.domain.source.controller.dto.SourceListResponse;
 import site.kkokkio.domain.source.controller.dto.TopSourceListResponse;
 import site.kkokkio.domain.source.dto.SourceDto;

@@ -44,6 +44,14 @@ public class JwtUtils {
 		return expiration;
 	}
 
+	// Claims 호출
+	public Claims getClaims(String token) {
+		return Jwts.parser()
+			.build()
+			.parseSignedClaims(token)
+			.getPayload();
+	}
+
 	public Date getExpiration(String token) {
 		try {
 			SecretKey key = getSecretKey();
@@ -65,11 +73,12 @@ public class JwtUtils {
 	}
 
 	// JWT 생성
-	public String createToken(Map<String, Object> claims) {
+	public String createToken(String email, Map<String, Object> claims) {
 		SecretKey key = getSecretKey();
 		Date issuedAt = new Date();
 
 		return Jwts.builder()
+			.subject(email) // 사용자 식별자(email)
 			.claims(claims) // 사용자 정보 포함
 			.issuedAt(issuedAt) // 발급 시간
 			.expiration(new Date(issuedAt.getTime() + expiration)) // 만료 시간
@@ -78,11 +87,12 @@ public class JwtUtils {
 	}
 
 	// 리프레시 토큰 생성
-	public String createRefreshToken(Map<String, Object> claims) {
+	public String createRefreshToken(String email, Map<String, Object> claims) {
 		SecretKey key = getSecretKey();
 		Date issuedAt = new Date();
 
 		return Jwts.builder()
+			.subject(email)
 			.claims(claims)
 			.issuedAt(issuedAt)
 			.expiration(new Date(issuedAt.getTime() + refreshTokenExpiration))

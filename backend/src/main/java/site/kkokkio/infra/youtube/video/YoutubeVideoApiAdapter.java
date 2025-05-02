@@ -1,5 +1,6 @@
 package site.kkokkio.infra.youtube.video;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
@@ -21,6 +22,9 @@ import site.kkokkio.infra.common.exception.ExternalApiErrorUtil;
 import site.kkokkio.infra.common.exception.RetryableExternalApiException;
 import site.kkokkio.infra.youtube.video.dto.*;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -36,6 +40,17 @@ public class YoutubeVideoApiAdapter implements VideoApiPort {
     @Qualifier("youtubeWebClient")
     private final WebClient youtubeWebClient;
 
+    // ObjectMapper 주입 (JSON 파싱에 사용)
+    private final ObjectMapper objectMapper;
+
+    // 파일에서 읽어올 Mock 활성화 여부
+    @Value("${mock.enabled}")
+    private boolean mockEnabled;
+
+    // Mock Youtube JSON 파일 경로
+    @Value("${mock.youtube-file}")
+    private String mockFile;
+
     // .env 등 설정 파일에서 읽어올 Youtube API 설정 값
     @Value("${youtube.api.key}")
     private String YOUTUBE_API_KEY;
@@ -50,25 +65,38 @@ public class YoutubeVideoApiAdapter implements VideoApiPort {
 
     // VideoApiPort 인터페이스의 메소드 구현
     @Override
-    @Retry(name = "YOUTUBE_VIDEO_RETRY") // Resilience4j 애노테이션 (나중에 설정 추가 후 활성화)
-    @CircuitBreaker(name = "YOUTUBE_VIDEO_CIRCUIT_BREAKER") // Resilience4j 애노테이션 (나중에 설정 추가 후 활성화)
-    @RateLimiter(name = "YOUTUBE_VIDEO_RATE_LIMITER") // Resilience4j 애노테이션 (나중에 설정 추가 후 활성화)
+    @Retry(name = "YOUTUBE_VIDEO_RETRY") // Resilience4j 애노테이션
+    @CircuitBreaker(name = "YOUTUBE_VIDEO_CIRCUIT_BREAKER") // Resilience4j 애노테이션
+    @RateLimiter(name = "YOUTUBE_VIDEO_RATE_LIMITER") // Resilience4j 애노테이션
     public Mono<List<VideoDto>> fetchVideos(String keyword, int count) {
 
-        // WebClient를 사용하여 YouTube API 호출
-        return youtubeWebClient.get()
-                // 요청 URI 빌드 (기본 URL + 경로 + 쿼리 파라미터)
-                .uri(uri -> buildYoutubeVideosUri(uri, keyword, count))
-//                .header("X-API-KEY", YOUTUBE_API_KEY)
-                .retrieve()
-                // HTTP 에러 응답 처리 (4xx, 5xx)
-                .onStatus(HttpStatusCode::isError, this::mapYoutubeError)
-                // 응답 본문을 Youtube API 응답 구조 DTO로 변환
-                .bodyToMono(YoutubeVideosSearchResponse.class)
-                // 서킷 오픈 시 예외 처리
-                .onErrorMap(CallNotPermittedException.class, ex -> new RetryableExternalApiException(503, ex.getMessage()))
-                // Youtube API 응답 DTO를 VideoDTo 목록으로 변환
-                .map(this::toVideoDtos);
+        // mockEnabled 설정에 따라 Mock 데이터 로딩 또는 실제 API 호출
+        Mono<YoutubeVideosSearchResponse> responseMono;
+
+        if (mockEnabled) {
+            log.info("Mock 모드 활성화: Youtube Mock 데이터 파일 로드 시작 [{}]", mockFile);
+            responseMono = loadMockYoutubeResponse(); // Mock 데이터 로딩 메소드 호출
+        } else { // Mock 모드 비활성화 또는 설정 누락 시 실제 API 호출
+            log.info("Mock 모드 비활성화: Youtube API 호출 시작. keyword={}, count={}", keyword, count);
+
+            // WebClient를 사용하여 YouTube API 호출
+            responseMono = youtubeWebClient.get()
+                    // 요청 URI 빌드 (기본 URL + 경로 + 쿼리 파라미터)
+                    .uri(uri -> buildYoutubeVideosUri(uri, keyword, count))
+                    .retrieve()
+                    // HTTP 에러 응답 처리 (4xx, 5xx)
+                    .onStatus(HttpStatusCode::isError, this::mapYoutubeError)
+                    // 응답 본문을 Youtube API 응답 구조 DTO로 변환
+                    .bodyToMono(YoutubeVideosSearchResponse.class)
+                    // 서킷 오픈 시 예외 처리
+                    .onErrorMap(CallNotPermittedException.class,
+                            ex -> {
+                                log.warn("CircuitBreaker 'YOUTUBE_VIDEO_CIRCUIT_BREAKER' OPEN. Call Not Permitted.");
+                                return new RetryableExternalApiException(503, ex.getMessage());
+                            });
+        }
+        // Youtube API 응답 DTO를 VideoDTo 목록으로 변환하여 반환
+        return responseMono.map(this::toVideoDtos);
     }
 
     // Youtube API 요청 URI를 빌드하는 헬퍼 메소드
@@ -245,5 +273,34 @@ public class YoutubeVideoApiAdapter implements VideoApiPort {
                     // 생성된 예외를 Mono로 감싸 반환
                     return Mono.error(serviceException);
                 });
+    }
+
+    /**
+     * Mock 모드 활성화 시 Mock Youtube API 응답 JSON 파일을 로드합니다.
+     * src/main/resources/mock/ 디렉토리에 파일이 존재해야 합니다.
+     *
+     * @return Mock 응답 DTO를 담은 Mono
+     */
+    private Mono<YoutubeVideosSearchResponse> loadMockYoutubeResponse() {
+        try (InputStream is = getClass().getResourceAsStream("/mock/" + mockFile)) {
+            if (is == null) {
+                log.error("Mock 파일이 없습니다: /mock/{}", mockFile);
+                return Mono.error(new FileNotFoundException("Mock 파일을 찾을 수가 없습니다: "
+                        + mockFile));
+            }
+
+            // ObjectMapper를 사용하여 JSON 파일을 YoutubeVideosSearchResponse 객체로 파싱
+            YoutubeVideosSearchResponse response = objectMapper.readValue(
+                    is, YoutubeVideosSearchResponse.class);
+            return Mono.just(response);
+        } catch (IOException e) {
+            log.error("Mock 파일 로딩을 실패했습니다: {}", mockFile, e);
+            return Mono.error(new RuntimeException("유튜브 Mock 파일을 로딩하는데 실패했습니다: "
+                    + mockFile, e));
+        } catch (Exception e) {
+            log.error("Mock 파일을 파싱하는데 실패했습니다: {}", mockFile, e);
+            return Mono.error(new RuntimeException("유튜브 Mock 파일을 파싱하는데 실패했습니다: "
+                    + mockFile, e));
+        }
     }
 }

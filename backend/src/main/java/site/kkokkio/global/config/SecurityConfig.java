@@ -74,11 +74,11 @@ public class SecurityConfig {
 					).permitAll()
 
 					// 댓글 GET 요청 허용
-					.requestMatchers(HttpMethod.GET, "/api/v1/posts/*/comments")
+					.requestMatchers(HttpMethod.GET, "/api/*/posts/*/comments")
 					.permitAll()
 
 					// 회원 권한
-					.requestMatchers(getPubliCUserEndpoints().toArray(String[]::new)).hasRole("USER")
+					.requestMatchers(getPublicUserEndpoints().toArray(String[]::new)).hasRole("USER")
 					// 관리자 권한
 					.requestMatchers(getPublicAdminEndpoints().toArray(String[]::new)).hasRole("ADMIN")
 
@@ -148,7 +148,7 @@ public class SecurityConfig {
 			"/",
 
 			// 로그인, 회원가입 등
-			"/api/v1/auth/**",
+			"/api/*/auth/**",
 
 			// Todo: 아래 엔드포인트는 개발 환경에서만, 운영 서버 반영 전 제거 필요
 
@@ -167,12 +167,12 @@ public class SecurityConfig {
 	}
 
 	// USER(회원) 권한
-	private List<String> getPubliCUserEndpoints() {
+	private List<String> getPublicUserEndpoints() {
 		return List.of(
 			// 댓글 권한
-			"/api/v1/posts/*/comments",
-			"/api/v1/comments/*",
-			"/api/v1/comments/*/like"
+			"/api/*/posts/*/comments",
+			"/api/*/comments/*",
+			"/api/*/comments/*/like"
 		);
 	}
 
@@ -180,9 +180,9 @@ public class SecurityConfig {
 	private List<String> getPublicAdminEndpoints() {
 		return List.of(
 			// 댓글 권한
-			"/api/v1/posts/*/comments",
-			"/api/v1/comments/*",
-			"/api/v1/comments/*/like"
+			"/api/*/posts/*/comments",
+			"/api/*/comments/*",
+			"/api/*/comments/*/like"
 		);
 	}
 

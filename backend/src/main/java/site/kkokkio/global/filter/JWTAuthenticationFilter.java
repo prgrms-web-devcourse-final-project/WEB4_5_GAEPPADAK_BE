@@ -30,6 +30,19 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
 	private final CustomUserDetailsService userDetailsService;
 	private final RedisTemplate<String, String> redisTemplate;
 
+	// 필터 체인 통과
+	@Override
+	protected boolean shouldNotFilter(HttpServletRequest request) {
+		String path = request.getServletPath();
+
+		// 필터를 통과해야하는 엔드 포인트
+		return List.of(
+			"/api/*/auth/login",
+			"/api/*/auth/signup",
+			"/api/*/auth/refresh"
+		).contains(path);
+	}
+
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 		throws ServletException, IOException {

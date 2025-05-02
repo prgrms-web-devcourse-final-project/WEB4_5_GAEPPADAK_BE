@@ -7,7 +7,6 @@ import java.time.Duration;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -86,17 +85,15 @@ class AuthServiceV1Test {
 
 		// Claims
 		Map<String, Object> claims = Map.of(
-			"id", UUID.randomUUID(),
-			"email", email,
-			"nickname", "nick",
+			"isEmailVerified", true,
 			"role", MemberRole.USER
 		);
 
 		// given
 		given(memberService.findByEmail(email)).willReturn(member);
 		given(passwordEncoder.matches(rawPw, encPw)).willReturn(true);
-		given(jwtUtils.createToken(anyMap())).willReturn("accessToken");
-		given(jwtUtils.createRefreshToken(anyMap())).willReturn("refreshToken");
+		given(jwtUtils.createToken(eq(email), anyMap())).willReturn("accessToken");
+		given(jwtUtils.createRefreshToken(eq(email), anyMap())).willReturn("refreshToken");
 		willDoNothing().given(valueOperations)
 			.set(eq("refreshToken:" + email), eq("refreshToken"), any(Duration.class));
 
@@ -141,7 +138,7 @@ class AuthServiceV1Test {
 		given(jwtUtils.getRefreshTokenFromCookies(request)).willReturn(Optional.of(rt));
 		given(jwtUtils.getPayload(rt)).willReturn(claims);
 		given(valueOperations.get("refreshToken:" + email)).willReturn(rt);
-		given(jwtUtils.createToken(claims)).willReturn("new-access");
+		given(jwtUtils.createToken(email, claims)).willReturn("new-access");
 
 		TokenDto result = authService.refreshToken(request, response);
 

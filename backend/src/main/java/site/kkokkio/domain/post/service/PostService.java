@@ -206,7 +206,7 @@ public class PostService {
 				.source(source)
 				.build())
 			.toList();
-		postSourceRepository.saveAll(mappings);
+		postSourceRepository.insertIgnoreAll(mappings);
 	}
 
 	public void cachePostCardView(Post post, String keyword, Duration ttl) {

@@ -14,7 +14,7 @@ import site.kkokkio.domain.source.entity.Source;
 import site.kkokkio.global.enums.Platform;
 
 @Repository
-public interface PostSourceRepository extends JpaRepository<PostSource, Long> {
+public interface PostSourceRepository extends JpaRepository<PostSource, Long>, PostSourceRepositoryCustom {
 	@Query("""
 		SELECT ps
 		FROM PostSource ps

@@ -74,8 +74,8 @@ public class KeywordServiceTest {
 
 		// Then
 		assertThat(createdKeyword).isEqualTo(existingKeyword);
-		verify(keywordRepository, times(1)).save(any(Keyword.class)); // save 메서드가 1번 호출되는지 확인
-		verify(keywordRepository, times(1)).findKeywordByText(keywordText); // findKeywordByText 메서드가 1번 호출되는지 확인
+		verify(keywordRepository, times(1)).findKeywordByText(keywordText);
+		verify(keywordRepository, never()).save(any());
 	}
 
 	@Test

@@ -1,0 +1,24 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update # 개발 중에는 스키마 자동 업데이트
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        highlight_sql: true
+        use_sql_comments: true
+        default_batch_fetch_size: 100 # N+1 최소화를 위한 배치 fetch 사이즈 설정
+
+  flyway:
+    enabled: false
+    clean-disabled: false # 개발환경에서는 clean 허용
+
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+    org.hibernate.orm.jdbc.extract: TRACE
+    org.springframework.transaction.interceptor: TRACE
+    org.flywaydb.core: INFO

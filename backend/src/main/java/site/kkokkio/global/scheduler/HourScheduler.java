@@ -24,12 +24,12 @@ public class HourScheduler {
 	private final JobLauncher jobLauncher;
 	private final Job trendingKeywordsJob;
 
-	@Scheduled(cron = "0 0 * * * *")
+	@Scheduled(cron = "${schedule.cron}")
 	public void runTrendingKeywordsJob() throws
 		JobExecutionAlreadyRunningException,
 		JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException {
 		LocalDateTime bucketAt = LocalDateTime.now(ZoneId.of("Asia/Seoul"))
-			.withMinute(0).withSecond(0).withNano(0); // bucketAt 매시 정각 설정
+			.withSecond(0).withNano(0); // bucketAt 매시 정각 설정
 		JobParameters jobParameters = new JobParametersBuilder()
 			.addString("runTime", bucketAt.toString())
 			.toJobParameters();

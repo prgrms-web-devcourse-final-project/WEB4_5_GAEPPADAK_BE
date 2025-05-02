@@ -33,15 +33,18 @@ import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.service.PostService;
 import site.kkokkio.domain.source.controller.dto.TopSourceListResponse;
+import site.kkokkio.domain.source.dto.NewsDto;
 import site.kkokkio.domain.source.dto.SourceDto;
 import site.kkokkio.domain.source.dto.TopSourceItemDto;
 import site.kkokkio.domain.source.entity.PostSource;
 import site.kkokkio.domain.source.entity.Source;
 import site.kkokkio.domain.source.port.out.NewsApiPort;
+import site.kkokkio.domain.source.repository.KeywordSourceRepository;
 import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.domain.source.repository.SourceRepository;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
+import site.kkokkio.infra.common.exception.RetryableExternalApiException;
 
 @ExtendWith(MockitoExtension.class)
 class SourceServiceTest {
@@ -49,20 +52,13 @@ class SourceServiceTest {
     @InjectMocks
     private SourceService sourceService;
 
-    @Mock
-    private PostService postService;
-
-    @Mock
-    private PostSourceRepository postSourceRepository;
-
-    @Mock
-    private SourceRepository sourceRepository;
-
-    @Mock
-    private NewsApiPort newsApi;
-
-    @Mock
-    private KeywordMetricHourlyService keywordMetricHourlyService;
+    @Mock private PostService postService;
+    @Mock private PostSourceRepository postSourceRepository;
+    @Mock private SourceRepository sourceRepository;
+    @Mock private NewsApiPort newsApi;
+    @Mock private KeywordMetricHourlyService keywordMetricHourlyService;
+    @Mock private OpenGraphService openGraphService;
+    @Mock private KeywordSourceRepository keywordSourceRepository;
 
 
 	private List<Source> newsSources;
@@ -214,50 +210,47 @@ class SourceServiceTest {
     }
 
 
-    //TODO(2hwayoung): fix
-    // @Test
-    // @DisplayName("뉴스 검색 - 성공")
-    // void searchNews_success() {
-    //     // given
-    //     KeywordMetricHourlyDto metric = new KeywordMetricHourlyDto(1L, "키워드",
-    //         Platform.NAVER_NEWS, LocalDateTime.of(2025, 4, 29, 12, 0), 0, 0, false);
-    //     given(keywordMetricHourlyService.findHourlyMetrics())
-    //             .willReturn(List.of(metric));
-    //
-    //     NewsDto dto = NewsDto.builder()
-    //             .title("제목")
-    //             .link("http://example.com/article")
-    //             .originalLink("http://example.com/original")
-    //             .description("설명")
-    //             .pubDate(LocalDateTime.of(2025, 4, 29, 12, 0))
-    //             .build();
-    //     given(newsApi.fetchNews(eq("키워드"), anyInt(), anyInt(), anyString()))
-    //             .willReturn(Mono.just(List.of(dto)));
-    //
-    //     // when
-    //     sourceService.searchNews();
-    //
-    //     // then
-    //     then(sourceRepository).should().saveAll(argThat(sources -> {
-    //         // 검사 로직
-    //         assertThat(sources).hasSize(1);
-    //         Source src = sources.iterator().next();
-    //         assertThat(src.getTitle()).isEqualTo("제목");
-    //         assertThat(src.getNormalizedUrl()).isEqualTo("http://example.com/article");
-    //         assertThat(src.getPlatform()).isEqualTo(Platform.NAVER_NEWS);
-    //         assertThat(src.getDescription()).isEqualTo("설명");
-    //         assertThat(src.getPublishedAt()).isEqualTo(LocalDateTime.of(2025, 4, 29, 12, 0));
-    //         assertThat(src.getFingerprint()).isNotBlank();
-    //         return true;
-    //     }));
-    // }
+    @Test
+    @DisplayName("뉴스 검색 - 성공")
+    void searchNews_success() {
+        // given
+        Long keywordId = 1L;
+        String keywordText = "키워드";
+        KeywordMetricHourlyDto metric = new KeywordMetricHourlyDto(keywordId, keywordText, Platform.GOOGLE_TREND, LocalDateTime.now(), 0, 0, false);
+        given(keywordMetricHourlyService.findHourlyMetrics()).willReturn(List.of(metric));
+
+        NewsDto dto = NewsDto.builder()
+            .title("뉴스 제목")
+            .link("https://example.com/news")
+            .originalLink("https://example.com/origin")
+            .description("뉴스 설명")
+            .pubDate(LocalDateTime.now())
+            .build();
+
+        given(newsApi.fetchNews(eq(keywordText), anyInt(), anyInt(), eq("sim")))
+            .willReturn(Mono.just(List.of(dto)));
+
+        // when
+        sourceService.searchNews();
+
+        // then
+        then(sourceRepository).should().insertIgnoreAll(argThat(sources ->
+            sources.size() == 1 &&
+            sources.getFirst().getTitle().equals("뉴스 제목")
+        ));
+        then(keywordSourceRepository).should().insertIgnoreAll(argThat(ksList ->
+            ksList.size() == 1 &&
+            ksList.getFirst().getKeyword().getId().equals(keywordId)
+        ));
+        then(openGraphService).should().enrichAsync(any(Source.class));
+    }
 
     @Test
     @DisplayName("뉴스 검색 - Empty 데이터")
     void searchNews_empty() {
         // given
         KeywordMetricHourlyDto metric = new KeywordMetricHourlyDto(1L, "키워드",
-            Platform.NAVER_NEWS, LocalDateTime.of(2025, 4, 29, 12, 0), 0, 0, false);
+            Platform.NAVER_NEWS, LocalDateTime.now(), 0, 0, false);
         given(keywordMetricHourlyService.findHourlyMetrics())
                 .willReturn(List.of(metric));
 
@@ -268,46 +261,46 @@ class SourceServiceTest {
         sourceService.searchNews();
 
         // then
-        then(sourceRepository).should(never()).saveAll(any());}
+        then(sourceRepository).shouldHaveNoInteractions();
+        then(keywordSourceRepository).shouldHaveNoInteractions();
+        then(openGraphService).shouldHaveNoInteractions();
+    }
 
+    @Test
+    @DisplayName("뉴스 검색 - 에러 발생")
+    void searchNews_error() {
+        // given
+        KeywordMetricHourlyDto metric1 = new KeywordMetricHourlyDto(1L, "실패키워드",
+            Platform.NAVER_NEWS, LocalDateTime.now(), 0, 0, false);
+        KeywordMetricHourlyDto metric2 = new KeywordMetricHourlyDto(2L, "정상키워드",
+            Platform.NAVER_NEWS, LocalDateTime.now(), 0, 0, false);
+        given(keywordMetricHourlyService.findHourlyMetrics())
+                .willReturn(List.of(metric1, metric2));
 
+        NewsDto dto = NewsDto.builder()
+                .title("제목1")
+                .link("http://example.com/article")
+                .originalLink("http://example.com/original")
+                .description("설명")
+                .pubDate(LocalDateTime.of(2025, 4, 29, 12, 0))
+                .build();
 
-    //TODO(2hwayoung): fix
-    // @Test
-    // @DisplayName("뉴스 검색 - 에러 발생")
-    // void searchNews_error() {
-    //     // given
-    //     KeywordMetricHourlyDto metric1 = new KeywordMetricHourlyDto(1L, "실패키워드",
-    //         Platform.NAVER_NEWS, LocalDateTime.of(2025, 4, 29, 12, 0), 0, 0, false);
-    //     KeywordMetricHourlyDto metric2 = new KeywordMetricHourlyDto(2L, "정상키워드",
-    //         Platform.NAVER_NEWS, LocalDateTime.of(2025, 4, 29, 12, 0), 0, 0, false);
-    //     given(keywordMetricHourlyService.findHourlyMetrics())
-    //             .willReturn(List.of(metric1, metric2));
-    //
-    //     NewsDto dto = NewsDto.builder()
-    //             .title("제목1")
-    //             .link("http://example.com/article")
-    //             .originalLink("http://example.com/original")
-    //             .description("설명")
-    //             .pubDate(LocalDateTime.of(2025, 4, 29, 12, 0))
-    //             .build();
-    //
-    //     given(newsApi.fetchNews(eq("실패키워드"), anyInt(), anyInt(), anyString()))
-    //         .willReturn(Mono.error(new RetryableExternalApiException(503, "서버 오류")));
-    //
-    //     given(newsApi.fetchNews(eq("정상키워드"), anyInt(), anyInt(), anyString()))
-    //         .willReturn(Mono.just(List.of(dto)));
-    //
-    //     // when
-    //     sourceService.searchNews();
-    //
-    //     // then
-    //     then(sourceRepository).should().saveAll(argThat(sources -> {
-    //         assertThat(sources).hasSize(1);
-    //         assertThat(sources.iterator().next().getTitle()).isEqualTo("제목1");
-    //         return true;
-    //     }));
-    // }
+        given(newsApi.fetchNews(eq("실패키워드"), anyInt(), anyInt(), anyString()))
+            .willReturn(Mono.error(new RetryableExternalApiException(503, "서버 오류")));
+
+        given(newsApi.fetchNews(eq("정상키워드"), anyInt(), anyInt(), anyString()))
+            .willReturn(Mono.just(List.of(dto)));
+
+        // when
+        sourceService.searchNews();
+
+        // then
+        then(sourceRepository).should().insertIgnoreAll(argThat(sources -> {
+            assertThat(sources).hasSize(1);
+            assertThat(sources.getFirst().getTitle()).isEqualTo("제목1");
+            return true;
+        }));
+    }
 
     @Test
     @DisplayName("실시간 인기 유튜브 Source 조회 - 성공")

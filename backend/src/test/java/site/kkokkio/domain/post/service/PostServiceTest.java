@@ -3,6 +3,7 @@ package site.kkokkio.domain.post.service;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -14,18 +15,28 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.entity.Keyword;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourly;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourlyId;
 import site.kkokkio.domain.keyword.repository.KeywordMetricHourlyRepository;
 import site.kkokkio.domain.keyword.repository.KeywordRepository;
+import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
 import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.entity.PostKeyword;
 import site.kkokkio.domain.post.repository.PostKeywordRepository;
 import site.kkokkio.domain.post.repository.PostMetricHourlyRepository;
 import site.kkokkio.domain.post.repository.PostRepository;
+import site.kkokkio.domain.source.entity.KeywordSource;
+import site.kkokkio.domain.source.entity.Source;
+import site.kkokkio.domain.source.repository.KeywordSourceRepository;
+import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
 
@@ -34,16 +45,17 @@ public class PostServiceTest {
 	@InjectMocks
 	private PostService postService;
 
-	@Mock
-	private PostRepository postRepository;
-	@Mock
-	private KeywordRepository keywordRepository;
-	@Mock
-	private KeywordMetricHourlyRepository keywordMetricHourlyRepository;
-	@Mock
-	private PostKeywordRepository postKeywordRepository;
-	@Mock
-	private PostMetricHourlyRepository postMetricHourlyRepository;
+    @Mock private KeywordMetricHourlyService keywordMetricHourlyService;
+    @Mock private KeywordSourceRepository keywordSourceRepository;
+    @Mock private KeywordMetricHourlyRepository keywordMetricHourlyRepository;
+    @Mock private PostRepository postRepository;
+    @Mock private KeywordRepository keywordRepository;
+    @Mock private PostKeywordRepository postKeywordRepository;
+    @Mock private PostMetricHourlyRepository postMetricHourlyRepository;
+    @Mock private PostSourceRepository postSourceRepository;
+    @Mock private StringRedisTemplate redisTemplate;
+    @Mock private ObjectMapper objectMapper;
+    @Mock private ValueOperations<String, String> valueOps;
 
 	@Test
 	@DisplayName("postId로 포스트 단건 조회 성공")
@@ -133,81 +145,114 @@ public class PostServiceTest {
 			.hasMessageContaining("포스트를 불러오지 못했습니다.");
 	}
 
-		//TODO(2hwayoung): fix
-	// @Test
-	// @DisplayName("포스트 생성 성공")
-	// void test5() {
-		// // given
-		// Long keywordId = 100L;
-		// LocalDateTime bucketAt = LocalDateTime.now().withMinute(0).withSecond(0).withNano(0);
-		// String title = "포스트 제목";
-		// String summary = "요약";
-		// String thumbnailUrl = "https://img.url";
-		//
-		// Keyword keyword = Keyword.builder().id(keywordId).text("테스트 키워드").build();
-		// KeywordMetricHourly metric = KeywordMetricHourly.builder()
-		// 	.id(new KeywordMetricHourlyId(bucketAt, Platform.GOOGLE_TREND, keywordId))
-		// 	.keyword(keyword)
-		// 	.volume(100)
-		// 	.score(100)
-		// 	.build();
-		// Post savedPost = Post.builder()
-		// 	.id(1L)
-		// 	.title(title)
-		// 	.summary(summary)
-		// 	.thumbnailUrl(thumbnailUrl)
-		// 	.bucketAt(bucketAt)
-		// 	.build();
-		//
-		// given(postRepository.save(any(Post.class))).willReturn(savedPost);
-		// given(keywordMetricHourlyRepository.findById(any())).willReturn(Optional.of(metric));
-		// given(keywordRepository.findById(keywordId)).willReturn(Optional.of(keyword));
+	@Test
+	@DisplayName("포스트 생성 - 성공")
+	void generatePosts_success() {
+		// given
+		Long keywordId = 100L;
+		LocalDateTime bucketAt = LocalDateTime.now().withMinute(0).withSecond(0).withNano(0);
+		String KeywordText = "키워드";
 
-		// // when
-		// Post result = postService.createPost(keywordId, bucketAt, title, summary, thumbnailUrl);
-		//
-		// // then
-		// assertThat(result.getTitle()).isEqualTo(title);
-	// }
+        KeywordMetricHourlyDto metric = new KeywordMetricHourlyDto(keywordId, KeywordText, Platform.GOOGLE_TREND, bucketAt, 0, 0, false);
+        given(keywordMetricHourlyService.findHourlyMetrics()).willReturn(List.of(metric));
 
-	// @Test
-	// @DisplayName("포스트 생성 실패 - KeywordMetricHourly 없음")
-	// void test6() {
-	// 	// given
-	// 	Long keywordId = 100L;
-	// 	LocalDateTime bucketAt = LocalDateTime.now();
-	//
-	// 	given(postRepository.save(any(Post.class))).willReturn(Post.builder().id(1L).build());
-	// 	given(keywordMetricHourlyRepository.findById(any())).willReturn(Optional.empty());
-	//
-	// 	// when & then
-	// 	assertThatThrownBy(() -> postService.createPost(keywordId, bucketAt, "제목", "요약", null))
-	// 		.isInstanceOf(ServiceException.class)
-	// 		.hasMessageContaining("KeywordMetricHourly를 찾을 수 없습니다.");
-	// }
+        Keyword keyword = Keyword.builder().id(keywordId).text(KeywordText).build();
+        Source source1 = createSource("url1");
+        Source source2 = createSource("url2");
+        Post savedPost = Post.builder().id(100L).title("title").summary("desc").build();
 
-// 	@Test
-// 	@DisplayName("포스트 생성 실패 - Keyword 없음")
-// 	void test7() {
-// 		// given
-// 		Long keywordId = 100L;
-// 		LocalDateTime bucketAt = LocalDateTime.now();
-//
-// 		Keyword keyword = Keyword.builder().id(keywordId).text("테스트 키워드").build();
-// 		KeywordMetricHourly metric = KeywordMetricHourly.builder()
-// 			.id(new KeywordMetricHourlyId(bucketAt, Platform.GOOGLE_TREND, keywordId))
-// 			.keyword(keyword)
-// 			.volume(100)
-// 			.score(100)
-// 			.build();
-//
-// 		given(postRepository.save(any(Post.class))).willReturn(Post.builder().id(1L).build());
-// 		given(keywordMetricHourlyRepository.findById(any())).willReturn(Optional.of(metric));
-// 		given(keywordRepository.findById(keywordId)).willReturn(Optional.empty());
-//
-// 		// when & then
-// 		assertThatThrownBy(() -> postService.createPost(keywordId, bucketAt, "제목", "요약", null))
-// 			.isInstanceOf(ServiceException.class)
-// 			.hasMessageContaining("Keyword를 찾을 수 없습니다.");
-// 	}
+        KeywordSource ks1 = KeywordSource.builder().keyword(keyword).source(source1).build();
+        KeywordSource ks2 = KeywordSource.builder().keyword(keyword).source(source2).build();
+        given(keywordSourceRepository.findTopSourcesByKeywordIdsLimited(List.of(keywordId), 10))
+            .willReturn(List.of(ks1, ks2));
+
+        KeywordMetricHourly metricEntity = KeywordMetricHourly.builder().id(new KeywordMetricHourlyId(bucketAt, Platform.GOOGLE_TREND, keywordId)).build();
+        given(keywordMetricHourlyRepository.findById(any())).willReturn(Optional.of(metricEntity));
+
+        given(postRepository.save(any())).willReturn(savedPost);
+        given(keywordRepository.findById(keywordId)).willReturn(Optional.of(keyword));
+        given(redisTemplate.opsForValue()).willReturn(valueOps);
+        doNothing().when(valueOps).set(any(), any(), any());
+
+        // when
+        postService.generatePosts();
+
+        // then
+        then(postRepository).should().save(any());
+        then(postSourceRepository).should().insertIgnoreAll(any());
+        then(postKeywordRepository).should().insertIgnoreAll(any());
+        then(postMetricHourlyRepository).should().save(any());
+        then(valueOps).should().set(contains("POST_CARD:"), any(), eq(Duration.ofHours(24)));
+
+	}
+
+	@Test
+	@DisplayName("포스트 생성 - lowVariation=true인 경우 기존 포스트 연결")
+	void generatePosts_LowVariation() {// given
+		Long keywordId = 1L;
+		LocalDateTime bucketAt = LocalDateTime.now().withMinute(0).withSecond(0).withNano(0);
+		KeywordMetricHourlyDto metric = new KeywordMetricHourlyDto(keywordId, "chatgpt", Platform.GOOGLE_TREND, bucketAt, 0, 0, true);
+		Keyword keyword = Keyword.builder().id(keywordId).text("chatgpt").build();
+		Source source = createSource("http://example.com");
+
+		given(keywordMetricHourlyService.findHourlyMetrics()).willReturn(List.of(metric));
+		given(keywordSourceRepository.findTopSourcesByKeywordIdsLimited(List.of(keywordId), 10))
+			.willReturn(List.of(KeywordSource.builder().keyword(keyword).source(source).build()));
+
+		Post existingPost = Post.builder().id(999L).title("기존").summary("요약").build();
+		PostKeyword pk = PostKeyword.builder().post(existingPost).build();
+
+		given(postKeywordRepository.findTopByKeywordIdOrderByPost_BucketAtDesc(keywordId))
+			.willReturn(Optional.of(pk));
+
+		KeywordMetricHourlyId kmhId = new KeywordMetricHourlyId(bucketAt, Platform.GOOGLE_TREND, keywordId);
+		given(keywordMetricHourlyRepository.findById(kmhId)).willReturn(Optional.of(
+			KeywordMetricHourly.builder().id(kmhId).build()
+		));
+
+		// when
+		postService.generatePosts();
+
+		// then
+		then(postRepository).should(never()).save(any()); // 신규 포스트 저장 안됨
+		then(postSourceRepository).should().insertIgnoreAll(argThat(mappings ->
+			mappings.size() == 1 &&
+			mappings.getFirst().getPost().getId().equals(999L) &&
+			mappings.getFirst().getSource().getFingerprint().equals(source.getFingerprint())
+		));
+	}
+
+	@Test
+	@DisplayName("포스트 생성 - 소스가 없을 시 스킵")
+	void generatePosts_skipped() {
+		// given
+		Long keywordId = 1L;
+		LocalDateTime now = LocalDateTime.of(2025, 5, 1, 0, 0);
+		KeywordMetricHourlyDto metric = new KeywordMetricHourlyDto(keywordId, "없음", Platform.GOOGLE_TREND, now, 0, 0, false);
+
+		given(keywordMetricHourlyService.findHourlyMetrics()).willReturn(List.of(metric));
+		given(keywordSourceRepository.findTopSourcesByKeywordIdsLimited(List.of(keywordId), 10)).willReturn(List.of());
+
+		// when
+		postService.generatePosts();
+
+		// then
+		then(postRepository).shouldHaveNoInteractions();
+		then(postSourceRepository).shouldHaveNoInteractions();
+		then(postKeywordRepository).shouldHaveNoInteractions();
+		then(postMetricHourlyRepository).shouldHaveNoInteractions();
+		then(keywordMetricHourlyRepository).should(never()).findById(any());
+	}
+
+    private Source createSource(String url) {
+        return Source.builder()
+                .fingerprint(url)
+                .normalizedUrl(url)
+                .title("제목")
+                .description("설명")
+                .thumbnailUrl("썸네일")
+                .publishedAt(LocalDateTime.now())
+                .platform(Platform.NAVER_NEWS)
+                .build();
+    }
 }

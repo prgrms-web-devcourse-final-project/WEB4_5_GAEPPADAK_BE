@@ -115,6 +115,6 @@ jobs:
             docker pull ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest && \
             docker stop app1 2>/dev/null || true && \
             docker rm app1 2>/dev/null || true && \
-            docker run -e DOPPLER_TOKEN=${{ secrets.DOPPLER_SERVICE_TOKEN }} -d --name app1 -p 8080:8080 --network common \
+            docker run --restart always -e DOPPLER_TOKEN=${{ secrets.DOPPLER_SERVICE_TOKEN }} -d --name app1 -p 8080:8080 --network common \
             ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest && \
             docker rmi $(docker images -f "dangling=true" -q) || true

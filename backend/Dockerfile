@@ -33,6 +33,8 @@ COPY --from=builder /app/build/libs/*.jar app.jar
 # 앱 실행
 ENTRYPOINT ["doppler", "run", "--"]
 
-# 배포 환경 변경 시 active를 변경할 것 (prd, dev)
+# 현재는 배포 환경 변경 시 active를 변경할 것 (prd, dev)
+# 추후 깃헙 액션 도플러 연결로 다음 코드 사용 가능
+# CMD ["sh", "-c", "java -jar -Dspring.profiles.active=${DOCKER_ENV} app.jar"]
 CMD ["java", "-jar", "-Dspring.profiles.active=dev", "app.jar"]
 

@@ -47,10 +47,10 @@ public class AuthService {
 		String accessToken = jwtUtils.createToken(claims);
 		String refreshToken = jwtUtils.createRefreshToken(claims);
 
-		// Redis에 Refresh Token 저장 (키: "RT:<email>")
+		// Redis에 Refresh Token 저장 (키: "refreshToken:<email>")
 		Duration rtTtl = Duration.ofMillis(jwtUtils.getRefreshTokenExpiration());
 		redisTemplate.opsForValue()
-			.set("RT:" + member.getEmail(), refreshToken, rtTtl);
+			.set("refreshToken:" + member.getEmail(), refreshToken, rtTtl);
 
 		// 쿠키에 토큰 세팅
 		jwtUtils.setJwtInCookie(accessToken, response);
@@ -68,8 +68,8 @@ public class AuthService {
 		// 페이로드에서 이메일 추출
 		String email = jwtUtils.getPayload(rt).get("email", String.class);
 
-		// Redis에 저장된 RT와 비교
-		String savedRt = redisTemplate.opsForValue().get("RT:" + email);
+		// Redis에 저장된 refreshToken와 비교
+		String savedRt = redisTemplate.opsForValue().get("refreshToken:" + email);
 		if (savedRt == null || !savedRt.equals(rt)) {
 			throw new ServiceException("401-2", "유효하지 않은 리프레시 토큰입니다.");
 		}
@@ -94,10 +94,10 @@ public class AuthService {
 		// Access Token 남은 만료시간 만큼 블랙리스트에 저장
 		long remainingMs = jwtUtils.getExpiration(at).getTime() - System.currentTimeMillis();
 		redisTemplate.opsForValue()
-			.set("BL:" + at, "logout", Duration.ofMillis(remainingMs));
+			.set("blackList:" + at, "logout", Duration.ofMillis(remainingMs));
 
 		// Redis에서 Refresh Token 삭제
-		redisTemplate.delete("RT:" + email);
+		redisTemplate.delete("refreshToken:" + email);
 
 		// 쿠키 삭제
 		jwtUtils.clearAuthCookies(response);

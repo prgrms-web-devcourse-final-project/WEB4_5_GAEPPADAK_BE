@@ -42,7 +42,7 @@ resilience4j:
     instances:
       NAVER_NEWS_CIRCUIT_BREAKER:
         base-config: default
-      YOUTUBE_NEWS_CIRCUIT_BREAKER: # 유튜브 서킷 브레이커 인스턴스
+      YOUTUBE_VIDEO_CIRCUIT_BREAKER: # 유튜브 서킷 브레이커 인스턴스
         base-config: default
   ratelimiter:
     configs:

@@ -24,7 +24,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import lombok.RequiredArgsConstructor;
-import site.kkokkio.global.filter.JWTAuthenticationFilter;
+import site.kkokkio.global.filter.JwtAuthenticationFilter;
 import site.kkokkio.global.security.CustomUserDetailsService;
 import site.kkokkio.global.util.JwtUtils;
 
@@ -36,6 +36,7 @@ public class SecurityConfig {
 
 	private final CustomUserDetailsService customUserDetailsService;
 	private final RedisTemplate<String, String> redisTemplate;
+	private final JwtUtils jwtUtils;
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtUtils jwtUtils) throws Exception {
@@ -63,8 +64,7 @@ public class SecurityConfig {
 			.authenticationProvider(authenticationProvider())
 
 			// JWT 인증 필터 추가
-			.addFilterBefore(new JWTAuthenticationFilter(jwtUtils, customUserDetailsService, redisTemplate),
-				UsernamePasswordAuthenticationFilter.class)
+			.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
 
 			// 엔드포인트별 권한 설정
 			.authorizeHttpRequests(authorize ->
@@ -132,6 +132,12 @@ public class SecurityConfig {
 	@Bean
 	public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
 		return config.getAuthenticationManager();
+	}
+
+	// JwtAuthenticationFilter Bean 등록
+	@Bean
+	public JwtAuthenticationFilter jwtAuthenticationFilter() {
+		return new JwtAuthenticationFilter(jwtUtils, customUserDetailsService, redisTemplate);
 	}
 
 	// 패스워드 암호화를 위한 Bean

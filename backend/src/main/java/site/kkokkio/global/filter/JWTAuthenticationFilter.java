@@ -37,9 +37,9 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
 
 		// 필터를 통과해야하는 엔드 포인트
 		return List.of(
-			"/api/*/auth/login",
-			"/api/*/auth/signup",
-			"/api/*/auth/refresh"
+			"/api/v1/auth/login",
+			"/api/v1/auth/signup",
+			"/api/v1/auth/refresh"
 		).contains(path);
 	}
 

@@ -69,12 +69,6 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
 				String role = claims.get("role", String.class);
 				Boolean isVerified = claims.get("isEmailVerified", Boolean.class);
 
-				// Redis에 저장된 액세스 토큰과 일치하는지 확인
-				if (!isTokenInRedis(email, token)) {
-					response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "유효하지 않은 토큰입니다.");
-					return;
-				}
-
 				if (email != null && Boolean.TRUE.equals(isVerified)) {
 					// UserDetails 객체 생성 (DB에서 사용자 정보 조회)
 					UserDetails userDetails = userDetailsService.loadUserByUsername(email);
@@ -98,6 +92,8 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
 				return;
 			}
 		}
+		// 검증 후 다음 필터로
+		filterChain.doFilter(request, response);
 	}
 
 	// 헤더에서 토큰 추출하는 메서드

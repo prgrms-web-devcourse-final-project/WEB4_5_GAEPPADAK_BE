@@ -80,4 +80,18 @@ public class GlobalExceptionHandler {
 				)
 			);
 	}
+
+	@ExceptionHandler(CustomAuthException.class)
+	public ResponseEntity<RsData<Void>> handleCustomAuthException(CustomAuthException e) {
+
+		return ResponseEntity
+			.status(HttpStatus.UNAUTHORIZED)
+			.body(
+				new RsData<>(
+					"401",
+					"%s에 대한 에러 발생".formatted(e.getAuthErrorType().name())
+				)
+			);
+	}
+
 }

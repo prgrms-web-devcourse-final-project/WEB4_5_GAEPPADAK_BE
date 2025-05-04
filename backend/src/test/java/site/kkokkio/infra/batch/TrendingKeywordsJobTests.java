@@ -1,15 +1,15 @@
-package site.kkokkio.infra.batch;
-
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.batch.test.context.SpringBatchTest;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-
-@Slf4j
-@SpringBatchTest
-@SpringBootTest
-@ActiveProfiles("test")
-public class TrendingKeywordsJobTests {
+//package site.kkokkio.infra.batch;
+//
+//import lombok.extern.slf4j.Slf4j;
+//import org.springframework.batch.test.context.SpringBatchTest;
+//import org.springframework.boot.test.context.SpringBootTest;
+//import org.springframework.test.context.ActiveProfiles;
+//
+//@Slf4j
+//@SpringBatchTest
+//@SpringBootTest
+//@ActiveProfiles("test")
+//public class TrendingKeywordsJobTests {
 //    @Autowired
 //    private JobLauncherTestUtils jobLauncherTestUtils;
 //
@@ -115,4 +115,4 @@ public class TrendingKeywordsJobTests {
 //
 //        log.info("Job 실행 결과: {}", jobExecution.getExitStatus());
 //    }
-}
+//}

@@ -86,7 +86,7 @@ public class SecurityConfig {
 		configuration.setAllowedOriginPatterns(Arrays.asList(
 			"https://login.aleph.kr",// Todo: 임시 프론트 배포 URL1
 			"https://www.app4.qwas.shop", // Todo: 임시 프론트 배포 URL2
-			"https://web.api.deploy.kkokkio.site", // 프론트 API URL
+			"https://web.api.deploy.kkokkio.site:3000", // 프론트 API URL
 			"http://localhost:3000", // 로컬용
 			"https://api.deploy.kkokkio.site" // 백엔드 API URL
 		)); // 프론트 사이트 추가

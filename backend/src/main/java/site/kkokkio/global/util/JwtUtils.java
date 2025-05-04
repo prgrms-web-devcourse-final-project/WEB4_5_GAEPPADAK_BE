@@ -55,8 +55,8 @@ public class JwtUtils {
 				.getExpiration();
 		} catch (JwtException | IllegalArgumentException e) {
 			handleAuthException(e);
-			throw e; // 위에서 예외 처리하므로 실질적으로 실행되지 않음 (명시용)
 		}
+		return null;
 	}
 
 	// Refresh Token 만료 시간 반환
@@ -90,10 +90,10 @@ public class JwtUtils {
 			.compact();
 	}
 
-	// JWT 유효성 검사
-	private boolean isValidToken(String token) {
+	// JWT 유효성 검사 <- 토큰이 유효하지 않으면 CustomAuthException을 던진다.
+	public boolean isValidToken(String token) {
+		SecretKey key = getSecretKey();
 		try {
-			SecretKey key = getSecretKey();
 			Jwts.parser()
 				.verifyWith(key)
 				.build()

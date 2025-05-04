@@ -40,10 +40,10 @@ import java.util.stream.Collectors;
 public class SourceService {
 
 	private final PostSourceRepository postSourceRepository;
-    private final SourceRepository sourceRepository;
+    	private final SourceRepository sourceRepository;
 	private final PostService postService;
 	private final KeywordMetricHourlyService keywordMetricHourlyService;
-    private final OpenGraphService openGraphService;
+    	private final OpenGraphService openGraphService;
 	private final NewsApiPort newsApi;
 	private final VideoApiPort videoApi;
 

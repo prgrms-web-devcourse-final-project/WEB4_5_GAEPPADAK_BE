@@ -14,10 +14,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.repository.MemberRepository;
+import site.kkokkio.global.exception.CustomAuthException;
 import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.global.util.JwtUtils;
 
@@ -107,5 +111,55 @@ class MemberServiceV1Test {
 		assertThatThrownBy(() -> memberService.findByEmail("notfound@test.com"))
 			.isInstanceOf(ServiceException.class)
 			.hasMessageContaining("존재하지 않는 이메일");
+	}
+
+	@Test
+	@DisplayName("회원정보 조회 - 유효한 토큰")
+	void getMemberInfo_success() {
+
+		// given: HttpServletRequest에서 쿠키 리턴
+		HttpServletRequest req = mock(HttpServletRequest.class);
+		Cookie cookie = new Cookie("access-token", "valid.token");
+		given(jwtUtils.getJwtFromCookies(req)).willReturn(Optional.of("valid.token"));
+
+		// 토큰 검증 시 예외 없이 통과
+		given(jwtUtils.isValidToken("valid.token")).willReturn(true);
+
+		// 페이로드에서 email 추출
+		Claims claims = mock(Claims.class);
+		given(jwtUtils.getPayload("valid.token")).willReturn(claims);
+		given(claims.get("email", String.class)).willReturn("user@example.com");
+
+		// MemberServiceV1 내부 findByEmail 호출
+		Member member = Member.builder()
+			.email("user@example.com")
+			.nickname("tester")
+			.build();
+		given(memberRepository.findByEmail("user@example.com"))
+			.willReturn(Optional.of(member));
+
+		// when
+		MemberResponse resp = memberService.getMemberInfo(req);
+
+		// then
+		assertThat(resp).isNotNull();
+		assertThat(resp.getEmail()).isEqualTo("user@example.com");
+		assertThat(resp.getNickname()).isEqualTo("tester");
+		then(jwtUtils).should().isValidToken("valid.token");
+	}
+
+	@Test
+	@DisplayName("회원정보 조회 - 토큰 누락")
+	void getMemberInfo_noToken_throws() {
+		HttpServletRequest req = mock(HttpServletRequest.class);
+		given(jwtUtils.getJwtFromCookies(req)).willReturn(Optional.empty());
+
+		assertThatThrownBy(() -> memberService.getMemberInfo(req))
+			.isInstanceOf(CustomAuthException.class)
+			.satisfies(ex -> {
+				CustomAuthException cae = (CustomAuthException)ex;
+				assertThat(cae.getAuthErrorType())
+					.isEqualTo(CustomAuthException.AuthErrorType.CREDENTIALS_MISMATCH);
+			});
 	}
 }

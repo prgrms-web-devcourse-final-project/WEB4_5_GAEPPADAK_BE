@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 public record TopSourceItemDto(
         @NonNull String url,
         @NonNull String title,
-        @NonNull String thumbnailUrl,
+        String thumbnailUrl,
         @NonNull LocalDateTime publishedAt,
         @NonNull Platform platform,
         int score

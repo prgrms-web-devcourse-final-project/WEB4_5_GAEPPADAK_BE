@@ -1,6 +1,7 @@
 package site.kkokkio.domain.member.controller;
 
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
@@ -39,4 +41,16 @@ public class MemberControllerV1 {
 		return new RsData<>("200", "회원가입이 완료되었습니다.", memberResponse);
 	}
 
+	// 회원 정보 조회
+	@Operation(summary = "회원조회")
+	@ApiErrorCodeExamples({ErrorCode.MEMBER_ME_BAD_REQUEST})
+	@GetMapping("/me")
+	public RsData<MemberResponse> getMember(HttpServletRequest request) {
+		MemberResponse memberInfo = memberService.getMemberInfo(request);
+		return new RsData<>(
+			"200",
+			"마이페이지 조회 성공",
+			memberInfo
+		);
+	}
 }

@@ -46,7 +46,9 @@ public class JwtUtils {
 
 	// Claims 호출
 	public Claims getClaims(String token) {
+		SecretKey key = getSecretKey();
 		return Jwts.parser()
+			.verifyWith(key)
 			.build()
 			.parseSignedClaims(token)
 			.getPayload();

@@ -1,5 +1,6 @@
 package site.kkokkio.global.exception;
 
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
@@ -80,4 +81,18 @@ public class GlobalExceptionHandler {
 				)
 			);
 	}
+
+	@ExceptionHandler(CustomAuthException.class)
+	public ResponseEntity<Map<String, Object>> handleCustomAuthException(CustomAuthException e) {
+
+		Map<String, Object> body = Map.of(
+			"status_code", HttpStatus.UNAUTHORIZED.value(),   // 401
+			"err_code", e.getAuthErrorType().name(),      // ex) "TOKEN_EXPIRED"
+			"message", e.getMessage()                    // ex) "만료된 토큰: 2025-05-04T09:56:00"
+		);
+		return ResponseEntity
+			.status(HttpStatus.UNAUTHORIZED)
+			.body(body);
+	}
+
 }

@@ -328,45 +328,46 @@ class SourceServiceTest {
                         LocalDateTime.now(), 404, 55, false)
         );
 
-        // Mocking할 Repository의 반환 값 생성
-        List<Source> mockSourceList = Arrays.asList(
-                Source.builder().fingerprint("fp1").normalizedUrl("http://youtube.com/v1").title("영상제목1")
-                        .thumbnailUrl("thumb1").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).build(),
-                Source.builder().fingerprint("fp2").normalizedUrl("http://youtube.com/v2").title("영상제목2")
-                        .thumbnailUrl("thumb2").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).build(),
-                Source.builder().fingerprint("fp3").normalizedUrl("http://youtube.com/v3").title("영상제목3")
-                        .thumbnailUrl("thumb3").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).build(),
-                Source.builder().fingerprint("fp4").normalizedUrl("http://youtube.com/v4").title("영상제목4")
-                        .thumbnailUrl("thumb4").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).build(),
-                Source.builder().fingerprint("fp5").normalizedUrl("http://youtube.com/v5").title("영상제목5")
-                        .thumbnailUrl("thumb5").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).build(),
-                Source.builder().fingerprint("fp6").normalizedUrl("http://youtube.com/v6").title("영상제목6")
-                        .thumbnailUrl("thumb6").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).build(),
-                Source.builder().fingerprint("fp7").normalizedUrl("http://youtube.com/v7").title("영상제목7")
-                        .thumbnailUrl("thumb7").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).build(),
-                Source.builder().fingerprint("fp8").normalizedUrl("http://youtube.com/v8").title("영상제목8")
-                        .thumbnailUrl("thumb8").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).build(),
-                Source.builder().fingerprint("fp9").normalizedUrl("http://youtube.com/v9").title("영상제목9")
-                        .thumbnailUrl("thumb9").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).build(),
-                Source.builder().fingerprint("fp10").normalizedUrl("http://youtube.com/v10").title("영상제목10")
-                        .thumbnailUrl("thumb10").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).build()
+        // Mocking할 Repository의 반환 값 (Page<TopSourceItemDto>) 생성
+        List<TopSourceItemDto> mockSourceItemDtoList = Arrays.asList(
+                TopSourceItemDto.builder().url("http://youtube.com/v1").title("영상제목1")
+                        .thumbnailUrl("thumb1").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(90).build(),
+                TopSourceItemDto.builder().url("http://youtube.com/v2").title("영상제목2")
+                        .thumbnailUrl("thumb2").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(70).build(),
+                TopSourceItemDto.builder().url("http://youtube.com/v3").title("영상제목3")
+                        .thumbnailUrl("thumb3").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(30).build(),
+                TopSourceItemDto.builder().url("http://youtube.com/v4").title("영상제목4")
+                        .thumbnailUrl("thumb4").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(77).build(),
+                TopSourceItemDto.builder().url("http://youtube.com/v5").title("영상제목5")
+                        .thumbnailUrl("thumb5").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(70).build(),
+                TopSourceItemDto.builder().url("http://youtube.com/v6").title("영상제목6")
+                        .thumbnailUrl("thumb6").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(86).build(),
+                TopSourceItemDto.builder().url("http://youtube.com/v7").title("영상제목7")
+                        .thumbnailUrl("thumb7").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(43).build(),
+                TopSourceItemDto.builder().url("http://youtube.com/v8").title("영상제목8")
+                        .thumbnailUrl("thumb8").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(86).build(),
+                TopSourceItemDto.builder().url("http://youtube.com/v9").title("영상제목9")
+                        .thumbnailUrl("thumb9").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(42).build(),
+                TopSourceItemDto.builder().url("http://youtube.com/v10").title("영상제목10")
+                        .thumbnailUrl("thumb10").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(55).build()
         );
 
         // Service 메소드에 전달될 Pageable 객체 (컨트롤러에서 넘어올 형태)
         Pageable pageable = PageRequest.of(0, 10, Sort.by("score").descending());
 
-        // Repository가 반환할 Mock Page<Source> 객체 생성
-        Page<Source> mockSourcePage = new PageImpl<>(mockSourceList, pageable, 50);
+        // Repository가 반환할 Mock Page<TopSourceItemDto> 객체 생성
+        Page<TopSourceItemDto> mockSourceItemDtoPage = new PageImpl<>(
+                mockSourceItemDtoList, pageable, 50);
 
         // keywordMetricHourlyService.findHourlyMetrics() 호출 시 mockTopKeywords 반환
         given(keywordMetricHourlyService.findHourlyMetrics()).willReturn(mockTopKeywords);
 
-        // postSourceRepository.findSourcesByTopKeywordIdsAndPlatform() 호출 시 mockSourcePage 반환
-        given(postSourceRepository.findSourcesByTopKeywordIdsAndPlatform(
+        // findTopSourcesByKeywordIdsAndPlatformOrderedByScore()를 Mocking
+        given(postSourceRepository.findTopSourcesByKeywordIdsAndPlatformOrderedByScore(
                 anyList(),
                 eq(Platform.YOUTUBE),
                 eq(pageable)
-        )).willReturn(mockSourcePage);
+        )).willReturn(mockSourceItemDtoPage);
 
         /// when
         // 테스트 대상 메소드 호출
@@ -379,41 +380,43 @@ class SourceServiceTest {
 
         // list 안의 TopSourceItemDto 객체들이 올바르게 변환되었는지 검증
         assertThat(result.list().getFirst().url())
-                .isEqualTo(mockSourceList.getFirst().getNormalizedUrl());
+                .isEqualTo(mockSourceItemDtoList.getFirst().url());
         assertThat(result.list().getFirst().title())
-                .isEqualTo(mockSourceList.getFirst().getTitle());
+                .isEqualTo(mockSourceItemDtoList.getFirst().title());
         assertThat(result.list().getFirst().thumbnailUrl())
-                .isEqualTo(mockSourceList.getFirst().getThumbnailUrl());
+                .isEqualTo(mockSourceItemDtoList.getFirst().thumbnailUrl());
         assertThat(result.list().getFirst().publishedAt())
-                .isEqualTo(mockSourceList.getFirst().getPublishedAt());
+                .isEqualTo(mockSourceItemDtoList.getFirst().publishedAt());
         assertThat(result.list().getFirst().platform())
-                .isEqualTo(mockSourceList.getFirst().getPlatform());
+                .isEqualTo(mockSourceItemDtoList.getFirst().platform());
+        assertThat(result.list().getFirst().score())
+                .isEqualTo(mockSourceItemDtoList.getFirst().score());
 
         // Mock SourceList의 두 번째 항목도 검증
         assertThat(result.list().get(1).url())
-                .isEqualTo(mockSourceList.get(1).getNormalizedUrl());
+                .isEqualTo(mockSourceItemDtoList.get(1).url());
         assertThat(result.list().get(1).title())
-                .isEqualTo(mockSourceList.get(1).getTitle());
+                .isEqualTo(mockSourceItemDtoList.get(1).title());
         assertThat(result.list().get(1).thumbnailUrl())
-                .isEqualTo(mockSourceList.get(1).getThumbnailUrl());
+                .isEqualTo(mockSourceItemDtoList.get(1).thumbnailUrl());
         assertThat(result.list().get(1).publishedAt())
-                .isEqualTo(mockSourceList.get(1).getPublishedAt());
+                .isEqualTo(mockSourceItemDtoList.get(1).publishedAt());
         assertThat(result.list().get(1).platform())
-                .isEqualTo(mockSourceList.get(1).getPlatform());
+                .isEqualTo(mockSourceItemDtoList.get(1).platform());
 
         // meta 정보가 Mock Page에서 올바르게 변환되었는지 검증
-        assertThat(result.meta().page()).isEqualTo(mockSourcePage.getNumber());
-        assertThat(result.meta().size()).isEqualTo(mockSourcePage.getSize());
-        assertThat(result.meta().totalElements()).isEqualTo(mockSourcePage.getTotalElements());
-        assertThat(result.meta().totalPages()).isEqualTo(mockSourcePage.getTotalPages());
-        assertThat(result.meta().hasNext()).isEqualTo(mockSourcePage.hasNext());
-        assertThat(result.meta().hasPrevious()).isEqualTo(mockSourcePage.hasPrevious());
+        assertThat(result.meta().page()).isEqualTo(mockSourceItemDtoPage.getNumber());
+        assertThat(result.meta().size()).isEqualTo(mockSourceItemDtoPage.getSize());
+        assertThat(result.meta().totalElements()).isEqualTo(mockSourceItemDtoPage.getTotalElements());
+        assertThat(result.meta().totalPages()).isEqualTo(mockSourceItemDtoPage.getTotalPages());
+        assertThat(result.meta().hasNext()).isEqualTo(mockSourceItemDtoPage.hasNext());
+        assertThat(result.meta().hasPrevious()).isEqualTo(mockSourceItemDtoPage.hasPrevious());
 
         // Service 메소드가 의존하는 다른 메소드들을 올바르게 호출했는지 검증
         verify(keywordMetricHourlyService, times(1))
                 .findHourlyMetrics();
         verify(postSourceRepository, times(1))
-                .findSourcesByTopKeywordIdsAndPlatform(
+                .findTopSourcesByKeywordIdsAndPlatformOrderedByScore(
                         anyList(),
                         eq(Platform.YOUTUBE),
                         eq(pageable)
@@ -472,22 +475,24 @@ class SourceServiceTest {
                         LocalDateTime.now(), 1000, 90, false)
         );
 
-        // Mocking할 Repository의 반환 값 (빈 Page<Source>) 생성
-        List<Source> mockEmptySourceList = Collections.emptyList();
-        Pageable pageable = PageRequest.of(0, 10, Sort.by("score").descending());
+        // Mocking할 Repository의 반환 값 (빈 Page<TopSourceItemDto>) 생성
+        List<TopSourceItemDto> mockEmptySourceList = Collections.emptyList();
+        Pageable pageable = PageRequest.of(
+                0, 10, Sort.by("score").descending());
 
-        // Repository가 반환할 Mock 빈 Page<Source> 객체 생성 (내용은 비어있고, 전체 개수는 0)
-        Page<Source> mockEmptySourcePage = new PageImpl<>(mockEmptySourceList, pageable, 0);
+        // Repository가 반환할 Mock 빈 Page<TopSourceItemDto> 객체 생성
+        Page<TopSourceItemDto> mockEmptySourceItemDtoPage = new PageImpl<>(
+                mockEmptySourceList, pageable, 0);
 
         // keywordMetricHourlyService.findHourlyMetrics() 호출 시 비어있지 않은 목록 반환
         given(keywordMetricHourlyService.findHourlyMetrics()).willReturn(mockTopKeywords);
 
-        // postSourceRepository.findSourcesByTopKeywordIdsAndPlatform() 호출 시 빈 mockEmptySourcePage 반환
-        given(postSourceRepository.findSourcesByTopKeywordIdsAndPlatform(
+        // findTopSourcesByKeywordIdsAndPlatformOrderedByScore()를 Mocking
+        given(postSourceRepository.findTopSourcesByKeywordIdsAndPlatformOrderedByScore(
                 anyList(),
                 eq(Platform.YOUTUBE),
                 eq(pageable)
-        )).willReturn(mockEmptySourcePage);
+        )).willReturn(mockEmptySourceItemDtoPage);
 
         /// when
         // 테스트 대상 메소드 호출
@@ -497,16 +502,16 @@ class SourceServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.list()).isNotNull().isEmpty();
         assertThat(result.meta()).isNotNull();
-        assertThat(result.meta().page()).isEqualTo(mockEmptySourcePage.getNumber());
-        assertThat(result.meta().size()).isEqualTo(mockEmptySourcePage.getSize());
-        assertThat(result.meta().totalElements()).isEqualTo(mockEmptySourcePage.getTotalElements());
-        assertThat(result.meta().totalPages()).isEqualTo(mockEmptySourcePage.getTotalPages());
-        assertThat(result.meta().hasNext()).isEqualTo(mockEmptySourcePage.hasNext());
-        assertThat(result.meta().hasPrevious()).isEqualTo(mockEmptySourcePage.hasPrevious());
+        assertThat(result.meta().page()).isEqualTo(mockEmptySourceItemDtoPage.getNumber());
+        assertThat(result.meta().size()).isEqualTo(mockEmptySourceItemDtoPage.getSize());
+        assertThat(result.meta().totalElements()).isEqualTo(mockEmptySourceItemDtoPage.getTotalElements());
+        assertThat(result.meta().totalPages()).isEqualTo(mockEmptySourceItemDtoPage.getTotalPages());
+        assertThat(result.meta().hasNext()).isEqualTo(mockEmptySourceItemDtoPage.hasNext());
+        assertThat(result.meta().hasPrevious()).isEqualTo(mockEmptySourceItemDtoPage.hasPrevious());
 
         // Service가 Repository 메소드를 호출했는지 검증 (인기 키워드가 있으므로 호출되어야 함)
         verify(postSourceRepository, times(1))
-                .findSourcesByTopKeywordIdsAndPlatform(
+                .findTopSourcesByKeywordIdsAndPlatformOrderedByScore(
                         anyList(),
                         eq(Platform.YOUTUBE),
                         eq(pageable)
@@ -545,45 +550,46 @@ class SourceServiceTest {
                         LocalDateTime.now(), 404, 55, false)
         );
 
-        // Mocking할 Repository의 반환 값 생성
-        List<Source> mockSourceList = Arrays.asList(
-                Source.builder().fingerprint("fp1").normalizedUrl("http://news.naver.com/article/1").title("뉴스제목1")
-                        .thumbnailUrl("thumb1").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build(),
-                Source.builder().fingerprint("fp2").normalizedUrl("http://news.naver.com/article/2").title("뉴스제목2")
-                        .thumbnailUrl("thumb2").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build(),
-                Source.builder().fingerprint("fp3").normalizedUrl("http://news.naver.com/article/3").title("뉴스제목3")
-                        .thumbnailUrl("thumb3").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build(),
-                Source.builder().fingerprint("fp4").normalizedUrl("http://news.naver.com/article/4").title("뉴스제목4")
-                        .thumbnailUrl("thumb4").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build(),
-                Source.builder().fingerprint("fp5").normalizedUrl("http://news.naver.com/article/5").title("뉴스제목5")
-                        .thumbnailUrl("thumb5").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build(),
-                Source.builder().fingerprint("fp6").normalizedUrl("http://news.naver.com/article/6").title("뉴스제목6")
-                        .thumbnailUrl("thumb6").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build(),
-                Source.builder().fingerprint("fp7").normalizedUrl("http://news.naver.com/article/7").title("뉴스제목7")
-                        .thumbnailUrl("thumb7").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build(),
-                Source.builder().fingerprint("fp8").normalizedUrl("http://news.naver.com/article/8").title("뉴스제목8")
-                        .thumbnailUrl("thumb8").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build(),
-                Source.builder().fingerprint("fp9").normalizedUrl("http://news.naver.com/article/9").title("뉴스제목9")
-                        .thumbnailUrl("thumb9").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build(),
-                Source.builder().fingerprint("fp10").normalizedUrl("http://news.naver.com/article/10").title("뉴스제목10")
-                        .thumbnailUrl("thumb10").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build()
+        // Mocking할 Repository의 반환 값 (Page<TopSourceItemDto>) 생성
+        List<TopSourceItemDto> mockSourceItemDtoList = Arrays.asList(
+                TopSourceItemDto.builder().url("http://news.naver.com/article/1").title("뉴스제목1")
+                        .thumbnailUrl("thumb1").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(90).build(),
+                TopSourceItemDto.builder().url("http://news.naver.com/article/2").title("뉴스제목2")
+                        .thumbnailUrl("thumb2").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(70).build(),
+                TopSourceItemDto.builder().url("http://news.naver.com/article/3").title("뉴스제목3")
+                        .thumbnailUrl("thumb3").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(30).build(),
+                TopSourceItemDto.builder().url("http://news.naver.com/article/4").title("뉴스제목4")
+                        .thumbnailUrl("thumb4").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(77).build(),
+                TopSourceItemDto.builder().url("http://news.naver.com/article/5").title("뉴스제목5")
+                        .thumbnailUrl("thumb5").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(70).build(),
+                TopSourceItemDto.builder().url("http://news.naver.com/article/6").title("뉴스제목6")
+                        .thumbnailUrl("thumb6").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(86).build(),
+                TopSourceItemDto.builder().url("http://news.naver.com/article/7").title("뉴스제목7")
+                        .thumbnailUrl("thumb7").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(43).build(),
+                TopSourceItemDto.builder().url("http://news.naver.com/article/8").title("뉴스제목8")
+                        .thumbnailUrl("thumb8").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(86).build(),
+                TopSourceItemDto.builder().url("http://news.naver.com/article/9").title("뉴스제목9")
+                        .thumbnailUrl("thumb9").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(42).build(),
+                TopSourceItemDto.builder().url("http://news.naver.com/article/10").title("뉴스제목10")
+                        .thumbnailUrl("thumb10").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(55).build()
         );
 
         // Service 메소드에 전달될 Pageable 객체 (컨트롤러에서 넘어올 형태)
         Pageable pageable = PageRequest.of(0, 10, Sort.by("score").descending());
 
-        // Repository가 반환할 Mock Page<Source> 객체 생성
-        Page<Source> mockSourcePage = new PageImpl<>(mockSourceList, pageable, 50);
+        // Repository가 반환할 Mock Page<TopSourceItemDto> 객체 생성
+        Page<TopSourceItemDto> mockSourceItemDtoPage = new PageImpl<>(
+                mockSourceItemDtoList, pageable, 50);
 
         // keywordMetricHourlyService.findHourlyMetrics() 호출 시 mockTopKeywords 반환
         given(keywordMetricHourlyService.findHourlyMetrics()).willReturn(mockTopKeywords);
 
-        // postSourceRepository.findSourcesByTopKeywordIdsAndPlatform() 호출 시 mockSourcePage 반환
-        given(postSourceRepository.findSourcesByTopKeywordIdsAndPlatform(
+        // findTopSourcesByKeywordIdsAndPlatformOrderedByScore()를 Mocking
+        given(postSourceRepository.findTopSourcesByKeywordIdsAndPlatformOrderedByScore(
                 anyList(),
                 eq(Platform.NAVER_NEWS),
                 eq(pageable)
-        )).willReturn(mockSourcePage);
+        )).willReturn(mockSourceItemDtoPage);
 
         /// when
         // 테스트 대상 메소드 호출
@@ -596,41 +602,45 @@ class SourceServiceTest {
 
         // list 안의 TopSourceItemDto 객체들이 올바르게 변환되었는지 검증
         assertThat(result.list().getFirst().url())
-                .isEqualTo(mockSourceList.getFirst().getNormalizedUrl());
+                .isEqualTo(mockSourceItemDtoList.getFirst().url());
         assertThat(result.list().getFirst().title())
-                .isEqualTo(mockSourceList.getFirst().getTitle());
+                .isEqualTo(mockSourceItemDtoList.getFirst().title());
         assertThat(result.list().getFirst().thumbnailUrl())
-                .isEqualTo(mockSourceList.getFirst().getThumbnailUrl());
+                .isEqualTo(mockSourceItemDtoList.getFirst().thumbnailUrl());
         assertThat(result.list().getFirst().publishedAt())
-                .isEqualTo(mockSourceList.getFirst().getPublishedAt());
+                .isEqualTo(mockSourceItemDtoList.getFirst().publishedAt());
         assertThat(result.list().getFirst().platform())
-                .isEqualTo(mockSourceList.getFirst().getPlatform());
+                .isEqualTo(mockSourceItemDtoList.getFirst().platform());
+        assertThat(result.list().getFirst().score())
+                .isEqualTo(mockSourceItemDtoList.getFirst().score());
 
         // Mock SourceList의 두 번째 항목도 검증
         assertThat(result.list().get(1).url())
-                .isEqualTo(mockSourceList.get(1).getNormalizedUrl());
+                .isEqualTo(mockSourceItemDtoList.get(1).url());
         assertThat(result.list().get(1).title())
-                .isEqualTo(mockSourceList.get(1).getTitle());
+                .isEqualTo(mockSourceItemDtoList.get(1).title());
         assertThat(result.list().get(1).thumbnailUrl())
-                .isEqualTo(mockSourceList.get(1).getThumbnailUrl());
+                .isEqualTo(mockSourceItemDtoList.get(1).thumbnailUrl());
         assertThat(result.list().get(1).publishedAt())
-                .isEqualTo(mockSourceList.get(1).getPublishedAt());
+                .isEqualTo(mockSourceItemDtoList.get(1).publishedAt());
         assertThat(result.list().get(1).platform())
-                .isEqualTo(mockSourceList.get(1).getPlatform());
+                .isEqualTo(mockSourceItemDtoList.get(1).platform());
+        assertThat(result.list().get(1).score())
+                .isEqualTo(mockSourceItemDtoList.get(1).score());
 
         // meta 정보가 Mock Page에서 올바르게 변환되었는지 검증
-        assertThat(result.meta().page()).isEqualTo(mockSourcePage.getNumber());
-        assertThat(result.meta().size()).isEqualTo(mockSourcePage.getSize());
-        assertThat(result.meta().totalElements()).isEqualTo(mockSourcePage.getTotalElements());
-        assertThat(result.meta().totalPages()).isEqualTo(mockSourcePage.getTotalPages());
-        assertThat(result.meta().hasNext()).isEqualTo(mockSourcePage.hasNext());
-        assertThat(result.meta().hasPrevious()).isEqualTo(mockSourcePage.hasPrevious());
+        assertThat(result.meta().page()).isEqualTo(mockSourceItemDtoPage.getNumber());
+        assertThat(result.meta().size()).isEqualTo(mockSourceItemDtoPage.getSize());
+        assertThat(result.meta().totalElements()).isEqualTo(mockSourceItemDtoPage.getTotalElements());
+        assertThat(result.meta().totalPages()).isEqualTo(mockSourceItemDtoPage.getTotalPages());
+        assertThat(result.meta().hasNext()).isEqualTo(mockSourceItemDtoPage.hasNext());
+        assertThat(result.meta().hasPrevious()).isEqualTo(mockSourceItemDtoPage.hasPrevious());
 
         // Service 메소드가 의존하는 다른 메소드들을 올바르게 호출했는지 검증
         verify(keywordMetricHourlyService, times(1))
                 .findHourlyMetrics();
         verify(postSourceRepository, times(1))
-                .findSourcesByTopKeywordIdsAndPlatform(
+                .findTopSourcesByKeywordIdsAndPlatformOrderedByScore(
                         anyList(),
                         eq(Platform.NAVER_NEWS),
                         eq(pageable)
@@ -689,22 +699,24 @@ class SourceServiceTest {
                         LocalDateTime.now(), 1000, 90, false)
         );
 
-        // Mocking할 Repository의 반환 값 (빈 Page<Source>) 생성
-        List<Source> mockEmptySourceList = Collections.emptyList();
-        Pageable pageable = PageRequest.of(0, 10, Sort.by("score").descending());
+        // Mocking할 Repository의 반환 값 (빈 Page<TopSourceItemDto>) 생성
+        List<TopSourceItemDto> mockEmptySourceItemDtoList = Collections.emptyList();
+        Pageable pageable = PageRequest.of(
+                0, 10, Sort.by("score").descending());
 
         // Repository가 반환할 Mock 빈 Page<Source> 객체 생성 (내용은 비어있고, 전체 개수는 0)
-        Page<Source> mockEmptySourcePage = new PageImpl<>(mockEmptySourceList, pageable, 0);
+        Page<TopSourceItemDto> mockEmptySourceItemDtoPage = new PageImpl<>(
+                mockEmptySourceItemDtoList,pageable, 0);
 
         // keywordMetricHourlyService.findHourlyMetrics() 호출 시 비어있지 않은 목록 반환
         given(keywordMetricHourlyService.findHourlyMetrics()).willReturn(mockTopKeywords);
 
-        // postSourceRepository.findSourcesByTopKeywordIdsAndPlatform() 호출 시 빈 mockEmptySourcePage 반환
-        given(postSourceRepository.findSourcesByTopKeywordIdsAndPlatform(
+        // findTopSourcesByKeywordIdsAndPlatformOrderedByScore()를 Mocking
+        given(postSourceRepository.findTopSourcesByKeywordIdsAndPlatformOrderedByScore(
                 anyList(),
                 eq(Platform.NAVER_NEWS),
                 eq(pageable)
-        )).willReturn(mockEmptySourcePage);
+        )).willReturn(mockEmptySourceItemDtoPage);
 
         /// when
         // 테스트 대상 메소드 호출
@@ -714,16 +726,16 @@ class SourceServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.list()).isNotNull().isEmpty();
         assertThat(result.meta()).isNotNull();
-        assertThat(result.meta().page()).isEqualTo(mockEmptySourcePage.getNumber());
-        assertThat(result.meta().size()).isEqualTo(mockEmptySourcePage.getSize());
-        assertThat(result.meta().totalElements()).isEqualTo(mockEmptySourcePage.getTotalElements());
-        assertThat(result.meta().totalPages()).isEqualTo(mockEmptySourcePage.getTotalPages());
-        assertThat(result.meta().hasNext()).isEqualTo(mockEmptySourcePage.hasNext());
-        assertThat(result.meta().hasPrevious()).isEqualTo(mockEmptySourcePage.hasPrevious());
+        assertThat(result.meta().page()).isEqualTo(mockEmptySourceItemDtoPage.getNumber());
+        assertThat(result.meta().size()).isEqualTo(mockEmptySourceItemDtoPage.getSize());
+        assertThat(result.meta().totalElements()).isEqualTo(mockEmptySourceItemDtoPage.getTotalElements());
+        assertThat(result.meta().totalPages()).isEqualTo(mockEmptySourceItemDtoPage.getTotalPages());
+        assertThat(result.meta().hasNext()).isEqualTo(mockEmptySourceItemDtoPage.hasNext());
+        assertThat(result.meta().hasPrevious()).isEqualTo(mockEmptySourceItemDtoPage.hasPrevious());
 
         // Service가 Repository 메소드를 호출했는지 검증 (인기 키워드가 있으므로 호출되어야 함)
         verify(postSourceRepository, times(1))
-                .findSourcesByTopKeywordIdsAndPlatform(
+                .findTopSourcesByKeywordIdsAndPlatformOrderedByScore(
                         anyList(),
                         eq(Platform.NAVER_NEWS),
                         eq(pageable)

@@ -15,7 +15,8 @@ public record TopSourceItemDto(
         @NonNull String title,
         @NonNull String thumbnailUrl,
         @NonNull LocalDateTime publishedAt,
-        @NonNull Platform platform
+        @NonNull Platform platform,
+        int score
 ) {
     public static TopSourceItemDto fromSource(Source source) {
         return TopSourceItemDto.builder()
@@ -24,6 +25,7 @@ public record TopSourceItemDto(
                 .thumbnailUrl(source.getThumbnailUrl())
                 .publishedAt(source.getPublishedAt())
                 .platform(source.getPlatform())
+                .score(0)
                 .build();
     }
 }

@@ -252,15 +252,14 @@ public class SourceService {
 			return TopSourceListResponse.from(Page.empty(pageable));
 		}
 
-		// Repository에서 인기 키워드 ID 목록과 플랫폼(YOUTUBE), Pageable 정보를 사용하여 Source 엔티티들을 페이지네이션하여 조회
-		Page<Source> sourcePage = postSourceRepository.findSourcesByTopKeywordIdsAndPlatform(
-				topKeywordIds,
-				Platform.YOUTUBE,
-				pageable
-		);
-
-		// 조회된 Page<Source>를 Page<TopSourceItemDto>로 변환
-		Page<TopSourceItemDto> dtoPage = sourcePage.map(TopSourceItemDto::fromSource);
+		// PostSourceRepository에서 인기 키워드 ID 목록과 플랫폼(YOUTUBE),
+		// Pageable 정보를 사용하여 조회 및 DTO 변환
+		Page<TopSourceItemDto> dtoPage = postSourceRepository
+				.findTopSourcesByKeywordIdsAndPlatformOrderedByScore(
+						topKeywordIds,
+						Platform.YOUTUBE,
+						pageable
+				);
 
 		// Page<TopSourceItemDto>를 TopSourceListResponse 객체로 변환하여 반환
 		return TopSourceListResponse.from(dtoPage);
@@ -285,15 +284,14 @@ public class SourceService {
 			return TopSourceListResponse.from(Page.empty(pageable));
 		}
 
-		// Repository에서 인기 키워드 ID 목록과 플랫폼(NAVER_NEWS), Pageable 정보를 사용하여 Source 엔티티들을 페이지네이션하여 조회
-		Page<Source> sourcePage = postSourceRepository.findSourcesByTopKeywordIdsAndPlatform(
-				topKeywordIds,
-				Platform.NAVER_NEWS,
-				pageable
-		);
-
-		// 조회된 Page<Source>를 Page<TopSourceItemDto>로 변환
-		Page<TopSourceItemDto> dtoPage = sourcePage.map(TopSourceItemDto::fromSource);
+		// PostSourceRepository에서 인기 키워드 ID 목록과 플랫폼(NAVER_NEWS),
+		// Pageable 정보를 사용하여 조회 및 DTO 변환
+		Page<TopSourceItemDto> dtoPage = postSourceRepository
+				.findTopSourcesByKeywordIdsAndPlatformOrderedByScore(
+						topKeywordIds,
+						Platform.NAVER_NEWS,
+						pageable
+				);
 
 		// Page<TopSourceItemDto>를 TopSourceListResponse 객체로 변환하여 반환
 		return TopSourceListResponse.from(dtoPage);

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import site.kkokkio.domain.source.dto.TopSourceItemDto;
 import site.kkokkio.domain.source.entity.PostSource;
 import site.kkokkio.domain.source.entity.Source;
 import site.kkokkio.global.enums.Platform;
@@ -58,6 +59,35 @@ public interface PostSourceRepository extends JpaRepository<PostSource, Long>, P
 			AND s.platform = :platform
 			""")
 	Page<Source> findSourcesByTopKeywordIdsAndPlatform(
+			@Param("topKeywordIds") List<Long> topKeywordIds,
+			@Param("platform") Platform platform,
+			Pageable pageable
+	);
+
+	/**
+	 * 실시간 인기 키워드 ID와 플랫폼 기반으로, 출처(Source) 정보를 score 기준 내림차순 정렬하여 DTO로 조회.
+	 * DISTINCT 문제 해결을 위해 SELECT new 사용.
+	 */
+	@Query("""
+            SELECT new site.kkokkio.domain.source.dto.TopSourceItemDto(
+                s.normalizedUrl,
+                s.title,
+                s.thumbnailUrl,
+                s.publishedAt,
+                s.platform,
+                kmh.score
+                )
+            FROM KeywordMetricHourly kmh
+            LEFT JOIN kmh.post p
+            JOIN PostSource ps
+            ON ps.post = p
+            JOIN ps.source s
+            WHERE kmh.id.keywordId
+            IN (:topKeywordIds)
+                AND s.platform = :platform
+            ORDER BY kmh.score DESC
+            """)
+	Page<TopSourceItemDto> findTopSourcesByKeywordIdsAndPlatformOrderedByScore(
 			@Param("topKeywordIds") List<Long> topKeywordIds,
 			@Param("platform") Platform platform,
 			Pageable pageable

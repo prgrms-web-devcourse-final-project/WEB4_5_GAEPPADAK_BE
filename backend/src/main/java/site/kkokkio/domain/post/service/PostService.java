@@ -32,7 +32,6 @@ import site.kkokkio.domain.source.entity.PostSource;
 import site.kkokkio.domain.source.entity.Source;
 import site.kkokkio.domain.source.repository.KeywordSourceRepository;
 import site.kkokkio.domain.source.repository.PostSourceRepository;
-import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
 
@@ -244,22 +243,30 @@ public class PostService {
         try {
             Resource resource = resourceLoader.getResource("classpath:mock/" + mockPostFile);
 
+
+            // 리소스 존재 여부 확인
+            if (!resource.exists()) {
+                log.error("Mock 파일이 클래스패스에 없습니다: {}", "classpath:mock/" + mockPostFile);
+                // 파일 로딩 실패 시 어떤 예외를 던질지 정책 결정
+                throw new RuntimeException("Post Mock 파일을 찾을 수가 없습니다: " + mockPostFile);
+            }
+
             try (InputStream is = resource.getInputStream()) {
 
                 // ObjectMapper를 사용하여 JSON 파일을 RsData<List<PostDto>> 형태로 파싱
-                // RsData의 data 필드가 List<PostDto>이므로 TypeReference 사용
-                RsData<List<PostDto>> responseData = objectMapper.readValue(
-                        is, new TypeReference<RsData<List<PostDto>>>() {
+                List<PostDto> mockData = objectMapper.readValue(
+                        is, new TypeReference<List<PostDto>>() {
                         }
                 );
 
-                // 파싱된 RsData 객체에서 data 필드에 담긴 List<PostDto>를 추출하여 반환
-                if (responseData == null) {
+                // 파싱된 리스트가 null일 경우 처리
+                if (mockData == null) {
                     log.warn("Post Mock 파일 내용의 data 필드가 비어있거나 null입니다: {}", mockPostFile);
                     return Collections.emptyList();
                 }
-                log.info("Post Mock 데이터 로드 완료. {}개 항목.", responseData.getData().size());
-                return responseData.getData();
+                log.info("Post Mock 데이터 로드 완료. {}개 항목.", mockData.size());
+                return mockData;
+
             }
         } catch (IOException e) {
             log.error("Post Mock 파일 로딩을 실패했습니다: {}", mockPostFile, e);

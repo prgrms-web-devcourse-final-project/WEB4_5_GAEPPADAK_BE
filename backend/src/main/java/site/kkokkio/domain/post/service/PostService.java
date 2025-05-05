@@ -1,21 +1,15 @@
 package site.kkokkio.domain.post.service;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.List;
-import java.util.Map;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.entity.Keyword;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourly;
@@ -38,6 +32,14 @@ import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.Map;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -52,6 +54,14 @@ public class PostService {
 	private final PostSourceRepository postSourceRepository;
 	private final StringRedisTemplate redisTemplate;
 	private final ObjectMapper objectMapper;
+
+	// Mock 활성화 설정 주입
+	@Value("${mock.enabled}")
+	private boolean mockEnabled;
+
+	// Mock Post Json 파일 경로 설정 주입
+	@Value("${mock.post-file}")
+	private String mockPostFile;
 
 	public Post getPostById(Long id) {
 		return postRepository.findById(id)
@@ -72,8 +82,15 @@ public class PostService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<PostDto> getTopPostsWithKeyword() {
+	public List<PostDto> getTopPostsWithKeyword() throws IOException {
 
+		// Mock 모드 활성화 시 Mock 데이터 로딩
+		if (mockEnabled) {
+			log.info("Mock 모드 활성화: Post Mock 데이터 파일 로드 시작 [{}]", mockPostFile);
+			return loadMockPostsResponse();
+		}
+
+		// Mock 모드 비활성화 시 기존 로직 (DB 조회) 실행
 		LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"))
 			.withMinute(0)
 			.withSecond(0)
@@ -211,6 +228,33 @@ public class PostService {
 			values.set(key, json, ttl);
 		} catch (JsonProcessingException e) {
 			log.error("Redis 캐싱 직렬화 실패. postId={}", post.getId(), e);
+		}
+	}
+
+	/**
+	 * Mock 모드 활성화 시 Mock Post 데이터를 JSON 파일에서 로드합니다.
+	 *
+	 * @return List<PostDto>
+	 */
+	private List<PostDto> loadMockPostsResponse() throws IOException {
+		try (InputStream is = getClass().getResourceAsStream("/mock/" + mockPostFile)) {
+			if (is == null) {
+				log.error("Mock 파일이 없습니다: /mock/{}", mockPostFile);
+				throw new RuntimeException("Post Mock 파일을 찾을 수가 없습니다: " + mockPostFile);
+			}
+
+			// ObjectMapper를 사용하여 JSON 파일을 List<PostDto> 형태로 파싱
+			// List<PostDto>를 파싱하기 위해 TypeReference 사용
+			List<PostDto> mockData = objectMapper.readValue(is, new TypeReference<List<PostDto>>() {});
+
+			log.info("Post Mock 데이터 로드 완료. {}개 항목.", mockData.size());
+			return mockData;
+		} catch (IOException e) {
+			log.error("Post Mock 파일 로딩을 실패했습니다: {}", mockPostFile, e);
+			throw new RuntimeException("Post Mock 파일을 로딩하는데 실패했습니다: " + mockPostFile, e);
+		} catch (Exception e) {
+			log.error("Post Mock 파일을 파싱하는데 실패했습니다: {}", mockPostFile, e);
+			throw new RuntimeException("Post Mock 파일을 파싱하는데 실패했습니다: " + mockPostFile, e);
 		}
 	}
 }

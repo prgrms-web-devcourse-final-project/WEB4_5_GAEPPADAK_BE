@@ -1,0 +1,76 @@
+{
+  "code": "200",
+  "message": "정상적으로 호출되었습니다.",
+  "data": [
+    {
+      "postId": 1,
+      "keyword": "주식",
+      "title": "개인 투자자 77%, \"국내 자본시장 확대 필요\"…방법은 투자인센티브 강...",
+      "summary": "글로벌 경제 불확실성 확대에도 응답자 중 가장 많은 32.4%가 올해 투자 비중을 늘릴 자산으로 주식을 꼽았다. 예·적금(15.3%), 금(8.5%), 채권(5.1%), 부동산(3.4%), 가상자산(2.7%), 달러화(2.6%) 등이 그 뒤를 이었다.",
+      "thumbnailUrl": "http://example.com/thumbnails/post/default1.jpg"
+    },
+    {
+      "postId": 2,
+      "keyword": "로봇",
+      "title": "오늘의 로봇기업 주식시세(2025-04-30)",
+      "summary": "로봇 기업 관련 주식 시세 정보입니다.",
+      "thumbnailUrl": "http://example.com/thumbnails/post/default2.jpg"
+    },
+    {
+      "postId": 3,
+      "keyword": "ETF",
+      "title": "대세 ETF 상품 관심 급증...'머니마켓 ETF'에 자금 쏠리나",
+      "summary": "올해 들어 국내를 포함한 주식시장이 극심한 변동성을 보이면서 투자자들의 자금이 안전 자산으로... 이는 최근 주식시장이 높은 변동성을 보이면서 위험도가 낮지만 금리형 대비 초과수익을 받을 수 있는...",
+      "thumbnailUrl": "http://example.com/thumbnails/post/default3.jpg"
+    },
+    {
+      "postId": 4,
+      "keyword": "국채",
+      "title": "미래에셋자산운용, '한국판 SGOV' 美초단기국채 ETF 신규 상장",
+      "summary": "주식 및 채권시장에 대한 불확실성으로 안전자산에 대한 투자자들의 관심이 높아지는 가운데, 'TIGER 미국초단기(3개월이하)국채 ETF'는 국내 상장 ETF 중 유일하게 미국 초단기 국채에 100% 투자한다.",
+      "thumbnailUrl": "http://example.com/thumbnails/post/default4.jpg"
+    },
+    {
+      "postId": 5,
+      "keyword": "웅진",
+      "title": "웅진, '상조 1위' 프리드라이프 인수에 상한가(종합)",
+      "summary": "웅진은 전날 종속회사 WJ라이프가 상조회사 프리드라이프 지분 99.77%를 인수하는 주식매매계약을 체결했다고 공시했다. 프리드라이프는 작년 말 기준 선수금 2조5천600억원을 보유한 국내 상조업계 1위 기업이다.",
+      "thumbnailUrl": "http://example.com/thumbnails/post/default5.jpg"
+    },
+    {
+      "postId": 6,
+      "keyword": "세금",
+      "title": "한동훈 \"강남3구·용산도 용적률·건폐율 완화…종부세 폐지\"",
+      "summary": "해외 주식 투자자의 세금부담 완화를 위해 양도세 공제 한도를 현행 250만원에서 5천만원으로 확대하고, 손실이 났을 경우 이후 3년간 이익에서 차감할 수 있도록 '양도손실 이월공제' 제도를 도입하겠다고",
+      "thumbnailUrl": "http://example.com/thumbnails/post/default6.jpg"
+    },
+    {
+      "postId": 7,
+      "keyword": "이엠텍",
+      "title": "이엠텍, 최대주주 변경 수반 주식 담보제공 계약 체결",
+      "summary": "이엠텍(091120)은 최대주주 변경을 수반하는 주식 담보제공 계약을 체결했다고 30일 공시했다.",
+      "thumbnailUrl": "http://example.com/thumbnails/post/default7.jpg"
+    },
+    {
+      "postId": 8,
+      "keyword": "유심",
+      "title": "유엔젤, SKT 유심 교체 대란에 eSIM 서비스 활용 가능성에 ‘관심’",
+      "summary": "이 같은 소식에 주식시장에서는 유엔젤에 매수세가 몰리며 상승하는 것으로 풀이된다. 한편 유엔젤의 최대주주가 2대 주주와 공동으로 보유 주식 매각 계약을 체결하면서 경영권 변동 가능성이 제기된 점도 주가에...",
+      "thumbnailUrl": "http://example.com/thumbnails/post/default8.jpg"
+    },
+    {
+      "postId": 9,
+      "keyword": "라임펀드",
+      "title": "한국투자증권, 라임펀드 등 불완전판매 기관 경고…\"직원 대상 구상권 ...",
+      "summary": "해당 증권사들은 문제된 대체투자가 아닌 주식형 라임펀드를 판매했다. 반면 대신증권의 경우 과거 라임펀드 불완전판매 건과 관련해 구상권을 청구한 바 있다.",
+      "thumbnailUrl": "http://example.com/thumbnails/post/default9.jpg"
+    },
+    {
+      "postId": 10,
+      "keyword": "도서전",
+      "title": "서울국제도서전 공공성 회복해야”…7개 출판문화단체 연대 성명",
+      "summary": "도서전의 주식회사 전환 백지화와 지분 구조 재검토, 지속 가능한 공적 지원 확대 등이 이뤄져야 한다고... 도서전을 주식회사로 전환했습니다.",
+      "thumbnailUrl": "http://example.com/thumbnails/post/default10.jpg"
+    }
+  ]
+}

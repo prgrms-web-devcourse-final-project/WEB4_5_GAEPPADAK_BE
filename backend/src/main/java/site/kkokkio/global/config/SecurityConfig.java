@@ -47,7 +47,7 @@ public class SecurityConfig {
 	private final ObjectMapper objectMapper;
 
 	@Bean
-	public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtUtils jwtUtils) throws Exception {
+	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
 		http
 			// CORS 설정 추가
@@ -165,7 +165,7 @@ public class SecurityConfig {
 	public AccessDeniedHandler customAccessDeniedHandler() {
 		return (request, response, accessDeniedException) -> {
 			response.setCharacterEncoding("UTF-8");
-			response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+			response.setStatus(HttpServletResponse.SC_FORBIDDEN);
 			response.setContentType(MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8");
 
 			RsData<Void> body = new RsData<>("403", "권한이 없습니다.");

@@ -239,7 +239,7 @@ public class PostService {
 	 * @return List<PostDto>
 	 */
 	private List<PostDto> loadMockPostsResponse() {
-		try (InputStream is = getClass().getResourceAsStream("/mock/" + mockPostFile)) {
+		try (InputStream is = getClass().getClassLoader().getResourceAsStream("mock/" + mockPostFile)) {
 			if (is == null) {
 				log.error("Mock 파일이 없습니다: /mock/{}", mockPostFile);
 				throw new RuntimeException("Post Mock 파일을 찾을 수가 없습니다: " + mockPostFile);

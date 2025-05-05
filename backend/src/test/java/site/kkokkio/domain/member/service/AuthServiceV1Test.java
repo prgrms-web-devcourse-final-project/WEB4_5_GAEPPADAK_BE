@@ -156,6 +156,7 @@ class AuthServiceV1Test {
 		given(claims.get("email", String.class)).willReturn(email);
 
 		given(jwtUtils.getJwtFromCookies(request)).willReturn(Optional.of(at));
+		given(jwtUtils.getClaims(at)).willReturn(claims);
 		given(jwtUtils.getPayload(at)).willReturn(claims);
 		given(jwtUtils.getExpiration(at)).willReturn(new Date(System.currentTimeMillis() + 60000));
 

@@ -11,12 +11,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.service.PostService;
 import site.kkokkio.global.exception.ServiceException;
+import site.kkokkio.global.security.CustomUserDetailsService;
+import site.kkokkio.global.util.JwtUtils;
 
 @WebMvcTest(PostControllerV1.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -27,6 +30,15 @@ public class PostControllerV1Test {
 
 	@MockitoBean
 	private PostService postService;
+
+	@MockitoBean
+	private CustomUserDetailsService customUserDetailsService;
+
+	@MockitoBean
+	private RedisTemplate<String, String> redisTemplate;
+
+	@MockitoBean
+	private JwtUtils jwtUtils;
 
 	@Test
 	@DisplayName("포스트 단건 조회 - 성공")

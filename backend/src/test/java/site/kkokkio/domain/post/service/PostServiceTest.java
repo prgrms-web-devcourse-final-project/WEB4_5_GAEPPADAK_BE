@@ -1,5 +1,15 @@
 package site.kkokkio.domain.post.service;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.BDDMockito.*;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,17 +38,6 @@ import site.kkokkio.domain.source.repository.KeywordSourceRepository;
 import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
-
-import java.io.IOException;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class PostServiceTest {
@@ -145,7 +144,7 @@ public class PostServiceTest {
 
 	@Test
 	@DisplayName("top10 키워드 포스트 조회 실패 - 포스트 없음")
-	void test4() {
+	void test4() throws IOException {
 		// given
 		given(keywordMetricHourlyRepository.findTop10ById_BucketAtOrderByScoreDesc(any()))
 			.willReturn(Collections.emptyList());

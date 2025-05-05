@@ -5,7 +5,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
@@ -39,7 +42,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
-
 import java.util.List;
 import java.util.Map;
 
@@ -47,221 +49,224 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class PostService {
-	private final PostRepository postRepository;
-	private final KeywordRepository keywordRepository;
-	private final KeywordMetricHourlyRepository keywordMetricHourlyRepository;
-	private final PostKeywordRepository postKeywordRepository;
-	private final PostMetricHourlyRepository postMetricHourlyRepository;
-	private final KeywordSourceRepository keywordSourceRepository;
-	private final KeywordMetricHourlyService keywordMetricHourlyService;
-	private final PostSourceRepository postSourceRepository;
-	private final StringRedisTemplate redisTemplate;
-	private final ObjectMapper objectMapper;
+    private final PostRepository postRepository;
+    private final KeywordRepository keywordRepository;
+    private final KeywordMetricHourlyRepository keywordMetricHourlyRepository;
+    private final PostKeywordRepository postKeywordRepository;
+    private final PostMetricHourlyRepository postMetricHourlyRepository;
+    private final KeywordSourceRepository keywordSourceRepository;
+    private final KeywordMetricHourlyService keywordMetricHourlyService;
+    private final PostSourceRepository postSourceRepository;
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
 
-	// Mock 활성화 설정 주입
-	@Value("${mock.enabled}")
-	private boolean mockEnabled;
+    // Mock 활성화 설정 주입
+    @Value("${mock.enabled}")
+    private boolean mockEnabled;
 
-	// Mock Post Json 파일 경로 설정 주입
-	@Value("${mock.post-file}")
-	private String mockPostFile;
+    // Mock Post Json 파일 경로 설정 주입
+    @Value("${mock.post-file}")
+    private String mockPostFile;
 
-	public Post getPostById(Long id) {
-		return postRepository.findById(id)
-			.orElseThrow(() -> new ServiceException("404", "해당 포스트를 찾을 수 없습니다."));
-	}
+    @Autowired
+    private ResourceLoader resourceLoader;
 
-	@Transactional(readOnly = true)
-	public PostDto getPostWithKeywordById(Long id) {
-		Post post = postRepository.findById(id)
-			.orElseThrow(() -> new ServiceException("404", "포스트를 불러오지 못했습니다."));
+    public Post getPostById(Long id) {
+        return postRepository.findById(id)
+                .orElseThrow(() -> new ServiceException("404", "해당 포스트를 찾을 수 없습니다."));
+    }
 
-		PostKeyword postKeyword = postKeywordRepository.findByPost_Id(id)
-			.orElseThrow(() -> new ServiceException("404", "포스트를 불러오지 못했습니다."));
+    @Transactional(readOnly = true)
+    public PostDto getPostWithKeywordById(Long id) {
+        Post post = postRepository.findById(id)
+                .orElseThrow(() -> new ServiceException("404", "포스트를 불러오지 못했습니다."));
 
-		String keywordText = postKeyword.getKeyword().getText();
+        PostKeyword postKeyword = postKeywordRepository.findByPost_Id(id)
+                .orElseThrow(() -> new ServiceException("404", "포스트를 불러오지 못했습니다."));
 
-		return PostDto.from(post, keywordText);
-	}
+        String keywordText = postKeyword.getKeyword().getText();
 
-	@Transactional(readOnly = true)
-	public List<PostDto> getTopPostsWithKeyword() throws IOException {
+        return PostDto.from(post, keywordText);
+    }
 
-		// Mock 모드 활성화 시 Mock 데이터 로딩
-		if (mockEnabled) {
-			log.info("Mock 모드 활성화: Post Mock 데이터 파일 로드 시작 [{}]", mockPostFile);
-			return loadMockPostsResponse();
-		}
+    @Transactional(readOnly = true)
+    public List<PostDto> getTopPostsWithKeyword() throws IOException {
 
-		// Mock 모드 비활성화 시 기존 로직 (DB 조회) 실행
-		LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"))
-			.withMinute(0)
-			.withSecond(0)
-			.withNano(0);
+        // Mock 모드 활성화 시 Mock 데이터 로딩
+        if (mockEnabled) {
+            log.info("Mock 모드 활성화: Post Mock 데이터 파일 로드 시작 [{}]", mockPostFile);
+            return loadMockPostsResponse();
+        }
 
-		//최신 버킷 기준으로 점수 높은 순 키워드(10개)
-		List<KeywordMetricHourly> topKeywordMetrics = keywordMetricHourlyRepository.findTop10ById_BucketAtOrderByScoreDesc(
-			now);
+        // Mock 모드 비활성화 시 기존 로직 (DB 조회) 실행
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"))
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
 
-		List<PostDto> topPosts = topKeywordMetrics.stream()
-			.filter(metric -> metric.getPost() != null)
-			.map(metric -> PostDto.from(metric.getPost(), metric.getKeyword().getText()))
-			.toList();
+        //최신 버킷 기준으로 점수 높은 순 키워드(10개)
+        List<KeywordMetricHourly> topKeywordMetrics = keywordMetricHourlyRepository.findTop10ById_BucketAtOrderByScoreDesc(
+                now);
 
-		return topPosts;
-	}
+        List<PostDto> topPosts = topKeywordMetrics.stream()
+                .filter(metric -> metric.getPost() != null)
+                .map(metric -> PostDto.from(metric.getPost(), metric.getKeyword().getText()))
+                .toList();
 
-	/**
-	 * 신규 키워드에 대해서 포스트를 생성한다.
-	 */
-	@Transactional
-	public void generatePosts() {
-		// Step 1. 현재 Top10 키워드 전체 조회
-		List<KeywordMetricHourlyDto> allTopKeywords = keywordMetricHourlyService.findHourlyMetrics();
-		List<Long> keywordIds = allTopKeywords.stream().map(KeywordMetricHourlyDto::keywordId).toList();
+        return topPosts;
+    }
 
-    	// Step 2. Top10 keywords → sources 맵 조회
-		// TODO: executionContext로 수집한 new Source Url 리스트로 대체
-		List<KeywordSource> keywordSources = keywordSourceRepository.findTopSourcesByKeywordIdsLimited(keywordIds, 10);
-    	Map<Long, List<Source>> keywordToSources = KeywordSource.groupByKeywordId(keywordSources);
+    /**
+     * 신규 키워드에 대해서 포스트를 생성한다.
+     */
+    @Transactional
+    public void generatePosts() {
+        // Step 1. 현재 Top10 키워드 전체 조회
+        List<KeywordMetricHourlyDto> allTopKeywords = keywordMetricHourlyService.findHourlyMetrics();
+        List<Long> keywordIds = allTopKeywords.stream().map(KeywordMetricHourlyDto::keywordId).toList();
 
-		for (KeywordMetricHourlyDto metric : allTopKeywords) {
-			Long keywordId = metric.keywordId();
-			String keywordText = metric.text();
-			LocalDateTime bucketAt = metric.bucketAt();
+        // Step 2. Top10 keywords → sources 맵 조회
+        // TODO: executionContext로 수집한 new Source Url 리스트로 대체
+        List<KeywordSource> keywordSources = keywordSourceRepository.findTopSourcesByKeywordIdsLimited(keywordIds, 10);
+        Map<Long, List<Source>> keywordToSources = KeywordSource.groupByKeywordId(keywordSources);
 
-			List<Source> sources = keywordToSources.getOrDefault(keywordId, List.of());
-			if (sources.isEmpty()) {
-				log.warn("Source 없음 → keyword={} 스킵", keywordText);
-				continue;
-			}
+        for (KeywordMetricHourlyDto metric : allTopKeywords) {
+            Long keywordId = metric.keywordId();
+            String keywordText = metric.text();
+            LocalDateTime bucketAt = metric.bucketAt();
 
-			// Step 3A. low_variation=true → 포스트 생성 스킵 + 기존 포스트 연결
-			if (metric.lowVariation()) {
-				Post existingPost = getMostRecentPostByKeyword(keywordId);
-				if (existingPost == null) {
-					log.warn("기존 포스트 없음 → keyword={} 스킵", keywordText);
-					continue;
-				}
+            List<Source> sources = keywordToSources.getOrDefault(keywordId, List.of());
+            if (sources.isEmpty()) {
+                log.warn("Source 없음 → keyword={} 스킵", keywordText);
+                continue;
+            }
 
-				// KeywordMetricHourly ↔ Post 연결
-				KeywordMetricHourlyId keywordMetricHourlyId = new KeywordMetricHourlyId(bucketAt, Platform.GOOGLE_TREND,
-					keywordId);
-				KeywordMetricHourly keywordMetricHourly = keywordMetricHourlyRepository.findById(keywordMetricHourlyId)
-					.orElseThrow(() -> new ServiceException("404", "KeywordMetricHourly를 찾을 수 없습니다."));
+            // Step 3A. low_variation=true → 포스트 생성 스킵 + 기존 포스트 연결
+            if (metric.lowVariation()) {
+                Post existingPost = getMostRecentPostByKeyword(keywordId);
+                if (existingPost == null) {
+                    log.warn("기존 포스트 없음 → keyword={} 스킵", keywordText);
+                    continue;
+                }
 
-				keywordMetricHourly.setPost(existingPost);
+                // KeywordMetricHourly ↔ Post 연결
+                KeywordMetricHourlyId keywordMetricHourlyId = new KeywordMetricHourlyId(bucketAt, Platform.GOOGLE_TREND,
+                        keywordId);
+                KeywordMetricHourly keywordMetricHourly = keywordMetricHourlyRepository.findById(keywordMetricHourlyId)
+                        .orElseThrow(() -> new ServiceException("404", "KeywordMetricHourly를 찾을 수 없습니다."));
 
-				// Source ↔ Post 매핑
-				linkSourcesToPost(existingPost, sources);
+                keywordMetricHourly.setPost(existingPost);
 
-				continue;
-			}
+                // Source ↔ Post 매핑
+                linkSourcesToPost(existingPost, sources);
 
-			// Step 3B. low_variation=false → 신규 Post 생성
-			// TODO: AI 연결 전이므로 임시로 특정 Source의 Title, Description으로 작성
-			Source temp = sources.getFirst();
-			Post post = postRepository.save(Post.builder()
-				.title(temp.getTitle() != null ? temp.getTitle() : "제목 없음")
-				.summary(temp.getDescription() != null ? temp.getDescription() : "내용 없음")
-				.thumbnailUrl(temp.getThumbnailUrl())
-				.bucketAt(bucketAt)
-				.reportCount(0)
-				.build());
+                continue;
+            }
 
-			// Step 4. 신규 Post 연결
-			// Source ↔ Post 매핑
-			linkSourcesToPost(post, sources);
+            // Step 3B. low_variation=false → 신규 Post 생성
+            // TODO: AI 연결 전이므로 임시로 특정 Source의 Title, Description으로 작성
+            Source temp = sources.getFirst();
+            Post post = postRepository.save(Post.builder()
+                    .title(temp.getTitle() != null ? temp.getTitle() : "제목 없음")
+                    .summary(temp.getDescription() != null ? temp.getDescription() : "내용 없음")
+                    .thumbnailUrl(temp.getThumbnailUrl())
+                    .bucketAt(bucketAt)
+                    .reportCount(0)
+                    .build());
 
-			// KeywordMetricHourly ↔ Post 연결
-			KeywordMetricHourlyId keywordMetricHourlyId = new KeywordMetricHourlyId(bucketAt, Platform.GOOGLE_TREND,
-				keywordId);
-			KeywordMetricHourly keywordMetricHourly = keywordMetricHourlyRepository.findById(keywordMetricHourlyId)
-				.orElseThrow(() -> new ServiceException("404", "KeywordMetricHourly를 찾을 수 없습니다."));
-			keywordMetricHourly.setPost(post);
+            // Step 4. 신규 Post 연결
+            // Source ↔ Post 매핑
+            linkSourcesToPost(post, sources);
 
-			// Keyword ↔ Post 매핑
-			Keyword keyword = keywordRepository.findById(keywordId)
-				.orElseThrow(() -> new ServiceException("404", "Keyword를 찾을 수 없습니다."));
-			PostKeyword postKeyword = PostKeyword.builder().post(post).keyword(keyword).build();
-			postKeywordRepository.insertIgnoreAll(List.of(postKeyword));
+            // KeywordMetricHourly ↔ Post 연결
+            KeywordMetricHourlyId keywordMetricHourlyId = new KeywordMetricHourlyId(bucketAt, Platform.GOOGLE_TREND,
+                    keywordId);
+            KeywordMetricHourly keywordMetricHourly = keywordMetricHourlyRepository.findById(keywordMetricHourlyId)
+                    .orElseThrow(() -> new ServiceException("404", "KeywordMetricHourly를 찾을 수 없습니다."));
+            keywordMetricHourly.setPost(post);
 
-			// PostMetricHourly 생성
-			PostMetricHourly postMetricHourly = PostMetricHourly.builder()
-				.post(post)
-				.bucketAt(bucketAt)
-				.clickCount(0)
-				.likeCount(0)
-				.build();
-			postMetricHourlyRepository.save(postMetricHourly);
+            // Keyword ↔ Post 매핑
+            Keyword keyword = keywordRepository.findById(keywordId)
+                    .orElseThrow(() -> new ServiceException("404", "Keyword를 찾을 수 없습니다."));
+            PostKeyword postKeyword = PostKeyword.builder().post(post).keyword(keyword).build();
+            postKeywordRepository.insertIgnoreAll(List.of(postKeyword));
 
-			// Redis 캐싱 (TTL 24시간)
-			cachePostCardView(post, keywordText, Duration.ofHours(24));
+            // PostMetricHourly 생성
+            PostMetricHourly postMetricHourly = PostMetricHourly.builder()
+                    .post(post)
+                    .bucketAt(bucketAt)
+                    .clickCount(0)
+                    .likeCount(0)
+                    .build();
+            postMetricHourlyRepository.save(postMetricHourly);
 
-			log.info("신규 포스트 생성 완료 - postId={}, keyword={}", post.getId(), keywordText);
-		}
-	}
+            // Redis 캐싱 (TTL 24시간)
+            cachePostCardView(post, keywordText, Duration.ofHours(24));
 
-	// 가장 최근 생성된 포스트 반환
-	public Post getMostRecentPostByKeyword(Long keywordId) {
-		return postKeywordRepository.findTopByKeywordIdOrderByPost_BucketAtDesc(keywordId)
-			.map(PostKeyword::getPost)
-			.orElse(null);
-	}
+            log.info("신규 포스트 생성 완료 - postId={}, keyword={}", post.getId(), keywordText);
+        }
+    }
 
-	// Source 리스트 ↔ Post 매핑 저장
-	public void linkSourcesToPost(Post post, List<Source> sources) {
-		List<PostSource> mappings = sources.stream()
-			.map(source -> PostSource.builder().post(post).source(source).build())
-			.toList();
-		postSourceRepository.insertIgnoreAll(mappings);
-	}
+    // 가장 최근 생성된 포스트 반환
+    public Post getMostRecentPostByKeyword(Long keywordId) {
+        return postKeywordRepository.findTopByKeywordIdOrderByPost_BucketAtDesc(keywordId)
+                .map(PostKeyword::getPost)
+                .orElse(null);
+    }
 
-	public void cachePostCardView(Post post, String keyword, Duration ttl) {
-		ValueOperations<String, String> values = redisTemplate.opsForValue();
-		String key = "POST_CARD:" + post.getId();
+    // Source 리스트 ↔ Post 매핑 저장
+    public void linkSourcesToPost(Post post, List<Source> sources) {
+        List<PostSource> mappings = sources.stream()
+                .map(source -> PostSource.builder().post(post).source(source).build())
+                .toList();
+        postSourceRepository.insertIgnoreAll(mappings);
+    }
 
-		PostDto dto = PostDto.from(post, keyword);
-		try {
-			String json = objectMapper.writeValueAsString(dto);
-			values.set(key, json, ttl);
-		} catch (JsonProcessingException e) {
-			log.error("Redis 캐싱 직렬화 실패. postId={}", post.getId(), e);
-		}
-	}
+    public void cachePostCardView(Post post, String keyword, Duration ttl) {
+        ValueOperations<String, String> values = redisTemplate.opsForValue();
+        String key = "POST_CARD:" + post.getId();
 
-	/**
-	 * Mock 모드 활성화 시 Mock Post 데이터를 JSON 파일에서 로드합니다.
-	 *
-	 * @return List<PostDto>
-	 */
-	private List<PostDto> loadMockPostsResponse() {
-		try (InputStream is = getClass().getClassLoader().getResourceAsStream("mock/" + mockPostFile)) {
-			if (is == null) {
-				log.error("Mock 파일이 없습니다: /mock/{}", mockPostFile);
-				throw new RuntimeException("Post Mock 파일을 찾을 수가 없습니다: " + mockPostFile);
-			}
+        PostDto dto = PostDto.from(post, keyword);
+        try {
+            String json = objectMapper.writeValueAsString(dto);
+            values.set(key, json, ttl);
+        } catch (JsonProcessingException e) {
+            log.error("Redis 캐싱 직렬화 실패. postId={}", post.getId(), e);
+        }
+    }
 
-			// ObjectMapper를 사용하여 JSON 파일을 RsData<List<PostDto>> 형태로 파싱
-			// RsData의 data 필드가 List<PostDto>이므로 TypeReference 사용
-			RsData<List<PostDto>> responseData = objectMapper.readValue(
-					is, new TypeReference<RsData<List<PostDto>>>() {}
-			);
+    /**
+     * Mock 모드 활성화 시 Mock Post 데이터를 JSON 파일에서 로드합니다.
+     *
+     * @return List<PostDto>
+     */
+    private List<PostDto> loadMockPostsResponse() {
+        try {
+            Resource resource = resourceLoader.getResource("classpath:mock/" + mockPostFile);
 
-			// 파싱된 RsData 객체에서 data 필드에 담긴 List<PostDto>를 추출하여 반환
-			if (responseData == null || responseData.getData() == null) {
-				log.warn("Post Mock 파일 내용의 data 필드가 비어있거나 null입니다: {}", mockPostFile);
-				return Collections.emptyList();
-			}
+            try (InputStream is = resource.getInputStream()) {
 
-			log.info("Post Mock 데이터 로드 완료. {}개 항목.", responseData.getData().size());
-			return responseData.getData();
-		} catch (IOException e) {
-			log.error("Post Mock 파일 로딩을 실패했습니다: {}", mockPostFile, e);
-			throw new RuntimeException("Post Mock 파일을 로딩하는데 실패했습니다: " + mockPostFile, e);
-		} catch (Exception e) {
-			log.error("Post Mock 파일을 파싱하는데 실패했습니다: {}", mockPostFile, e);
-			throw new RuntimeException("Post Mock 파일을 파싱하는데 실패했습니다: " + mockPostFile, e);
-		}
-	}
+                // ObjectMapper를 사용하여 JSON 파일을 RsData<List<PostDto>> 형태로 파싱
+                // RsData의 data 필드가 List<PostDto>이므로 TypeReference 사용
+                RsData<List<PostDto>> responseData = objectMapper.readValue(
+                        is, new TypeReference<RsData<List<PostDto>>>() {
+                        }
+                );
+
+                // 파싱된 RsData 객체에서 data 필드에 담긴 List<PostDto>를 추출하여 반환
+                if (responseData == null) {
+                    log.warn("Post Mock 파일 내용의 data 필드가 비어있거나 null입니다: {}", mockPostFile);
+                    return Collections.emptyList();
+                }
+                log.info("Post Mock 데이터 로드 완료. {}개 항목.", responseData.getData().size());
+                return responseData.getData();
+            }
+        } catch (IOException e) {
+            log.error("Post Mock 파일 로딩을 실패했습니다: {}", mockPostFile, e);
+            throw new RuntimeException("Post Mock 파일을 로딩하는데 실패했습니다: " + mockPostFile, e);
+        } catch (Exception e) {
+            log.error("Post Mock 파일을 파싱하는데 실패했습니다: {}", mockPostFile, e);
+            throw new RuntimeException("Post Mock 파일을 파싱하는데 실패했습니다: " + mockPostFile, e);
+        }
+    }
 }

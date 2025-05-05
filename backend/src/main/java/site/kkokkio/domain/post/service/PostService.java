@@ -243,6 +243,7 @@ public class PostService {
         try {
             Resource resource = resourceLoader.getResource("classpath:mock/" + mockPostFile);
 
+
             // 리소스 존재 여부 확인
             if (!resource.exists()) {
                 log.error("Mock 파일이 클래스패스에 없습니다: {}", "classpath:mock/" + mockPostFile);
@@ -265,6 +266,7 @@ public class PostService {
                 }
                 log.info("Post Mock 데이터 로드 완료. {}개 항목.", mockData.size());
                 return mockData;
+
             }
         } catch (IOException e) {
             log.error("Post Mock 파일 로딩을 실패했습니다: {}", mockPostFile, e);

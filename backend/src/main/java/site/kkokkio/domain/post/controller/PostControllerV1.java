@@ -3,13 +3,23 @@ package site.kkokkio.domain.post.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import site.kkokkio.domain.keyword.service.KeywordService;
 import site.kkokkio.domain.post.controller.dto.PostDetailResponse;
 import site.kkokkio.domain.post.controller.dto.TopPostResponse;
 import site.kkokkio.domain.post.dto.PostDto;
+import site.kkokkio.domain.post.dto.PostListResponse;
 import site.kkokkio.domain.post.service.PostService;
 import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.exception.doc.ApiErrorCodeExamples;
@@ -24,6 +34,7 @@ import java.util.List;
 @Tag(name = "Post API V1", description = "포스트 관련 API 엔드포인트 V1")
 public class PostControllerV1 {
 	private final PostService postService;
+	private final KeywordService keywordService;
 
 	@Operation(summary = "포스트 조회")
 	@ApiErrorCodeExamples({ErrorCode.POST_NOT_FOUND_2})
@@ -42,6 +53,22 @@ public class PostControllerV1 {
 			"200",
 			"정상적으로 호출되었습니다.",
 			data
+		);
+	}
+
+	@GetMapping("/search")
+	@ApiErrorCodeExamples({ErrorCode.POST_NOT_FOUND_3})
+	@Operation(summary = "키워드 기반 Post 검색")
+	public RsData<PostListResponse> getPostListByKeyword(
+		@RequestParam String keyword,
+		@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+	) {
+		Page<PostDto> postDtoList = keywordService.getPostListByKeyword(keyword, pageable);
+		PostListResponse response = PostListResponse.from(postDtoList);
+		return new RsData<>(
+			"200",
+			"키워드의 포스트를 불러왔습니다.",
+			response
 		);
 	}
 

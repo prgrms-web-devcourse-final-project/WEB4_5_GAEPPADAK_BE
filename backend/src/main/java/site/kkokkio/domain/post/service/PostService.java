@@ -258,7 +258,7 @@ public class PostService {
 				return Collections.emptyList();
 			}
 
-			log.info("Post Mock 데이터 로드 완료. {}개 항목.", responseData.getData());
+			log.info("Post Mock 데이터 로드 완료. {}개 항목.", responseData.getData().size());
 			return responseData.getData();
 		} catch (IOException e) {
 			log.error("Post Mock 파일 로딩을 실패했습니다: {}", mockPostFile, e);

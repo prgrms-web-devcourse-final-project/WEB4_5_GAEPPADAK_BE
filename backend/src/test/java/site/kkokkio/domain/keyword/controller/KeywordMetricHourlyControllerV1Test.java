@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -20,6 +21,8 @@ import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
+import site.kkokkio.global.security.CustomUserDetailsService;
+import site.kkokkio.global.util.JwtUtils;
 
 @WebMvcTest(controllers = KeywordMetricHourlyControllerV1.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -29,6 +32,15 @@ public class KeywordMetricHourlyControllerV1Test {
 
 	@MockitoBean
 	private KeywordMetricHourlyService keywordMetricHourlyService;
+
+	@MockitoBean
+	private CustomUserDetailsService customUserDetailsService;
+
+	@MockitoBean
+	private RedisTemplate<String, String> redisTemplate;
+
+	@MockitoBean
+	private JwtUtils jwtUtils;
 
 	@Test
 	@DisplayName("인기 10 키워드 조회 - 성공")
@@ -56,7 +68,8 @@ public class KeywordMetricHourlyControllerV1Test {
 	@Test
 	@DisplayName("인기 10 키워드 조회 - 잘못된 요청")
 	public void getKeywordMetricHourly_Fail() throws Exception {
-		given(keywordMetricHourlyService.findHourlyMetrics()).willThrow(new ServiceException("404", "키워드를 불러오지 못했습니다."));
+		given(keywordMetricHourlyService.findHourlyMetrics()).willThrow(
+			new ServiceException("404", "키워드를 불러오지 못했습니다."));
 
 		mvc.perform(get("/api/v1/keywords/top"))
 			.andExpect(status().isOk())

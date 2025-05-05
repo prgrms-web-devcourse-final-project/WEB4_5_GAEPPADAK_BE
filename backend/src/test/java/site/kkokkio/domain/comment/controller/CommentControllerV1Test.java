@@ -8,7 +8,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
@@ -16,13 +15,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -34,12 +31,13 @@ import site.kkokkio.domain.comment.controller.dto.CommentCreateRequest;
 import site.kkokkio.domain.comment.dto.CommentDto;
 import site.kkokkio.domain.comment.service.CommentService;
 import site.kkokkio.domain.member.entity.Member;
-import site.kkokkio.global.config.SecurityConfig;
+import site.kkokkio.global.enums.MemberRole;
+import site.kkokkio.global.security.CustomUserDetails;
 import site.kkokkio.global.security.CustomUserDetailsService;
+import site.kkokkio.global.util.JwtUtils;
 
 @WebMvcTest(CommentControllerV1.class)
-@Import(SecurityConfig.class)
-@WithMockUser(roles = {"USER"})
+@WithMockUser(roles = "USER")
 class CommentControllerV1Test {
 
 	@Autowired
@@ -53,6 +51,12 @@ class CommentControllerV1Test {
 
 	@MockitoBean
 	private CustomUserDetailsService customUserDetailsService;
+
+	@MockitoBean
+	private RedisTemplate<String, String> redisTemplate;
+
+	@MockitoBean
+	private JwtUtils jwtUtils;
 
 	@Test
 	@DisplayName("댓글 목록 조회 성공")
@@ -77,17 +81,14 @@ class CommentControllerV1Test {
 		CommentCreateRequest request = new CommentCreateRequest("새 댓글");
 		CommentDto commentDto = new CommentDto(1L, UUID.randomUUID(), "새 댓글", 0, LocalDateTime.now());
 
+		Member member = mock(Member.class);
+		when(member.getRole()).thenReturn(MemberRole.USER);
+
 		Mockito.when(commentService.createComment(eq(1L), any(Member.class), any(CommentCreateRequest.class)))
 			.thenReturn(commentDto);
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/posts/1/comments")
-				.with(authentication(
-					new UsernamePasswordAuthenticationToken(
-						mock(Member.class),
-						null,
-						List.of(new SimpleGrantedAuthority("ROLE_USER"))
-					)
-				))
+				.with(user(new CustomUserDetails(member)))
 				.with(csrf())
 				.contentType(APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -100,15 +101,11 @@ class CommentControllerV1Test {
 	@DisplayName("댓글 작성 실패 - body 비어 있음")
 	void test2_1() throws Exception {
 		CommentCreateRequest request = new CommentCreateRequest(""); // 비어있는 body
+		Member member = mock(Member.class);
+		when(member.getRole()).thenReturn(MemberRole.USER);
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/posts/1/comments")
-				.with(authentication(
-					new UsernamePasswordAuthenticationToken(
-						mock(Member.class),
-						null,
-						List.of(new SimpleGrantedAuthority("ROLE_USER"))
-					)
-				))
+				.with(user(new CustomUserDetails(member)))
 				.with(csrf())
 				.contentType(APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -121,17 +118,14 @@ class CommentControllerV1Test {
 		CommentCreateRequest request = new CommentCreateRequest("수정된 댓글");
 		CommentDto commentDto = new CommentDto(1L, UUID.randomUUID(), "수정된 댓글", 0, LocalDateTime.now());
 
+		Member member = mock(Member.class);
+		when(member.getRole()).thenReturn(MemberRole.USER);
+
 		Mockito.when(commentService.updateComment(eq(1L), any(Member.class), any(CommentCreateRequest.class)))
 			.thenReturn(commentDto);
 
 		mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/comments/1")
-				.with(authentication(
-					new UsernamePasswordAuthenticationToken(
-						mock(Member.class),
-						null,
-						List.of(new SimpleGrantedAuthority("ROLE_USER"))
-					)
-				))
+				.with(user(new CustomUserDetails(member)))
 				.with(csrf())
 				.contentType(APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -144,15 +138,11 @@ class CommentControllerV1Test {
 	@DisplayName("댓글 수정 실패 - body 비어 있음")
 	void test3_1() throws Exception {
 		CommentCreateRequest request = new CommentCreateRequest(""); // 비어있는 body
+		Member member = mock(Member.class);
+		when(member.getRole()).thenReturn(MemberRole.USER);
 
 		mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/comments/1")
-				.with(authentication(
-					new UsernamePasswordAuthenticationToken(
-						mock(Member.class),
-						null,
-						List.of(new SimpleGrantedAuthority("ROLE_USER"))
-					)
-				))
+				.with(user(new CustomUserDetails(member)))
 				.with(csrf())
 				.contentType(APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -162,14 +152,11 @@ class CommentControllerV1Test {
 	@Test
 	@DisplayName("댓글 삭제 성공")
 	void test4() throws Exception {
+		Member member = mock(Member.class);
+		when(member.getRole()).thenReturn(MemberRole.USER);
+
 		mockMvc.perform(MockMvcRequestBuilders.delete("/api/v1/comments/1")
-				.with(authentication(
-					new UsernamePasswordAuthenticationToken(
-						mock(Member.class),
-						null,
-						List.of(new SimpleGrantedAuthority("ROLE_USER"))
-					)
-				))
+				.with(user(new CustomUserDetails(member)))
 				.with(csrf())
 				.accept(APPLICATION_JSON))
 			.andExpect(status().isOk())
@@ -182,17 +169,14 @@ class CommentControllerV1Test {
 	void test5() throws Exception {
 		CommentDto commentDto = new CommentDto(1L, UUID.randomUUID(), "댓글", 1, LocalDateTime.now());
 
+		Member member = mock(Member.class);
+		when(member.getRole()).thenReturn(MemberRole.USER);
+
 		Mockito.when(commentService.likeComment(eq(1L), any(Member.class)))
 			.thenReturn(commentDto);
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/comments/1/like")
-				.with(authentication(
-					new UsernamePasswordAuthenticationToken(
-						mock(Member.class),
-						null,
-						List.of(new SimpleGrantedAuthority("ROLE_USER"))
-					)
-				))
+				.with(user(new CustomUserDetails(member)))
 				.with(csrf()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("200"))

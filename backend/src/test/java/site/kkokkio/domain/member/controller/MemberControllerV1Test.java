@@ -14,6 +14,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -27,6 +28,7 @@ import site.kkokkio.domain.member.service.MemberService;
 import site.kkokkio.global.aspect.ResponseAspect;
 import site.kkokkio.global.enums.MemberRole;
 import site.kkokkio.global.exception.CustomAuthException;
+import site.kkokkio.global.security.CustomUserDetailsService;
 import site.kkokkio.global.util.JwtUtils;
 
 @WebMvcTest(MemberControllerV1.class)
@@ -49,6 +51,12 @@ class MemberControllerV1Test {
 
 	@MockitoBean
 	private AuthService authService;
+
+	@MockitoBean
+	private CustomUserDetailsService customUserDetailsService;
+
+	@MockitoBean
+	private RedisTemplate<String, String> redisTemplate;
 
 	@Test
 	@DisplayName("회원가입 - 성공")

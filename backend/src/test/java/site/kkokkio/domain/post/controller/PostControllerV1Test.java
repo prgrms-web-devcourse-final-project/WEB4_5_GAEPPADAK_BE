@@ -121,16 +121,17 @@ public class PostControllerV1Test {
 	}
 
 	@Test
-	@DisplayName("Top10 포스트 조회 - 실패 (포스트 없음)")
+	@DisplayName("Top10 포스트 조회 - 빈 배열 반환 (정상 응답)")
 	void test4() throws Exception {
 		// given
-		given(postService.getTopPostsWithKeyword())
-			.willThrow(new ServiceException("404", "포스트를 불러오지 못했습니다."));
+		given(postService.getTopPostsWithKeyword()).willReturn(List.of());
 
 		// when & then
 		mockMvc.perform(get("/api/v1/posts/top"))
-			.andExpect(status().isNotFound())
-			.andExpect(jsonPath("$.code").value("404"))
-			.andExpect(jsonPath("$.message").value("포스트를 불러오지 못했습니다."));
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").value("정상적으로 호출되었습니다."))
+			.andExpect(jsonPath("$.data").isArray())
+			.andExpect(jsonPath("$.data").isEmpty());
 	}
 }

@@ -105,10 +105,6 @@ public class PostService {
 			.map(metric -> PostDto.from(metric.getPost(), metric.getKeyword().getText()))
 			.toList();
 
-		if (topPosts.isEmpty()) {
-			throw new ServiceException("404", "포스트를 불러오지 못했습니다.");
-		}
-
 		return topPosts;
 	}
 

@@ -12,7 +12,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -26,9 +28,11 @@ import site.kkokkio.domain.member.service.MemberService;
 import site.kkokkio.global.aspect.ResponseAspect;
 import site.kkokkio.global.enums.MemberRole;
 import site.kkokkio.global.exception.ServiceException;
+import site.kkokkio.global.security.CustomUserDetailsService;
 import site.kkokkio.global.util.JwtUtils;
 
 @WebMvcTest(AuthControllerV1.class)
+@ActiveProfiles("test")
 @AutoConfigureMockMvc(addFilters = false)
 @Import(ResponseAspect.class)               // ① AOP 빈 등록
 @EnableAspectJAutoProxy(proxyTargetClass = true)
@@ -48,6 +52,12 @@ public class AuthControllerV1Test {
 
 	@MockitoBean
 	private AuthService authService;
+
+	@MockitoBean
+	private CustomUserDetailsService customUserDetailsService;
+
+	@MockitoBean
+	private RedisTemplate<String, String> redisTemplate;
 
 	@Test
 	@DisplayName("로그인 - 성공")

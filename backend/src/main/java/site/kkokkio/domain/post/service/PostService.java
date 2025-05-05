@@ -39,6 +39,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
+
 import java.util.List;
 import java.util.Map;
 
@@ -238,7 +239,7 @@ public class PostService {
 	 *
 	 * @return List<PostDto>
 	 */
-	private List<PostDto> loadMockPostsResponse() {
+	private List<PostDto> loadMockPostsResponse() throws IOException {
 		try (InputStream is = getClass().getResourceAsStream("/mock/" + mockPostFile)) {
 			if (is == null) {
 				log.error("Mock 파일이 없습니다: /mock/{}", mockPostFile);

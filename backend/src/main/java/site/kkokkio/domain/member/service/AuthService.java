@@ -38,19 +38,17 @@ public class AuthService {
 		}
 
 		Map<String, Object> claims = new HashMap<>();
-		claims.put("id", member.getId());
-		claims.put("email", member.getEmail());
-		claims.put("nickname", member.getNickname());
+		claims.put("isEmailVerified", member.isEmailVerified());
 		claims.put("role", member.getRole());
 
 		// token, refreshToken 생성
-		String accessToken = jwtUtils.createToken(claims);
-		String refreshToken = jwtUtils.createRefreshToken(claims);
+		String accessToken = jwtUtils.createToken(member.getEmail(), claims);
+		String refreshToken = jwtUtils.createRefreshToken(member.getEmail(), claims);
 
-		// Redis에 Refresh Token 저장 (키: "RT:<email>")
+		// Redis에 Refresh Token 저장 (키: "refreshToken:<email>")
 		Duration rtTtl = Duration.ofMillis(jwtUtils.getRefreshTokenExpiration());
 		redisTemplate.opsForValue()
-			.set("RT:" + member.getEmail(), refreshToken, rtTtl);
+			.set("refreshToken:" + member.getEmail(), refreshToken, rtTtl);
 
 		// 쿠키에 토큰 세팅
 		jwtUtils.setJwtInCookie(accessToken, response);
@@ -68,15 +66,15 @@ public class AuthService {
 		// 페이로드에서 이메일 추출
 		String email = jwtUtils.getPayload(rt).get("email", String.class);
 
-		// Redis에 저장된 RT와 비교
-		String savedRt = redisTemplate.opsForValue().get("RT:" + email);
+		// Redis에 저장된 refreshToken와 비교
+		String savedRt = redisTemplate.opsForValue().get("refreshToken:" + email);
 		if (savedRt == null || !savedRt.equals(rt)) {
 			throw new ServiceException("401-2", "유효하지 않은 리프레시 토큰입니다.");
 		}
 
 		// 새로운 토큰 발급
 		Map<String, Object> claims = jwtUtils.getPayload(rt);
-		String newAt = jwtUtils.createToken(claims);
+		String newAt = jwtUtils.createToken(email, claims);
 
 		// 쿠키에도 업데이트
 		jwtUtils.setJwtInCookie(newAt, response);
@@ -86,18 +84,19 @@ public class AuthService {
 
 	/** 로그아웃 -> Access Token 블랙리스트 등록 + Refresh Token 삭제 + 쿠키 삭제 */
 	public void logout(HttpServletRequest request, HttpServletResponse response) {
-		String at = jwtUtils.getJwtFromCookies(request)
+		String accessToken = jwtUtils.getJwtFromCookies(request)
 			.orElseThrow(() -> new ServiceException("401", "로그인 상태가 아닙니다."));
 
-		String email = jwtUtils.getPayload(at).get("email", String.class);
+		// Token의 subject 추출에서 email 추출
+		String email = jwtUtils.getClaims(accessToken).getSubject();
 
 		// Access Token 남은 만료시간 만큼 블랙리스트에 저장
-		long remainingMs = jwtUtils.getExpiration(at).getTime() - System.currentTimeMillis();
+		long remainingMs = jwtUtils.getExpiration(accessToken).getTime() - System.currentTimeMillis();
 		redisTemplate.opsForValue()
-			.set("BL:" + at, "logout", Duration.ofMillis(remainingMs));
+			.set("blackList:" + accessToken, "logout", Duration.ofMillis(remainingMs));
 
 		// Redis에서 Refresh Token 삭제
-		redisTemplate.delete("RT:" + email);
+		redisTemplate.delete("refreshToken:" + email);
 
 		// 쿠키 삭제
 		jwtUtils.clearAuthCookies(response);

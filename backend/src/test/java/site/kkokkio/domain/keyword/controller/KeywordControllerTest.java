@@ -19,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -33,6 +34,8 @@ import site.kkokkio.domain.source.dto.SourceDto;
 import site.kkokkio.domain.source.service.SourceService;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
+import site.kkokkio.global.security.CustomUserDetailsService;
+import site.kkokkio.global.util.JwtUtils;
 
 @WebMvcTest(controllers = KeywordControllerV1.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -47,6 +50,15 @@ public class KeywordControllerTest {
 	private KeywordService keywordService;
 	@MockitoBean
 	private SourceService sourceService;
+
+	@MockitoBean
+	private CustomUserDetailsService customUserDetailsService;
+
+	@MockitoBean
+	private RedisTemplate<String, String> redisTemplate;
+
+	@MockitoBean
+	private JwtUtils jwtUtils;
 
 	private List<PostDto> postDtos;
 	private String keywordText = "테스트 키워드";
@@ -144,24 +156,25 @@ public class KeywordControllerTest {
 	public void getKeywordSearchSources_Success() throws Exception {
 		// given
 		List<SourceDto> mockSources = IntStream.range(0, 5)
-            .mapToObj(i -> new SourceDto("url-" + i, "thumb-" + i, "title-" + i, LocalDateTime.now(), Platform.NAVER_NEWS))
-            .toList();
+			.mapToObj(
+				i -> new SourceDto("url-" + i, "thumb-" + i, "title-" + i, LocalDateTime.now(), Platform.NAVER_NEWS))
+			.toList();
 		when(keywordService.getPostListByKeyword(eq(keywordText), any(PageRequest.class)))
 			.thenReturn(new PageImpl<>(postDtos));
 		when(sourceService.getTop5SourcesByPosts(anyList()))
 			.thenReturn(mockSources);
 
 		// when & then
-        mvc.perform(MockMvcRequestBuilders.get("/api/v1/keywords/search/sources/top")
+		mvc.perform(MockMvcRequestBuilders.get("/api/v1/keywords/search/sources/top")
 				.param("keyword", keywordText)
 				.param("page", String.valueOf(page))
 				.param("size", String.valueOf(size))
 				.contentType(MediaType.APPLICATION_JSON))
 			.andExpect(MockMvcResultMatchers.status().isOk())
 			.andExpect(MockMvcResultMatchers.jsonPath("$.code").value("200"))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("성공적으로 조회되었습니다."))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.list").isArray())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.list.length()").value(5))
+			.andExpect(MockMvcResultMatchers.jsonPath("$.message").value("성공적으로 조회되었습니다."))
+			.andExpect(MockMvcResultMatchers.jsonPath("$.data.list").isArray())
+			.andExpect(MockMvcResultMatchers.jsonPath("$.data.list.length()").value(5))
 			.andDo(print());
 	}
 }

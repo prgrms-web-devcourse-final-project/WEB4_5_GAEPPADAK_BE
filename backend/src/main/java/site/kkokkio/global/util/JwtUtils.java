@@ -44,6 +44,16 @@ public class JwtUtils {
 		return expiration;
 	}
 
+	// Claims 호출
+	public Claims getClaims(String token) {
+		SecretKey key = getSecretKey();
+		return Jwts.parser()
+			.verifyWith(key)
+			.build()
+			.parseSignedClaims(token)
+			.getPayload();
+	}
+
 	public Date getExpiration(String token) {
 		try {
 			SecretKey key = getSecretKey();
@@ -65,11 +75,12 @@ public class JwtUtils {
 	}
 
 	// JWT 생성
-	public String createToken(Map<String, Object> claims) {
+	public String createToken(String email, Map<String, Object> claims) {
 		SecretKey key = getSecretKey();
 		Date issuedAt = new Date();
 
 		return Jwts.builder()
+			.subject(email) // 사용자 식별자(email)
 			.claims(claims) // 사용자 정보 포함
 			.issuedAt(issuedAt) // 발급 시간
 			.expiration(new Date(issuedAt.getTime() + expiration)) // 만료 시간
@@ -78,11 +89,12 @@ public class JwtUtils {
 	}
 
 	// 리프레시 토큰 생성
-	public String createRefreshToken(Map<String, Object> claims) {
+	public String createRefreshToken(String email, Map<String, Object> claims) {
 		SecretKey key = getSecretKey();
 		Date issuedAt = new Date();
 
 		return Jwts.builder()
+			.subject(email)
 			.claims(claims)
 			.issuedAt(issuedAt)
 			.expiration(new Date(issuedAt.getTime() + refreshTokenExpiration))
@@ -123,7 +135,7 @@ public class JwtUtils {
 
 	//JWT -> 쿠키에 저장
 	public void setJwtInCookie(String token, HttpServletResponse response) {
-		ResponseCookie cookie = ResponseCookie.from("access-token", token)
+		ResponseCookie cookie = ResponseCookie.from("accessToken", token)
 			.httpOnly(true) // 자바스크립트 접근 차단 (XSS 방지)
 			.path("/") // 전체 사이트에서 접근 가능
 
@@ -139,7 +151,7 @@ public class JwtUtils {
 
 	// 리프레시 토큰을 쿠키에 저장
 	public void setRefreshTokenInCookie(String token, HttpServletResponse response) {
-		ResponseCookie cookie = ResponseCookie.from("refresh_token", token)
+		ResponseCookie cookie = ResponseCookie.from("refreshToken", token)
 			.httpOnly(true)     // 자바스크립트 접근 차단 (XSS 방지)
 			.path("/auth")      // 인증 경로에서만 접근 가능
 
@@ -165,7 +177,7 @@ public class JwtUtils {
 			.forEach(cookie -> log.info("Cookie Name: {}, Value: {}", cookie.getName(), cookie.getValue()));
 
 		return Arrays.stream(cookies)
-			.filter(cookie -> "access-token".equals(cookie.getName()))
+			.filter(cookie -> "accessToken".equals(cookie.getName()))
 			.map(Cookie::getValue)
 			.findFirst();
 	}
@@ -179,7 +191,7 @@ public class JwtUtils {
 		}
 
 		return Arrays.stream(cookies)
-			.filter(cookie -> "refresh_token".equals(cookie.getName()))
+			.filter(cookie -> "refreshToken".equals(cookie.getName()))
 			.map(Cookie::getValue)
 			.findFirst();
 	}
@@ -187,7 +199,7 @@ public class JwtUtils {
 	// 쿠키 삭제 (로그아웃 시 사용)
 	public void clearAuthCookies(HttpServletResponse response) {
 		// 액세스 토큰 쿠키 삭제
-		ResponseCookie accessCookie = ResponseCookie.from("access-token", "")
+		ResponseCookie accessCookie = ResponseCookie.from("accessToken", "")
 			.httpOnly(true)
 			.path("/")
 			.maxAge(0) // 즉시 만료
@@ -196,7 +208,7 @@ public class JwtUtils {
 			.build();
 
 		// 리프레시 토큰 쿠키 삭제
-		ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", "")
+		ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", "")
 			.httpOnly(true)
 			.path("/auth")
 			.maxAge(0) // 즉시 만료

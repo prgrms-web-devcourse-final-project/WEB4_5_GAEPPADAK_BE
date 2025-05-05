@@ -7,7 +7,6 @@ import java.time.Duration;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -86,32 +85,29 @@ class AuthServiceV1Test {
 
 		// Claims
 		Map<String, Object> claims = Map.of(
-			"id", UUID.randomUUID(),
-			"email", email,
-			"nickname", "nick",
+			"isEmailVerified", true,
 			"role", MemberRole.USER
 		);
 
 		// given
 		given(memberService.findByEmail(email)).willReturn(member);
 		given(passwordEncoder.matches(rawPw, encPw)).willReturn(true);
-		given(jwtUtils.createToken(anyMap())).willReturn("access-token");
-		given(jwtUtils.createRefreshToken(anyMap())).willReturn("refresh-token");
+		given(jwtUtils.createToken(eq(email), anyMap())).willReturn("accessToken");
+		given(jwtUtils.createRefreshToken(eq(email), anyMap())).willReturn("refreshToken");
 		willDoNothing().given(valueOperations)
-			.set(eq("RT:" + email), eq("refresh-token"), any(Duration.class));
+			.set(eq("refreshToken:" + email), eq("refreshToken"), any(Duration.class));
 
 		// 쿠키 저장 stub
-		willDoNothing().given(jwtUtils).setJwtInCookie(eq("access-token"), any());
-		willDoNothing().given(jwtUtils).setRefreshTokenInCookie(eq("refresh-token"), any());
+		willDoNothing().given(jwtUtils).setJwtInCookie(eq("accessToken"), any());
+		willDoNothing().given(jwtUtils).setRefreshTokenInCookie(eq("refreshToken"), any());
 
-		// when
 		// when
 		MemberLoginResponse result = authService.login(email, rawPw, response);
 
 		// then
 		assertThat(result.email()).isEqualTo(email);
-		assertThat(result.token()).isEqualTo("access-token");
-		assertThat(result.refreshToken()).isEqualTo("refresh-token");
+		assertThat(result.token()).isEqualTo("accessToken");
+		assertThat(result.refreshToken()).isEqualTo("refreshToken");
 	}
 
 	@Test
@@ -141,8 +137,8 @@ class AuthServiceV1Test {
 
 		given(jwtUtils.getRefreshTokenFromCookies(request)).willReturn(Optional.of(rt));
 		given(jwtUtils.getPayload(rt)).willReturn(claims);
-		given(valueOperations.get("RT:" + email)).willReturn(rt);
-		given(jwtUtils.createToken(claims)).willReturn("new-access");
+		given(valueOperations.get("refreshToken:" + email)).willReturn(rt);
+		given(jwtUtils.createToken(email, claims)).willReturn("new-access");
 
 		TokenDto result = authService.refreshToken(request, response);
 
@@ -160,12 +156,13 @@ class AuthServiceV1Test {
 		given(claims.get("email", String.class)).willReturn(email);
 
 		given(jwtUtils.getJwtFromCookies(request)).willReturn(Optional.of(at));
+		given(jwtUtils.getClaims(at)).willReturn(claims);
 		given(jwtUtils.getPayload(at)).willReturn(claims);
 		given(jwtUtils.getExpiration(at)).willReturn(new Date(System.currentTimeMillis() + 60000));
 
 		willDoNothing().given(valueOperations)
 			.set(eq("BL:" + at), eq("logout"), any(Duration.class));
-		given(redisTemplate.delete("RT:" + email)).willReturn(true);
+		given(redisTemplate.delete("refreshToken:" + email)).willReturn(true);
 		willDoNothing().given(jwtUtils).clearAuthCookies(response);
 
 		// when & then

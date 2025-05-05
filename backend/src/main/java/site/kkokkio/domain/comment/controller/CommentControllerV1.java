@@ -22,11 +22,11 @@ import site.kkokkio.domain.comment.controller.dto.CommentCreateRequest;
 import site.kkokkio.domain.comment.controller.dto.CommentListResponse;
 import site.kkokkio.domain.comment.dto.CommentDto;
 import site.kkokkio.domain.comment.service.CommentService;
-import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.global.dto.Empty;
 import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.exception.doc.ApiErrorCodeExamples;
 import site.kkokkio.global.exception.doc.ErrorCode;
+import site.kkokkio.global.security.CustomUserDetails;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -58,9 +58,9 @@ public class CommentControllerV1 {
 	@PostMapping("/posts/{postId}/comments")
 	public RsData<CommentDto> createComment(
 		@PathVariable("postId") Long postId,
-		@AuthenticationPrincipal Member member, /*TODO: 인증/인가 구현 후 UserDetails 구현체로 변경*/
+		@AuthenticationPrincipal CustomUserDetails userDetails, /* 인증/인가 구현 후 UserDetails 구현체로 변경 완료*/
 		@Valid @RequestBody CommentCreateRequest request) {
-		CommentDto comment = commentService.createComment(postId, member, request);
+		CommentDto comment = commentService.createComment(postId, userDetails.getMember(), request);
 		return new RsData<>(
 			"200",
 			"댓글이 등록되었습니다.",
@@ -73,10 +73,10 @@ public class CommentControllerV1 {
 	@PatchMapping("/comments/{commentId}")
 	public RsData<CommentDto> updateComment(
 		@PathVariable("commentId") Long commentId,
-		@AuthenticationPrincipal Member member, /*TODO: 인증/인가 구현 후 UserDetails 구현체로 변경*/
+		@AuthenticationPrincipal CustomUserDetails userDetails, /* 인증/인가 구현 후 UserDetails 구현체로 변경 완료*/
 		@Valid @RequestBody CommentCreateRequest request
 	) {
-		CommentDto comment = commentService.updateComment(commentId, member, request);
+		CommentDto comment = commentService.updateComment(commentId, userDetails.getMember(), request);
 		return new RsData<>(
 			"200",
 			"댓글이 수정되었습니다.",
@@ -89,9 +89,9 @@ public class CommentControllerV1 {
 	@DeleteMapping("/comments/{commentId}")
 	public RsData<Empty> deleteComment(
 		@PathVariable("commentId") Long commentId,
-		@AuthenticationPrincipal Member member /*TODO: 인증/인가 구현 후 UserDetails 구현체로 변경*/
+		@AuthenticationPrincipal CustomUserDetails userDetails /* 인증/인가 구현 후 UserDetails 구현체로 변경 완료*/
 	) {
-		commentService.deleteCommentById(commentId, member);
+		commentService.deleteCommentById(commentId, userDetails.getMember());
 		return new RsData<>(
 			"204",
 			"댓글이 삭제되었습니다."
@@ -104,9 +104,9 @@ public class CommentControllerV1 {
 	@PostMapping("/comments/{commentId}/like")
 	public RsData<CommentDto> likeComment(
 		@PathVariable("commentId") Long commentId,
-		@AuthenticationPrincipal Member member /*TODO: 인증/인가 구현 후 UserDetails 구현체로 변경*/
+		@AuthenticationPrincipal CustomUserDetails userDetails /* 인증/인가 구현 후 UserDetails 구현체로 변경 완료*/
 	) {
-		CommentDto comment = commentService.likeComment(commentId, member);
+		CommentDto comment = commentService.likeComment(commentId, userDetails.getMember());
 		return new RsData<>(
 			"200",
 			"좋아요가 정상 처리되었습니다.",

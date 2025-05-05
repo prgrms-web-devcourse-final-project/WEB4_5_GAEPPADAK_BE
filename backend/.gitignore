@@ -38,3 +38,6 @@ out/
 
 # Redis persistence file
 redis_data/
+
+# Local 환경의 BaseInit 데이터(GODAOS)
+src/main/java/site/kkokkio/global/init/BaseInitDataLocal.java

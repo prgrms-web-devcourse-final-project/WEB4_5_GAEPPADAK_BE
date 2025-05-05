@@ -29,6 +29,7 @@ import site.kkokkio.domain.source.entity.PostSource;
 import site.kkokkio.domain.source.entity.Source;
 import site.kkokkio.domain.source.repository.KeywordSourceRepository;
 import site.kkokkio.domain.source.repository.PostSourceRepository;
+import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
 
@@ -37,6 +38,8 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Collections;
+
 import java.util.List;
 import java.util.Map;
 
@@ -239,12 +242,20 @@ public class PostService {
 				throw new RuntimeException("Post Mock 파일을 찾을 수가 없습니다: " + mockPostFile);
 			}
 
-			// ObjectMapper를 사용하여 JSON 파일을 List<PostDto> 형태로 파싱
-			// List<PostDto>를 파싱하기 위해 TypeReference 사용
-			List<PostDto> mockData = objectMapper.readValue(is, new TypeReference<List<PostDto>>() {});
+			// ObjectMapper를 사용하여 JSON 파일을 RsData<List<PostDto>> 형태로 파싱
+			// RsData의 data 필드가 List<PostDto>이므로 TypeReference 사용
+			RsData<List<PostDto>> responseData = objectMapper.readValue(
+					is, new TypeReference<RsData<List<PostDto>>>() {}
+			);
 
-			log.info("Post Mock 데이터 로드 완료. {}개 항목.", mockData.size());
-			return mockData;
+			// 파싱된 RsData 객체에서 data 필드에 담긴 List<PostDto>를 추출하여 반환
+			if (responseData == null || responseData.getData() == null) {
+				log.warn("Post Mock 파일 내용의 data 필드가 비어있거나 null입니다: {}", mockPostFile);
+				return Collections.emptyList();
+			}
+
+			log.info("Post Mock 데이터 로드 완료. {}개 항목.", responseData.getData().size());
+			return responseData.getData();
 		} catch (IOException e) {
 			log.error("Post Mock 파일 로딩을 실패했습니다: {}", mockPostFile, e);
 			throw new RuntimeException("Post Mock 파일을 로딩하는데 실패했습니다: " + mockPostFile, e);

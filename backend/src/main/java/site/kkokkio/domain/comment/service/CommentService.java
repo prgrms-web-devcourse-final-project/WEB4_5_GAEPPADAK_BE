@@ -101,4 +101,21 @@ public class CommentService {
 
 		return CommentDto.from(comment);
 	}
+
+	@Transactional
+	public CommentDto unlikeComment(Long commentId, Member member) {
+		Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
+			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
+
+		if (comment.getMember().getId().equals(member.getId())) {
+			throw new ServiceException("403", "본인 댓글은 좋아요 할 수 없습니다.");
+		}
+
+		if (commentLikeRepository.existsByComment(comment)) {
+			commentLikeRepository.deleteByComment(comment);
+			comment.decreaseLikeCount();
+			commentRepository.save(comment);
+		}
+		return CommentDto.from(comment);
+	}
 }

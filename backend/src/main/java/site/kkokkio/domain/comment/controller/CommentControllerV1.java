@@ -113,4 +113,19 @@ public class CommentControllerV1 {
 			comment
 		);
 	}
+
+	@Operation(summary = "댓글 좋아요 취소")
+	@ApiErrorCodeExamples({ErrorCode.COMMENT_LIKE_FORBIDDEN, ErrorCode.COMMENT_NOT_FOUND})
+	@DeleteMapping("/comments/{commentId}/like")
+	public RsData<CommentDto> unlikeComment(
+		@PathVariable("commentId") Long commentId,
+		@AuthenticationPrincipal CustomUserDetails userDetails
+	) {
+		CommentDto comment = commentService.unlikeComment(commentId, userDetails.getMember());
+		return new RsData<>(
+			"200",
+			"좋아요가 취소되었습니다.",
+			comment
+		);
+	}
 }

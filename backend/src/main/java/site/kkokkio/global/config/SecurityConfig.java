@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -17,13 +18,19 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.filter.JwtAuthenticationFilter;
 import site.kkokkio.global.security.CustomUserDetailsService;
 import site.kkokkio.global.util.JwtUtils;
@@ -37,6 +44,7 @@ public class SecurityConfig {
 	private final CustomUserDetailsService customUserDetailsService;
 	private final RedisTemplate<String, String> redisTemplate;
 	private final JwtUtils jwtUtils;
+	private final ObjectMapper objectMapper;
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtUtils jwtUtils) throws Exception {
@@ -66,21 +74,20 @@ public class SecurityConfig {
 			// JWT 인증 필터 추가
 			.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
 
+			// 로그인 관련 예외 처리
+			.exceptionHandling(ex -> ex
+				.authenticationEntryPoint(customAuthEntryPoint())
+				.accessDeniedHandler(customAccessDeniedHandler())
+			)
+
 			// 엔드포인트별 권한 설정
 			.authorizeHttpRequests(authorize ->
 				authorize
-					// 모든 HTTP 메소드에 대해 인증 없이 접근 가능한 경로
-					.requestMatchers(getPublicEndpoints().toArray(String[]::new)
-					).permitAll()
-
-					// 댓글 GET 요청 허용
-					.requestMatchers(HttpMethod.GET, "/api/*/posts/*/comments")
-					.permitAll()
-
-					// 회원 권한
-					.requestMatchers(getPublicUserEndpoints().toArray(String[]::new)).hasRole("USER")
-					// 관리자 권한
-					.requestMatchers(getPublicAdminEndpoints().toArray(String[]::new)).hasRole("ADMIN")
+					// — USER 로그인 필요
+					.requestMatchers(HttpMethod.POST, "/api/v1/posts/*/comments").authenticated()
+					.requestMatchers(HttpMethod.PATCH, "/api/v1/comments/*").authenticated()
+					.requestMatchers(HttpMethod.DELETE, "/api/v1/comments/*").authenticated()
+					.requestMatchers(HttpMethod.POST, "/api/v1/comments/*/like").authenticated()
 
 					// 그 외 모든 요청 허용
 					.anyRequest().permitAll()
@@ -140,56 +147,35 @@ public class SecurityConfig {
 		return new JwtAuthenticationFilter(jwtUtils, customUserDetailsService, redisTemplate);
 	}
 
+	// 인증 안 된 상태로 보호된 엔드포인트에 접근했을 때 (401)
+	@Bean
+	public AuthenticationEntryPoint customAuthEntryPoint() {
+		return (request, response, authException) -> {
+			response.setCharacterEncoding("UTF-8");
+			response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+			response.setContentType(MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8");
+
+			RsData<Void> body = new RsData<>("401", "로그인이 필요합니다.");
+			response.getWriter().write(objectMapper.writeValueAsString(body));
+		};
+	}
+
+	// 권한이 부족한 상태로 엔드포인트에 접근했을 때 (403)
+	@Bean
+	public AccessDeniedHandler customAccessDeniedHandler() {
+		return (request, response, accessDeniedException) -> {
+			response.setCharacterEncoding("UTF-8");
+			response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+			response.setContentType(MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8");
+
+			RsData<Void> body = new RsData<>("403", "권한이 없습니다.");
+			response.getWriter().write(objectMapper.writeValueAsString(body));
+		};
+	}
+
 	// 패스워드 암호화를 위한 Bean
 	@Bean
 	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
 	}
-
-	// 모든 사용자
-	private List<String> getPublicEndpoints() {
-		return List.of(
-
-			// root권한
-			"/",
-
-			// 로그인, 회원가입 등
-			"/api/*/auth/**",
-
-			// Todo: 아래 엔드포인트는 개발 환경에서만, 운영 서버 반영 전 제거 필요
-
-			// Swagger UI 관련 경로 허용
-			"/swagger-ui/**",
-			"/swagger-ui.html",
-			"/swagger-resources/**",
-
-			// OpenAPI 스펙
-			"/v3/api-docs/**",
-			"/webjars/**",
-
-			// h2-console 확인
-			"/h2-console/**"
-		);
-	}
-
-	// USER(회원) 권한
-	private List<String> getPublicUserEndpoints() {
-		return List.of(
-			// 댓글 권한
-			"/api/*/posts/*/comments",
-			"/api/*/comments/*",
-			"/api/*/comments/*/like"
-		);
-	}
-
-	// ADMIN(관리자) 권한
-	private List<String> getPublicAdminEndpoints() {
-		return List.of(
-			// 댓글 권한
-			"/api/*/posts/*/comments",
-			"/api/*/comments/*",
-			"/api/*/comments/*/like"
-		);
-	}
-
 }

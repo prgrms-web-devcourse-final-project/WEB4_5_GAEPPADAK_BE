@@ -36,13 +36,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	@Override
 	protected boolean shouldNotFilter(HttpServletRequest request) {
 		String path = request.getServletPath();
+		String method = request.getMethod();
 
-		// 필터를 통과해야하는 엔드 포인트
-		return List.of(
+		// Auth 관련 엔드포인트 ⇒ 무조건 스킵
+		if (List.of(
 			"/api/v1/auth/login",
 			"/api/v1/auth/signup",
 			"/api/v1/auth/refresh"
-		).contains(path);
+		).contains(path)) {
+			return true;
+		}
+
+		// “댓글 쓰기·수정·삭제·좋아요” 만 필터 적용
+		boolean isCommentWriteEndpoint =
+			("POST".equals(method) && path.matches("^/api/v1/posts/\\d+/comments$"))            // 댓글 작성
+				|| ("PATCH".equals(method) && path.matches("^/api/v1/comments/\\d+$"))          // 댓글 수정
+				|| ("DELETE".equals(method) && path.matches("^/api/v1/comments/\\d+$"))         // 댓글 삭제
+				|| ("POST".equals(method) && path.matches("^/api/v1/comments/\\d+/like$"));     // 댓글 좋아요
+
+		// isCommentWriteEndpoint 이면 필터 동작(= false 리턴), 아니면 스킵(= true 리턴)
+		return !isCommentWriteEndpoint;
 	}
 
 	@Override

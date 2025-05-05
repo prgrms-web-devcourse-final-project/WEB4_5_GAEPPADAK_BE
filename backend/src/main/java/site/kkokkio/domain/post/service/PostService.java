@@ -39,6 +39,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
+
 import java.util.List;
 import java.util.Map;
 
@@ -106,10 +107,6 @@ public class PostService {
 			.filter(metric -> metric.getPost() != null)
 			.map(metric -> PostDto.from(metric.getPost(), metric.getKeyword().getText()))
 			.toList();
-
-		if (topPosts.isEmpty()) {
-			throw new ServiceException("404", "포스트를 불러오지 못했습니다.");
-		}
 
 		return topPosts;
 	}

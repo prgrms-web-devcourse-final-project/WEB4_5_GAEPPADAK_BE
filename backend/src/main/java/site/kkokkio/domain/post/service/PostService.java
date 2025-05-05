@@ -235,7 +235,7 @@ public class PostService {
 	 *
 	 * @return List<PostDto>
 	 */
-	private List<PostDto> loadMockPostsResponse() {
+	private List<PostDto> loadMockPostsResponse() throws IOException {
 		try (InputStream is = getClass().getClassLoader().getResourceAsStream("mock/" + mockPostFile)) {
 			if (is == null) {
 				log.error("Mock 파일이 없습니다: /mock/{}", mockPostFile);

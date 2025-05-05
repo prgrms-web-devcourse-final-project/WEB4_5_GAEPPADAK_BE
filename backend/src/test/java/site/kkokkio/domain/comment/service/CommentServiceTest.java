@@ -49,6 +49,7 @@ class CommentServiceTest {
 		Post post = Post.builder().build();
 		Member member = Member.builder().build();
 		ReflectionTestUtils.setField(member, "id", UUID.randomUUID());
+		ReflectionTestUtils.setField(member, "nickname", "testUser");
 		Comment comment = Comment.builder().post(post).member(member).body("댓글").build();
 		ReflectionTestUtils.setField(comment, "id", 1L);
 		ReflectionTestUtils.setField(comment, "createdAt", LocalDateTime.now());
@@ -79,6 +80,7 @@ class CommentServiceTest {
 
 		Member member = Member.builder().build();
 		ReflectionTestUtils.setField(member, "id", UUID.randomUUID());
+		ReflectionTestUtils.setField(member, "nickname", "testUser");
 
 		Comment comment = Comment.builder()
 			.post(post)
@@ -112,6 +114,7 @@ class CommentServiceTest {
 	void test3() {
 		Member member = Member.builder().build();
 		ReflectionTestUtils.setField(member, "id", UUID.randomUUID());
+		ReflectionTestUtils.setField(member, "nickname", "testUser");
 
 		Comment comment = Comment.builder().member(member).body("기존 댓글").build();
 		ReflectionTestUtils.setField(comment, "id", 1L);
@@ -120,7 +123,7 @@ class CommentServiceTest {
 
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
 
-		CommentDto result = commentService.updateComment(1L, member, request);
+		CommentDto result = commentService.updateComment(1L, member.getId(), request);
 
 		assertEquals("수정된 댓글", result.body());
 	}
@@ -135,7 +138,7 @@ class CommentServiceTest {
 
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.empty());
 
-		assertThrows(ServiceException.class, () -> commentService.updateComment(1L, member, request));
+		assertThrows(ServiceException.class, () -> commentService.updateComment(1L, member.getId(), request));
 	}
 
 	@Test
@@ -143,13 +146,17 @@ class CommentServiceTest {
 	void test3_2() {
 		Member member = Member.builder().build();
 		ReflectionTestUtils.setField(member, "id", UUID.randomUUID());
+		ReflectionTestUtils.setField(member, "nickname", "testUser1");
 
-		Comment comment = Comment.builder().member(mock(Member.class)).body("댓글").build();
+		Member writer = Member.builder().build();
+		ReflectionTestUtils.setField(writer, "id", UUID.randomUUID());
+		ReflectionTestUtils.setField(writer, "nickname", "testUser2");
+		Comment comment = Comment.builder().member(writer).body("댓글").build();
 		CommentCreateRequest request = new CommentCreateRequest("수정된 댓글");
 
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
 
-		assertThrows(ServiceException.class, () -> commentService.updateComment(1L, member, request));
+		assertThrows(ServiceException.class, () -> commentService.updateComment(1L, member.getId(), request));
 	}
 
 	@Test
@@ -162,7 +169,7 @@ class CommentServiceTest {
 
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
 
-		commentService.deleteCommentById(1L, member);
+		commentService.deleteCommentById(1L, member.getId());
 
 		verify(commentRepository).save(any(Comment.class)); // softDelete 후 저장
 	}
@@ -175,7 +182,7 @@ class CommentServiceTest {
 
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.empty());
 
-		assertThrows(ServiceException.class, () -> commentService.deleteCommentById(1L, member));
+		assertThrows(ServiceException.class, () -> commentService.deleteCommentById(1L, member.getId()));
 	}
 
 	@Test
@@ -183,12 +190,16 @@ class CommentServiceTest {
 	void test4_2() {
 		Member member = Member.builder().build();
 		ReflectionTestUtils.setField(member, "id", UUID.randomUUID());
+		ReflectionTestUtils.setField(member, "nickname", "testUser1");
 
-		Comment comment = Comment.builder().member(mock(Member.class)).body("댓글").build();
+		Member writer = Member.builder().build();
+		ReflectionTestUtils.setField(writer, "id", UUID.randomUUID());
+		ReflectionTestUtils.setField(writer, "nickname", "testUser2");
+		Comment comment = Comment.builder().member(writer).body("댓글").build();
 
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
 
-		assertThrows(ServiceException.class, () -> commentService.deleteCommentById(1L, member));
+		assertThrows(ServiceException.class, () -> commentService.deleteCommentById(1L, member.getId()));
 	}
 
 	@Test
@@ -196,8 +207,10 @@ class CommentServiceTest {
 	void test5() {
 		Member member1 = Member.builder().build();
 		ReflectionTestUtils.setField(member1, "id", UUID.randomUUID());
+		ReflectionTestUtils.setField(member1, "nickname", "testUser1");
 		Member member2 = Member.builder().build();
 		ReflectionTestUtils.setField(member2, "id", UUID.randomUUID());
+		ReflectionTestUtils.setField(member2, "nickname", "testUser2");
 
 		Comment comment = Comment.builder().member(member2).body("댓글").likeCount(0).build();
 		ReflectionTestUtils.setField(comment, "id", 1L);
@@ -241,7 +254,10 @@ class CommentServiceTest {
 		Member member = Member.builder().build();
 		ReflectionTestUtils.setField(member, "id", UUID.randomUUID());
 
-		Comment comment = Comment.builder().member(mock(Member.class)).body("댓글").build();
+		Member writer = Member.builder().build();
+		ReflectionTestUtils.setField(writer, "id", UUID.randomUUID());
+
+		Comment comment = Comment.builder().member(writer).body("댓글").build();
 
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
 		when(commentLikeRepository.existsByComment(comment)).thenReturn(true);

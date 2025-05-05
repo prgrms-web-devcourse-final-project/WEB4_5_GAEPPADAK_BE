@@ -1,5 +1,7 @@
 package site.kkokkio.domain.comment.service;
 
+import java.util.UUID;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -48,11 +50,11 @@ public class CommentService {
 	}
 
 	@Transactional
-	public CommentDto updateComment(Long commentId, Member member, CommentCreateRequest request) {
+	public CommentDto updateComment(Long commentId, UUID memberId, CommentCreateRequest request) {
 		Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
 
-		if (!comment.getMember().equals(member)) {
+		if (!comment.getMember().getId().equals(memberId)) {
 			throw new ServiceException("403", "본인 댓글만 수정할 수 있습니다.");
 		}
 
@@ -63,11 +65,11 @@ public class CommentService {
 	}
 
 	@Transactional
-	public void deleteCommentById(Long commentId, Member member) {
+	public void deleteCommentById(Long commentId, UUID memberId) {
 		Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
 
-		if (!comment.getMember().equals(member)) {
+		if (!comment.getMember().getId().equals(memberId)) {
 			throw new ServiceException("403", "본인 댓글만 삭제할 수 있습니다.");
 		}
 
@@ -80,7 +82,7 @@ public class CommentService {
 		Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
 
-		if (comment.getMember().equals(member)) {
+		if (comment.getMember().getId().equals(member.getId())) {
 			throw new ServiceException("403", "본인 댓글은 좋아요 할 수 없습니다.");
 		}
 

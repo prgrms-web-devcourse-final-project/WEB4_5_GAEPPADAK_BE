@@ -61,7 +61,7 @@ class CommentControllerV1Test {
 	@Test
 	@DisplayName("댓글 목록 조회 성공")
 	void test1() throws Exception {
-		CommentDto commentDto = new CommentDto(1L, UUID.randomUUID(), "댓글", 0, LocalDateTime.now());
+		CommentDto commentDto = new CommentDto(1L, UUID.randomUUID(), "user", "댓글", 0, LocalDateTime.now());
 		Page<CommentDto> page = new PageImpl<>(Collections.singletonList(commentDto),
 			PageRequest.of(0, 10), 1);
 
@@ -79,7 +79,7 @@ class CommentControllerV1Test {
 	@DisplayName("댓글 작성 성공")
 	void test2() throws Exception {
 		CommentCreateRequest request = new CommentCreateRequest("새 댓글");
-		CommentDto commentDto = new CommentDto(1L, UUID.randomUUID(), "새 댓글", 0, LocalDateTime.now());
+		CommentDto commentDto = new CommentDto(1L, UUID.randomUUID(), "user", "새 댓글", 0, LocalDateTime.now());
 
 		Member member = mock(Member.class);
 		when(member.getRole()).thenReturn(MemberRole.USER);
@@ -116,12 +116,14 @@ class CommentControllerV1Test {
 	@DisplayName("댓글 수정 성공")
 	void test3() throws Exception {
 		CommentCreateRequest request = new CommentCreateRequest("수정된 댓글");
-		CommentDto commentDto = new CommentDto(1L, UUID.randomUUID(), "수정된 댓글", 0, LocalDateTime.now());
+		UUID memberId = UUID.randomUUID();
+		CommentDto commentDto = new CommentDto(1L, memberId, "user", "수정된 댓글", 0, LocalDateTime.now());
 
 		Member member = mock(Member.class);
+		when(member.getId()).thenReturn(memberId);
 		when(member.getRole()).thenReturn(MemberRole.USER);
 
-		Mockito.when(commentService.updateComment(eq(1L), any(Member.class), any(CommentCreateRequest.class)))
+		Mockito.when(commentService.updateComment(eq(1L), eq(memberId), any(CommentCreateRequest.class)))
 			.thenReturn(commentDto);
 
 		mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/comments/1")
@@ -167,7 +169,7 @@ class CommentControllerV1Test {
 	@Test
 	@DisplayName("댓글 좋아요 성공")
 	void test5() throws Exception {
-		CommentDto commentDto = new CommentDto(1L, UUID.randomUUID(), "댓글", 1, LocalDateTime.now());
+		CommentDto commentDto = new CommentDto(1L, UUID.randomUUID(), "user", "댓글", 1, LocalDateTime.now());
 
 		Member member = mock(Member.class);
 		when(member.getRole()).thenReturn(MemberRole.USER);

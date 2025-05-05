@@ -58,7 +58,7 @@ public class CommentControllerV1 {
 	@PostMapping("/posts/{postId}/comments")
 	public RsData<CommentDto> createComment(
 		@PathVariable("postId") Long postId,
-		@AuthenticationPrincipal CustomUserDetails userDetails, /* 인증/인가 구현 후 UserDetails 구현체로 변경 완료*/
+		@AuthenticationPrincipal CustomUserDetails userDetails,
 		@Valid @RequestBody CommentCreateRequest request) {
 		CommentDto comment = commentService.createComment(postId, userDetails.getMember(), request);
 		return new RsData<>(
@@ -73,10 +73,10 @@ public class CommentControllerV1 {
 	@PatchMapping("/comments/{commentId}")
 	public RsData<CommentDto> updateComment(
 		@PathVariable("commentId") Long commentId,
-		@AuthenticationPrincipal CustomUserDetails userDetails, /* 인증/인가 구현 후 UserDetails 구현체로 변경 완료*/
+		@AuthenticationPrincipal CustomUserDetails userDetails,
 		@Valid @RequestBody CommentCreateRequest request
 	) {
-		CommentDto comment = commentService.updateComment(commentId, userDetails.getMember(), request);
+		CommentDto comment = commentService.updateComment(commentId, userDetails.getMember().getId(), request);
 		return new RsData<>(
 			"200",
 			"댓글이 수정되었습니다.",
@@ -89,9 +89,9 @@ public class CommentControllerV1 {
 	@DeleteMapping("/comments/{commentId}")
 	public RsData<Empty> deleteComment(
 		@PathVariable("commentId") Long commentId,
-		@AuthenticationPrincipal CustomUserDetails userDetails /* 인증/인가 구현 후 UserDetails 구현체로 변경 완료*/
+		@AuthenticationPrincipal CustomUserDetails userDetails
 	) {
-		commentService.deleteCommentById(commentId, userDetails.getMember());
+		commentService.deleteCommentById(commentId, userDetails.getMember().getId());
 		return new RsData<>(
 			"204",
 			"댓글이 삭제되었습니다."
@@ -104,7 +104,7 @@ public class CommentControllerV1 {
 	@PostMapping("/comments/{commentId}/like")
 	public RsData<CommentDto> likeComment(
 		@PathVariable("commentId") Long commentId,
-		@AuthenticationPrincipal CustomUserDetails userDetails /* 인증/인가 구현 후 UserDetails 구현체로 변경 완료*/
+		@AuthenticationPrincipal CustomUserDetails userDetails
 	) {
 		CommentDto comment = commentService.likeComment(commentId, userDetails.getMember());
 		return new RsData<>(

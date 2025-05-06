@@ -7,10 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -22,12 +20,10 @@ import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.source.dto.SourceDto;
 import site.kkokkio.domain.source.service.SourceService;
 import site.kkokkio.global.enums.Platform;
-import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.global.security.CustomUserDetailsService;
 import site.kkokkio.global.util.JwtUtils;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -66,9 +62,9 @@ public class KeywordControllerTest {
 	@BeforeEach
 	void setUp() {
 		postDtos = Arrays.asList(
-			new PostDto(3L, keywordText, "제목3", "요약3", ""),
-			new PostDto(1L, keywordText, "제목1", "요약1", ""),
-			new PostDto(2L, keywordText, "제목2", "요약2", "")
+				new PostDto(3L, keywordText, "제목3", "요약3", ""),
+				new PostDto(1L, keywordText, "제목1", "요약1", ""),
+				new PostDto(2L, keywordText, "제목2", "요약2", "")
 		);
 	}
 
@@ -77,25 +73,25 @@ public class KeywordControllerTest {
 	public void getKeywordSearchSources_Success() throws Exception {
 		// given
 		List<SourceDto> mockSources = IntStream.range(0, 5)
-			.mapToObj(
-				i -> new SourceDto("url-" + i, "thumb-" + i, "title-" + i, LocalDateTime.now(), Platform.NAVER_NEWS, null))
-			.toList();
+				.mapToObj(
+						i -> new SourceDto("url-" + i, "thumb-" + i, "title-" + i, LocalDateTime.now(), Platform.NAVER_NEWS, null))
+				.toList();
 		when(keywordService.getPostListByKeyword(eq(keywordText), any(PageRequest.class)))
-			.thenReturn(new PageImpl<>(postDtos));
+				.thenReturn(new PageImpl<>(postDtos));
 		when(sourceService.getTop5SourcesByPosts(anyList()))
-			.thenReturn(mockSources);
+				.thenReturn(mockSources);
 
 		// when & then
 		mvc.perform(MockMvcRequestBuilders.get("/api/v1/keywords/search/sources/top")
-				.param("keyword", keywordText)
-				.param("page", String.valueOf(page))
-				.param("size", String.valueOf(size))
-				.contentType(MediaType.APPLICATION_JSON))
-			.andExpect(MockMvcResultMatchers.status().isOk())
-			.andExpect(MockMvcResultMatchers.jsonPath("$.code").value("200"))
-			.andExpect(MockMvcResultMatchers.jsonPath("$.message").value("성공적으로 조회되었습니다."))
-			.andExpect(MockMvcResultMatchers.jsonPath("$.data.list").isArray())
-			.andExpect(MockMvcResultMatchers.jsonPath("$.data.list.length()").value(5))
-			.andDo(print());
+						.param("keyword", keywordText)
+						.param("page", String.valueOf(page))
+						.param("size", String.valueOf(size))
+						.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.jsonPath("$.code").value("200"))
+				.andExpect(MockMvcResultMatchers.jsonPath("$.message").value("성공적으로 조회되었습니다."))
+				.andExpect(MockMvcResultMatchers.jsonPath("$.data.list").isArray())
+				.andExpect(MockMvcResultMatchers.jsonPath("$.data.list.length()").value(5))
+				.andDo(print());
 	}
 }

@@ -9,4 +9,6 @@ import site.kkokkio.domain.comment.entity.CommentLike;
 @Repository
 public interface CommentLikeRepository extends JpaRepository<CommentLike, Long> {
 	Boolean existsByComment(Comment comment);
+
+	void deleteByComment(Comment comment);
 }

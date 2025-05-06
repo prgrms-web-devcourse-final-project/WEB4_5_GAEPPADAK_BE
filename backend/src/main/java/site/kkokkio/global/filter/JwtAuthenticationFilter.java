@@ -42,6 +42,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		if (List.of(
 			"/api/v1/auth/login",
 			"/api/v1/auth/signup",
+			"/api/v1/auth/verify-email",
+			"/api/v1/auth/check-email",
 			"/api/v1/auth/refresh"
 		).contains(path)) {
 			return true;

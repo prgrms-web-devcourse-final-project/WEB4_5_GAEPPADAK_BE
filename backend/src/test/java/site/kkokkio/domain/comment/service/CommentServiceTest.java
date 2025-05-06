@@ -265,4 +265,25 @@ class CommentServiceTest {
 		assertThrows(ServiceException.class, () -> commentService.likeComment(1L, member));
 	}
 
+	@Test
+	@DisplayName("댓글 좋아요 취소 성공")
+	void test6() {
+		Member member1 = Member.builder().build();
+		ReflectionTestUtils.setField(member1, "id", UUID.randomUUID());
+		ReflectionTestUtils.setField(member1, "nickname", "testUser1");
+		Member member2 = Member.builder().build();
+		ReflectionTestUtils.setField(member2, "id", UUID.randomUUID());
+		ReflectionTestUtils.setField(member2, "nickname", "testUser2");
+
+		Comment comment = Comment.builder().member(member2).body("댓글").likeCount(1).build();
+		ReflectionTestUtils.setField(comment, "id", 1L);
+		ReflectionTestUtils.setField(comment, "createdAt", LocalDateTime.now());
+
+		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
+		when(commentLikeRepository.existsByComment(comment)).thenReturn(true);
+
+		CommentDto result = commentService.unlikeComment(1L, member1);
+
+		assertEquals(0, result.likeCount());
+	}
 }

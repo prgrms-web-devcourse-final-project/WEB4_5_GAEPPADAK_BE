@@ -1,7 +1,7 @@
 package site.kkokkio.domain.comment.controller;
 
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.BDDMockito.*;
 import static org.springframework.http.MediaType.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -183,5 +183,24 @@ class CommentControllerV1Test {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("200"))
 			.andExpect(jsonPath("$.data.likeCount").value(1));
+	}
+
+	@Test
+	@DisplayName("댓글 좋아요 취소 성공")
+	void test6() throws Exception {
+		CommentDto commentDto = new CommentDto(1L, UUID.randomUUID(), "user", "댓글", 0, LocalDateTime.now());
+
+		Member member = mock(Member.class);
+		when(member.getRole()).thenReturn(MemberRole.USER);
+
+		Mockito.when(commentService.unlikeComment(eq(1L), eq(member)))
+			.thenReturn(commentDto);
+
+		mockMvc.perform(MockMvcRequestBuilders.delete("/api/v1/comments/1/like")
+				.with(user(new CustomUserDetails(member)))
+				.with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.data.likeCount").value(0));
 	}
 }

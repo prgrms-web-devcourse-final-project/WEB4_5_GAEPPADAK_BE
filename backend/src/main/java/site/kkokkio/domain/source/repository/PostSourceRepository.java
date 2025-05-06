@@ -75,7 +75,8 @@ public interface PostSourceRepository extends JpaRepository<PostSource, Long>, P
                 s.thumbnailUrl,
                 s.publishedAt,
                 s.platform,
-                kmh.score
+                kmh.score,
+                s.videoId
                 )
             FROM KeywordMetricHourly kmh
             LEFT JOIN kmh.post p

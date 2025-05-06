@@ -88,6 +88,7 @@ CREATE TABLE source (
   thumbnail_url TEXT,
   published_at DATETIME NOT NULL,
   platform VARCHAR(30) NOT NULL,
+  video_id VARCHAR(255),
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_source_platform_published (platform, published_at)

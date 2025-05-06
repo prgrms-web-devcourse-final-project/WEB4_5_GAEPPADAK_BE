@@ -1,24 +1,12 @@
 package site.kkokkio.domain.source.entity;
 
-import java.time.LocalDateTime;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.util.BaseTimeEntity;
 import site.kkokkio.global.util.HashUtils;
+
+import java.time.LocalDateTime;
 
 /**
  * INDEX (platform, fetched_at)
@@ -57,6 +45,9 @@ public class Source extends BaseTimeEntity {
     @Column(nullable = false)
     private Platform platform;
 
+    @Column(name = "video_id")
+    private String videoId;
+
     /**
      * persist 직전에 URL을 해싱해 fingerprint를 자동 할당
      */
@@ -66,5 +57,4 @@ public class Source extends BaseTimeEntity {
             this.fingerprint = HashUtils.sha256Hex(this.normalizedUrl);
         }
     }
-
 }

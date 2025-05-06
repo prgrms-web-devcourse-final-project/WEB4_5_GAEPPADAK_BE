@@ -1,14 +1,13 @@
 package site.kkokkio.domain.source.repository;
 
-import java.util.List;
-
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
-
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import site.kkokkio.domain.source.entity.Source;
+
+import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
@@ -23,12 +22,12 @@ public class SourceRepositoryCustomImpl implements SourceRepositoryCustom {
 
         StringBuilder sql = new StringBuilder("""
             INSERT IGNORE INTO source
-            (fingerprint, normalized_url, title, description, thumbnail_url, published_at, platform, created_at, updated_at)
+            (fingerprint, normalized_url, title, description, thumbnail_url, published_at, platform, video_id, created_at, updated_at)
             VALUES
         """);
 
         for (int i = 0; i < sources.size(); i++) {
-            sql.append("(?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+            sql.append("(?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
             if (i < sources.size() - 1) sql.append(", ");
         }
 
@@ -43,6 +42,7 @@ public class SourceRepositoryCustomImpl implements SourceRepositoryCustom {
             query.setParameter(index++, s.getThumbnailUrl());
             query.setParameter(index++, s.getPublishedAt());
             query.setParameter(index++, s.getPlatform().name());
+            query.setParameter(index++, s.getVideoId());
         }
 
         query.executeUpdate();

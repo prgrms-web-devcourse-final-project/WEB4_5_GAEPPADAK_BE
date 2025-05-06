@@ -45,6 +45,7 @@ public record VideoDto(
                 .thumbnailUrl(this.thumbnailUrl)
                 .publishedAt(this.publishedAt)
                 .platform(platform)
+                .videoId(this.id)
                 .build();
     }
 }

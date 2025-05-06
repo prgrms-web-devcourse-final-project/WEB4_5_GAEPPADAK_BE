@@ -17,7 +17,8 @@ public record TopSourceItemDto(
         @NonNull LocalDateTime publishedAt,
         @NonNull Platform platform,
         int score,
-        String videoId
+        String videoId,
+        String description
 ) {
     public static TopSourceItemDto fromSource(Source source) {
         return TopSourceItemDto.builder()
@@ -28,6 +29,7 @@ public record TopSourceItemDto(
                 .platform(source.getPlatform())
                 .score(0)
                 .videoId(source.getVideoId())
+                .description(source.getDescription())
                 .build();
     }
 }

@@ -34,22 +34,6 @@ public class KeywordControllerV1 {
 	private final KeywordService keywordService;
 	private final SourceService sourceService;
 
-	@GetMapping("/search")
-	@ApiErrorCodeExamples({ErrorCode.POST_NOT_FOUND_3})
-	@Operation(summary = "키워드 기반 Post 검색")
-	public RsData<PostListResponse> getPostListByKeyword(
-		@RequestParam String keyword,
-		@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
-		) {
-		Page<PostDto> postDtoList = keywordService.getPostListByKeyword(keyword, pageable);
-		PostListResponse response = PostListResponse.from(postDtoList);
-		return new RsData<>(
-			"200",
-			"키워드의 포스트를 불러왔습니다.",
-			response
-		);
-	}
-
     @Operation(
         summary = "키워드 검색 출처 5개 최신순 조회 (페이지네이션)",
         description = "키워드 검색 결과인 포스트 목록 기준으로 최신순 출처 목록을 조회힙니다. (없을 경우 빈 배열 반환)"

@@ -1,14 +1,6 @@
 package site.kkokkio.domain.keyword.controller;
 
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.IntStream;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,9 +17,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import site.kkokkio.domain.keyword.service.KeywordService;
 import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.source.dto.SourceDto;
@@ -36,6 +25,15 @@ import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.global.security.CustomUserDetailsService;
 import site.kkokkio.global.util.JwtUtils;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.IntStream;
+
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
 @WebMvcTest(controllers = KeywordControllerV1.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -157,7 +155,7 @@ public class KeywordControllerTest {
 		// given
 		List<SourceDto> mockSources = IntStream.range(0, 5)
 			.mapToObj(
-				i -> new SourceDto("url-" + i, "thumb-" + i, "title-" + i, LocalDateTime.now(), Platform.NAVER_NEWS))
+				i -> new SourceDto("url-" + i, "thumb-" + i, "title-" + i, LocalDateTime.now(), Platform.NAVER_NEWS, null))
 			.toList();
 		when(keywordService.getPostListByKeyword(eq(keywordText), any(PageRequest.class)))
 			.thenReturn(new PageImpl<>(postDtos));

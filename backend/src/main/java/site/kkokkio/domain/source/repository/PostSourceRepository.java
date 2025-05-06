@@ -77,7 +77,9 @@ public interface PostSourceRepository extends JpaRepository<PostSource, Long>, P
                 s.platform,
                 kmh.score,
                 s.videoId,
-                s.description
+                CASE WHEN s.platform = 'NAVER_NEWS'
+                THEN s.description
+                ElSE NULL END
                 )
             FROM KeywordMetricHourly kmh
             LEFT JOIN kmh.post p

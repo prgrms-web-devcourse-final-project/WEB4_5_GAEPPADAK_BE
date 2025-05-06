@@ -52,15 +52,15 @@ class SourceControllerV1Test {
         // given
         List<SourceDto> mockNewsList = List.of(
                 new SourceDto("https://news.com", "https://image.jpg", "뉴스 제목1", LocalDateTime.parse("2024-04-29T15:30:00"),
-                        Platform.NAVER_NEWS, null),
+                        Platform.NAVER_NEWS, null, "뉴스 제목1 요약 내용"),
                 new SourceDto("https://news.com", "https://image.jpg", "뉴스 제목2", LocalDateTime.parse("2024-04-29T15:30:00"),
-                        Platform.NAVER_NEWS, null),
+                        Platform.NAVER_NEWS, null, "뉴스 제목2 요약 내용"),
                 new SourceDto("https://news.com", "https://image.jpg", "뉴스 제목3", LocalDateTime.parse("2024-04-29T15:30:00"),
-                        Platform.NAVER_NEWS, null),
+                        Platform.NAVER_NEWS, null, "뉴스 제목3 요약 내용"),
                 new SourceDto("https://news.com", "https://image.jpg", "뉴스 제목4", LocalDateTime.parse("2024-04-29T15:30:00"),
-                        Platform.NAVER_NEWS, null),
+                        Platform.NAVER_NEWS, null, "뉴스 제목4 요약 내용"),
                 new SourceDto("https://news.com", "https://image.jpg", "뉴스 제목5", LocalDateTime.parse("2024-04-29T15:30:00"),
-                        Platform.NAVER_NEWS, null)
+                        Platform.NAVER_NEWS, null, "뉴스 제목5 요약 내용")
         );
         given(sourceService.getTop10NewsSourcesByPostId(anyLong())).willReturn(mockNewsList);
 
@@ -118,15 +118,15 @@ class SourceControllerV1Test {
         // given
         List<SourceDto> mockVideoList = List.of(
                 new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목1",
-                        LocalDateTime.parse("2024-04-29T15:30:00"), Platform.YOUTUBE, "videoId1"),
+                        LocalDateTime.parse("2024-04-29T15:30:00"), Platform.YOUTUBE, "videoId1", null),
                 new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목2",
-                        LocalDateTime.parse("2024-04-29T15:30:00"), Platform.YOUTUBE, "videoId2"),
+                        LocalDateTime.parse("2024-04-29T15:30:00"), Platform.YOUTUBE, "videoId2", null),
                 new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목3",
-                        LocalDateTime.parse("2024-04-29T15:30:00"), Platform.YOUTUBE, "videoId3"),
+                        LocalDateTime.parse("2024-04-29T15:30:00"), Platform.YOUTUBE, "videoId3", null),
                 new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목4",
-                        LocalDateTime.parse("2024-04-29T15:30:00"), Platform.YOUTUBE, "videoId4"),
+                        LocalDateTime.parse("2024-04-29T15:30:00"), Platform.YOUTUBE, "videoId4", null),
                 new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목5",
-                        LocalDateTime.parse("2024-04-29T15:30:00"), Platform.YOUTUBE, "videoId5")
+                        LocalDateTime.parse("2024-04-29T15:30:00"), Platform.YOUTUBE, "videoId5", null)
         );
         given(sourceService.getTop10VideoSourcesByPostId(anyLong())).willReturn(mockVideoList);
 
@@ -154,7 +154,8 @@ class SourceControllerV1Test {
                         .publishedAt(LocalDateTime.parse("2024-04-29T15:30:00"))
                         .platform(Platform.YOUTUBE)
                         .score(100)
-                        .videoId("dQw4w9WgXcQ")
+                        .videoId("videoId1")
+                        .description(null)
                         .build(),
                 TopSourceItemDto.builder()
                         .url("https://youtube.com/watch?v=video2")
@@ -162,6 +163,9 @@ class SourceControllerV1Test {
                         .thumbnailUrl("https://image.youtube2.jpg")
                         .publishedAt(LocalDateTime.parse("2024-02-04T18:30:00"))
                         .platform(Platform.YOUTUBE)
+                        .score(90)
+                        .videoId("videoId2")
+                        .description(null)
                         .build(),
                 TopSourceItemDto.builder()
                         .url("https://youtube.com/watch?v=video3")
@@ -169,6 +173,9 @@ class SourceControllerV1Test {
                         .thumbnailUrl("https://image.youtube3.jpg")
                         .publishedAt(LocalDateTime.parse("2022-02-06T01:11:30"))
                         .platform(Platform.YOUTUBE)
+                        .score(80)
+                        .videoId("videoId3")
+                        .description(null)
                         .build(),
                 TopSourceItemDto.builder()
                         .url("https://youtube.com/watch?v=video4")
@@ -176,13 +183,16 @@ class SourceControllerV1Test {
                         .thumbnailUrl("https://image.youtube4.jpg")
                         .publishedAt(LocalDateTime.parse("2024-09-20T19:53:28"))
                         .platform(Platform.YOUTUBE)
+                        .score(70)
+                        .videoId("videoId4")
+                        .description(null)
                         .build()
         );
 
         // Mocking할 Page<TopSourceItemDto> 객체 생성
         Pageable mockPageable =
                 PageRequest.of(0, 5, Sort.by("score").descending());
-        Page<TopSourceItemDto> mockPage = new PageImpl<>(mockItemList, mockPageable, 100);
+        Page<TopSourceItemDto> mockPage = new PageImpl<>(mockItemList, mockPageable, mockItemList.size());
 
         // Mocking할 최종 반환 객체 TopSourceListResponse 생성
         TopSourceListResponse mockResponse = TopSourceListResponse.from(mockPage);
@@ -210,6 +220,9 @@ class SourceControllerV1Test {
                 .andExpect(jsonPath("$.data.list[0].thumbnailUrl").value("https://image.youtube1.jpg"))
                 .andExpect(jsonPath("$.data.list[0].publishedAt").value("2024-04-29T15:30:00"))
                 .andExpect(jsonPath("$.data.list[0].platform").value("YOUTUBE"))
+                .andExpect(jsonPath("$.data.list[0].score").value(100))
+                .andExpect(jsonPath("$.data.list[0].videoId").value("videoId1"))
+                .andExpect(jsonPath("$.data.list[0].description").isEmpty())
 
                 // data.meta 필드 값 검증
                 .andExpect(jsonPath("$.data.meta.page").value(mockPage.getNumber()))
@@ -272,6 +285,9 @@ class SourceControllerV1Test {
                         .thumbnailUrl("https://image.naver.com/1.jpg")
                         .publishedAt(LocalDateTime.parse("2024-04-29T15:30:00"))
                         .platform(Platform.NAVER_NEWS)
+                        .score(100)
+                        .videoId(null)
+                        .description("네이버 뉴스 요약 내용 1")
                         .build(),
                 TopSourceItemDto.builder()
                         .url("https://news.naver.com/article/2")
@@ -279,6 +295,9 @@ class SourceControllerV1Test {
                         .thumbnailUrl("https://image.naver.com/2.jpg")
                         .publishedAt(LocalDateTime.parse("2024-02-04T18:30:00"))
                         .platform(Platform.NAVER_NEWS)
+                        .score(90)
+                        .videoId(null)
+                        .description("네이버 뉴스 요약 내용 2")
                         .build(),
                 TopSourceItemDto.builder()
                         .url("https://news.naver.com/article/3")
@@ -286,6 +305,9 @@ class SourceControllerV1Test {
                         .thumbnailUrl("https://image.naver.com/3.jpg")
                         .publishedAt(LocalDateTime.parse("2022-02-06T01:11:30"))
                         .platform(Platform.NAVER_NEWS)
+                        .score(80)
+                        .videoId(null)
+                        .description("네이버 뉴스 요약 내용 3")
                         .build(),
                 TopSourceItemDto.builder()
                         .url("https://news.naver.com/article/4")
@@ -293,6 +315,9 @@ class SourceControllerV1Test {
                         .thumbnailUrl("https://image.naver.com/4.jpg")
                         .publishedAt(LocalDateTime.parse("2024-09-20T19:53:28"))
                         .platform(Platform.NAVER_NEWS)
+                        .score(70)
+                        .videoId(null)
+                        .description("네이버 뉴스 요약 내용 4")
                         .build()
         );
 
@@ -327,6 +352,9 @@ class SourceControllerV1Test {
                 .andExpect(jsonPath("$.data.list[0].thumbnailUrl").value("https://image.naver.com/1.jpg"))
                 .andExpect(jsonPath("$.data.list[0].publishedAt").value("2024-04-29T15:30:00"))
                 .andExpect(jsonPath("$.data.list[0].platform").value("NAVER_NEWS"))
+                .andExpect(jsonPath("$.data.list[0].score").value(100))
+                .andExpect(jsonPath("$.data.list[0].videoId").isEmpty())
+                .andExpect(jsonPath("$.data.list[0].description").value("네이버 뉴스 요약 내용 1"))
 
                 // data.meta 필드 값 검증
                 .andExpect(jsonPath("$.data.meta.page").value(mockPage.getNumber()))

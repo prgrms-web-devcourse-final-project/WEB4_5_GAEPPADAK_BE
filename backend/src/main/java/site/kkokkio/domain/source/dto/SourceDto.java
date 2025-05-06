@@ -14,7 +14,8 @@ public record SourceDto(
         @NonNull String title,
         @NonNull LocalDateTime publishedAt,
         @NonNull Platform platform,
-        String videoId
+        String videoId,
+        String description
 ) {
     public static SourceDto from(Source source) {
         return SourceDto.builder()
@@ -24,6 +25,7 @@ public record SourceDto(
                 .publishedAt(source.getPublishedAt())
                 .platform(source.getPlatform())
                 .videoId(source.getVideoId())
+                .description(source.getDescription())
                 .build();
     }
 }

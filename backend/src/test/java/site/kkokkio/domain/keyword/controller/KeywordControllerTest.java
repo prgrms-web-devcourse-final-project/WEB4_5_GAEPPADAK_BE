@@ -74,7 +74,7 @@ public class KeywordControllerTest {
 		// given
 		List<SourceDto> mockSources = IntStream.range(0, 5)
 				.mapToObj(
-						i -> new SourceDto("url-" + i, "thumb-" + i, "title-" + i, LocalDateTime.now(), Platform.NAVER_NEWS, null))
+						i -> new SourceDto("url-" + i, "thumb-" + i, "title-" + i, LocalDateTime.now(), Platform.NAVER_NEWS, null, "description-" + i))
 				.toList();
 		when(keywordService.getPostListByKeyword(eq(keywordText), any(PageRequest.class)))
 				.thenReturn(new PageImpl<>(postDtos));

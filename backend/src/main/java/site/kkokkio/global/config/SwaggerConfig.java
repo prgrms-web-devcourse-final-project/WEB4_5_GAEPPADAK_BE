@@ -44,7 +44,7 @@ public class SwaggerConfig {
 			.info(info)
             .servers(List.of(
                 new Server()
-                    .url(swaggerServerUrl)
+                    .url(swaggerServerUrl+"/v3/api-docs")
             ));
 	}
 

@@ -21,6 +21,7 @@ import site.kkokkio.global.util.JwtUtils;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.BDDMockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -209,7 +210,7 @@ class SourceControllerV1Test {
                 // 첫번째 값 검증
                 .andExpect(jsonPath("$.data.list[0].url").value("https://youtube.com/watch?v=video1"))
                 .andExpect(jsonPath("$.data.list[0].title").value("유튜브 인기 영상 제목 1"))
-                .andExpect(jsonPath("$.data.list[0].description").value(null))
+                .andExpect(jsonPath("$.data.list[0].description").value(nullValue()))
                 .andExpect(jsonPath("$.data.list[0].thumbnailUrl").value("https://image.youtube1.jpg"))
                 .andExpect(jsonPath("$.data.list[0].publishedAt").value("2024-04-29T15:30:00"))
                 .andExpect(jsonPath("$.data.list[0].platform").value("YOUTUBE"))

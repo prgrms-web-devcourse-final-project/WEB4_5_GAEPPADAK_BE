@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -61,9 +62,22 @@ public class PostControllerV1 {
 	@Operation(summary = "키워드 기반 Post 검색")
 	public RsData<PostListResponse> getPostListByKeyword(
 		@RequestParam String keyword,
-		@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+		@RequestParam(value = "sort", required = false, defaultValue = "createdAt") String sortField, // 정렬할 필드
+		@RequestParam(value = "order", required = false, defaultValue = "DESC") Sort.Direction orderDirection, // 정렬 방향 필드 추가
+		@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable defaultPageable
 	) {
-		Page<PostDto> postDtoList = keywordService.getPostListByKeyword(keyword, pageable);
+		// 제목 정렬 시 PostKeyword 엔티티에 title이 없으므로 post.title로 접근
+		if(sortField.equals("title"))
+			sortField = "post.title";
+
+		Sort sort = Sort.by(orderDirection, sortField);
+		Pageable customPaging = PageRequest.of(
+			defaultPageable.getPageNumber(),
+			defaultPageable.getPageSize(),
+			sort
+		);
+
+		Page<PostDto> postDtoList = keywordService.getPostListByKeyword(keyword, customPaging);
 		PostListResponse response = PostListResponse.from(postDtoList);
 		return new RsData<>(
 			"200",

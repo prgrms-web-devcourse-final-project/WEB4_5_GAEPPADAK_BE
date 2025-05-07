@@ -1,12 +1,11 @@
 package site.kkokkio.domain.source.dto;
 
-import java.time.LocalDateTime;
-
-import org.springframework.lang.NonNull;
-
 import lombok.Builder;
+import org.springframework.lang.NonNull;
 import site.kkokkio.domain.source.entity.Source;
 import site.kkokkio.global.enums.Platform;
+
+import java.time.LocalDateTime;
 
 @Builder
 public record SourceDto(

@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springdoc.core.customizers.OperationCustomizer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.method.HandlerMethod;
@@ -18,6 +19,7 @@ import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
+import io.swagger.v3.oas.models.servers.Server;
 import site.kkokkio.global.dto.Empty;
 import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.exception.doc.ApiErrorCodeExamples;
@@ -26,6 +28,9 @@ import site.kkokkio.global.exception.doc.ExampleHolder;
 
 @Configuration
 public class SwaggerConfig {
+
+    @Value("${springdoc.swagger-ui.url}")
+    private String swaggerServerUrl;
 
 	// Swagger info 작성 (제목, 버전, 설명)
 	@Bean
@@ -36,7 +41,11 @@ public class SwaggerConfig {
 			.description("프로젝트 '꼬끼오' 서비스의 백엔드 API 명세서입니다.");
 
 		return new OpenAPI()
-			.info(info);
+			.info(info)
+            .servers(List.of(
+                new Server()
+                    .url(swaggerServerUrl)
+            ));
 	}
 
 	// API 응답을 커스터마이징하는 메서드

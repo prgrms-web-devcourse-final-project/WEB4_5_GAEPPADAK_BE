@@ -170,3 +170,7 @@ mock:
   news-file: naver-news-search.json
   youtube-file: youtube-videos-search.json
   post-file: post-search.json
+
+springdoc:
+  swagger-ui:
+    url: http://localhost

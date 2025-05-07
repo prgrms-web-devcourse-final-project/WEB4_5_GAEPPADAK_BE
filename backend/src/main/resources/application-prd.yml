@@ -23,3 +23,7 @@ schedule:
 
 mock:
   enable: false
+
+springdoc:
+  swagger-ui:
+    url: https://api.prd.kkokkio.site/

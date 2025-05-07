@@ -13,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -58,6 +59,9 @@ public class AuthControllerV1Test {
 
 	@MockitoBean
 	private RedisTemplate<String, String> redisTemplate;
+
+	@MockitoBean
+	private RedisMessageListenerContainer redisMessageListenerContainer;
 
 	@Test
 	@DisplayName("로그인 - 성공")

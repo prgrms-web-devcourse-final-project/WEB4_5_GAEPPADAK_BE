@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -64,9 +65,22 @@ public class PostControllerV1 {
 	@Operation(summary = "키워드 기반 Post 검색")
 	public RsData<PostListResponse> getPostListByKeyword(
 		@RequestParam String keyword,
-		@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+		@RequestParam(value = "sort", required = false, defaultValue = "createdAt") String sortField, // 정렬할 필드
+		@RequestParam(value = "order", required = false, defaultValue = "DESC") Sort.Direction orderDirection, // 정렬 방향 필드 추가
+		@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable defaultPageable
 	) {
-		Page<PostDto> postDtoList = keywordService.getPostListByKeyword(keyword, pageable);
+		// 제목 정렬 시 PostKeyword 엔티티에 title이 없으므로 post.title로 접근
+		if(sortField.equals("title"))
+			sortField = "post.title";
+
+		Sort sort = Sort.by(orderDirection, sortField);
+		Pageable customPaging = PageRequest.of(
+			defaultPageable.getPageNumber(),
+			defaultPageable.getPageSize(),
+			sort
+		);
+
+		Page<PostDto> postDtoList = keywordService.getPostListByKeyword(keyword, customPaging);
 		PostListResponse response = PostListResponse.from(postDtoList);
 		return new RsData<>(
 			"200",
@@ -75,25 +89,36 @@ public class PostControllerV1 {
 		);
 	}
 
-    @Operation(
-        summary = "키워드 검색 출처 5개 최신순 조회 (페이지네이션)",
-        description = "키워드 검색 결과인 포스트 목록 기준으로 최신순 출처 목록을 조회힙니다. (없을 경우 빈 배열 반환)"
-    )
-    @ApiErrorCodeExamples({})
-    @GetMapping("/search/sources")
-    public RsData<PostSearchSourceListResponse> getKeywordSearchSources(
+	@Operation(
+		summary = "키워드 검색 출처 5개 최신순 조회 (페이지네이션)",
+		description = "키워드 검색 결과인 포스트 목록 기준으로 최신순 출처 목록을 조회힙니다. (없을 경우 빈 배열 반환)"
+	)
+	@ApiErrorCodeExamples({})
+	@GetMapping("/search/sources")
+	public RsData<PostSearchSourceListResponse> getKeywordSearchSources(
 		@RequestParam String keyword,
-		@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
-    ) {
-		Page<PostDto> postDtoList = keywordService.getPostListByKeyword(keyword, pageable);
-        List<SourceDto> searchSourceList = sourceService.getTop5SourcesByPosts(postDtoList.toList());
-		PostSearchSourceListResponse response = PostSearchSourceListResponse.from(searchSourceList, postDtoList);
-		return new RsData<>(
-			"200",
-			"성공적으로 조회되었습니다.",
-			response
+		@RequestParam(value = "sort", required = false, defaultValue = "createdAt") String sortField, // 정렬할 필드
+		@RequestParam(value = "order", required = false, defaultValue = "DESC") Sort.Direction orderDirection, // 정렬 방향 필드 추가
+		@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable defaultPageable
+	) {
+		if(sortField.equals("title"))
+		sortField = "post.title";
+		
+		Sort sort = Sort.by(orderDirection, sortField);
+		Pageable customPaging = PageRequest.of(
+			defaultPageable.getPageNumber(),
+			defaultPageable.getPageSize(),
+			sort
 		);
-    }
+	    	Page<PostDto> postDtoList = keywordService.getPostListByKeyword(keyword, customPaging);
+	    	List<SourceDto> searchSourceList = sourceService.getTop5SourcesByPosts(postDtoList.toList());
+	    	PostSearchSourceListResponse response = PostSearchSourceListResponse.from(searchSourceList, postDtoList);
+	    	return new RsData<>(
+	      		"200",
+	      		"성공적으로 조회되었습니다.",
+	      		response
+	    	);
+	}
 
 	@Operation(summary = "실시간 키워드에 해당하는 포스트 리스트 조회")
 	@ApiErrorCodeExamples({ErrorCode.POST_NOT_FOUND_2})

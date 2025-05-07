@@ -36,6 +36,10 @@ public class AuthService {
 		if (!passwordEncoder.matches(rawPassword, member.getPasswordHash())) {
 			throw new ServiceException("401", "비밀번호가 올바르지 않습니다.");
 		}
+		// 인증 확인
+		if (!member.isEmailVerified()) {
+			throw new ServiceException("403", "인증되지 않은 회원입니다.");
+		}
 
 		Map<String, Object> claims = new HashMap<>();
 		claims.put("isEmailVerified", member.isEmailVerified());

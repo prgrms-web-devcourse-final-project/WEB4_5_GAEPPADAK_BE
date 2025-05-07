@@ -10,7 +10,8 @@
 ### infra custom ###
 /infra/secrets.tf
 
-/infra/dev/.terraform
+/infra/**/.terraform
+
 /infra/dev/.turbo
 /infra/dev/terraform.lock.hcl
 /infra/dev/terraform.tfstate
@@ -18,7 +19,6 @@
 /infra/dev/.env
 infra/dev/.terraform.lock.hcl
 
-/infra/prd/.terraform
 /infra/prd/.turbo
 /infra/prd/terraform.lock.hcl
 /infra/prd/terraform.tfstate

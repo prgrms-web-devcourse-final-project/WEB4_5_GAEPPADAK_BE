@@ -20,6 +20,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -54,6 +55,9 @@ class CommentControllerV1Test {
 
 	@MockitoBean
 	private RedisTemplate<String, String> redisTemplate;
+
+	@MockitoBean
+	private RedisMessageListenerContainer redisMessageListenerContainer;
 
 	@MockitoBean
 	private JwtUtils jwtUtils;

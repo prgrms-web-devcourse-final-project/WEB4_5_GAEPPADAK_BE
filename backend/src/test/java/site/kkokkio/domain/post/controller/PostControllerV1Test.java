@@ -22,6 +22,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -56,6 +57,9 @@ public class PostControllerV1Test {
 
 	@MockitoBean
 	private RedisTemplate<String, String> redisTemplate;
+
+	@MockitoBean
+	private RedisMessageListenerContainer redisMessageListenerContainer;
 
 	@MockitoBean
 	private JwtUtils jwtUtils;
@@ -255,7 +259,8 @@ public class PostControllerV1Test {
 		// given
 		List<SourceDto> mockSources = IntStream.range(0, 5)
 			.mapToObj(
-				i -> new SourceDto("id-" + i, "url-" + i, "thumb-" + i, "title-" + i, LocalDateTime.now(), Platform.NAVER_NEWS))
+				i -> new SourceDto("id-" + i, "url-" + i, "thumb-" + i, "title-" + i, LocalDateTime.now(),
+					Platform.NAVER_NEWS))
 			.toList();
 		when(keywordService.getPostListByKeyword(eq(keywordText), any(PageRequest.class)))
 			.thenReturn(new PageImpl<>(postDtos));

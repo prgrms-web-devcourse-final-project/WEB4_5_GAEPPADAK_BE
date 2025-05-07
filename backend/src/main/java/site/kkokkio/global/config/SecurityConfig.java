@@ -106,7 +106,8 @@ public class SecurityConfig {
 			"https://www.app4.qwas.shop", // Todo: 임시 프론트 배포 URL2
 			"https://web.api.deploy.kkokkio.site:3000", // 프론트 API URL
 			"http://localhost:3000", // 로컬용
-			"https://api.deploy.kkokkio.site" // 백엔드 API URL
+			"https://api.deploy.kkokkio.site", // 백엔드 API Dev
+			"https://api.prd.kkokkio.site"// 백엔드 API Prod
 		)); // 프론트 사이트 추가
 		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // 허용 HTTP 메소드
 		// configuration.setAllowedHeaders(Arrays.asList("*")); // HTTP 헤더(모두 허용)

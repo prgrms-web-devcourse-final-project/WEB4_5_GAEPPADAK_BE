@@ -91,6 +91,10 @@ networks:
   monitoring:
     driver: bridge
 
+networks:
+  monitoring:
+    driver: bridge
+
 volumes:
   db_data:
   prometheus_data:

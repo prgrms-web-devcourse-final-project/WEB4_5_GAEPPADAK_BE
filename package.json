@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "workspaces": [
     "backend",
-    "infra"
+    "infra/dev",
+    "infra/prd"
   ],
   "scripts": {
     "doppler": "npm run doppler:setup && turbo run doppler",

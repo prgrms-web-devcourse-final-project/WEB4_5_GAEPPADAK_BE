@@ -4,9 +4,14 @@
 # doppler run -- terraform apply
 # doppler run -- terraform destroy
 
+variable "env" {
+  description = "env"
+  default     = "dev"
+}
+
 variable "prefix" {
   description = "Prefix for all resources"
-  default     = "team04"
+  default     = "team04-dev"
 }
 
 variable "region" {

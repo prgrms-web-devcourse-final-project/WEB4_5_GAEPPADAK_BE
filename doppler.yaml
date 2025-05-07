@@ -2,6 +2,11 @@ setup:
   - project: kkokkio-backend
     config: local
     path: backend
+
   - project: kkokkio-infra
     config: dev
-    path: infra
+    path: infra/dev
+
+  - project: kkokkio-infra
+    config: prd
+    path: infra/prd

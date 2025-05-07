@@ -11,12 +11,11 @@ spring:
 logging:
   level:
     root: WARN
-    org.hibernate.SQL: OFF                     # 쿼리 로그 OFF
-    org.hibernate.orm.jdbc.bind: OFF           # 바인딩 로그 OFF
-    org.hibernate.orm.jdbc.extract: OFF        # JDBC extract 로그 OFF
+    org.hibernate.SQL: OFF # 쿼리 로그 OFF
+    org.hibernate.orm.jdbc.bind: OFF # 바인딩 로그 OFF
+    org.hibernate.orm.jdbc.extract: OFF # JDBC extract 로그 OFF
     org.springframework.transaction.interceptor: WARN
-    org.flywaydb.core: WARN                    # Flyway 실패나 경고만 로그
-
+    org.flywaydb.core: WARN # Flyway 실패나 경고만 로그
 
 schedule:
   cron: 0 0 * * * * # 매시간마다 실행
@@ -24,6 +23,5 @@ schedule:
 mock:
   enable: false
 
-springdoc:
-  swagger-ui:
-    url: https://api.prd.kkokkio.site/
+swagger:
+  url: https://api.prd.kkokkio.site

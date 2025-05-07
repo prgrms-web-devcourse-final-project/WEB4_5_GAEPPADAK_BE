@@ -29,7 +29,7 @@ import site.kkokkio.global.exception.doc.ExampleHolder;
 @Configuration
 public class SwaggerConfig {
 
-    @Value("${springdoc.swagger-ui.url}")
+    @Value("${swagger.url}")
     private String swaggerServerUrl;
 
 	// Swagger info 작성 (제목, 버전, 설명)

@@ -171,6 +171,5 @@ mock:
   youtube-file: youtube-videos-search.json
   post-file: post-search.json
 
-springdoc:
-  swagger-ui:
-    url: http://localhost
+swagger:
+  url: http://localhost:8080

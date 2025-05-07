@@ -1,4 +1,59 @@
 services:
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    depends_on:
+      - mysql-exporter
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=${DB_USERNAME}
+      - GF_SECURITY_ADMIN_PASSWORD=${DB_PASSWORD}
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
+
+  mysql-exporter:
+    container_name: mysql-exporter
+    image: prom/mysqld-exporter:latest
+    ports:
+      - "9104:9104"
+    command:
+      - "--mysqld.username=${DB_USERNAME}:${DB_PASSWORD}"
+      - "--mysqld.address=db:3306"
+    depends_on:
+      - db
+    networks:
+      - monitoring
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - monitoring
+
   db:
     image: mysql:8.0
     container_name: mysql
@@ -16,6 +71,8 @@ services:
     volumes:
       - db_data:/var/lib/mysql
       - ./mysql_logs:/logs
+    networks:
+      - monitoring
 
   redis: # container name
     image: redis:alpine
@@ -26,5 +83,11 @@ services:
     volumes: # 마운트할 볼륨 설정
       - ./redis_data:/data
 
+networks:
+  monitoring:
+    driver: bridge
+
 volumes:
   db_data:
+  prometheus_data:
+  grafana_data:

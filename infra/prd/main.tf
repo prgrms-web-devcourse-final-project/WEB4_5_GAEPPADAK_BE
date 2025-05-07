@@ -321,6 +321,9 @@ sudo mkswap /swapfile
 sudo swapon /swapfile
 sudo sh -c 'echo "/swapfile swap swap defaults 0 0" >> /etc/fstab'
 
+캐시 및 목록 업데이트를 먼저 수행하여 설치 안정성 확보
+sudo yum update -y
+
 # 도커 설치 및 실행/활성화
 yum install docker -y
 systemctl enable docker
@@ -359,7 +362,6 @@ docker run -d \
   redis:alpine
 
 # prd 환경에선 mysql 대신 rds 사용
-"
 
 echo "${var.GITHUB_ACCESS_TOKEN_1}" | docker login ghcr.io -u ${var.GITHUB_ACCESS_TOKEN_1_OWNER} --password-stdin
 

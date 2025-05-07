@@ -5,9 +5,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,6 +31,9 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import site.kkokkio.domain.keyword.service.KeywordService;
 import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.service.PostService;
+import site.kkokkio.domain.source.dto.SourceDto;
+import site.kkokkio.domain.source.service.SourceService;
+import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.global.security.CustomUserDetailsService;
 import site.kkokkio.global.util.JwtUtils;
@@ -42,6 +47,9 @@ public class PostControllerV1Test {
 
 	@MockitoBean
 	private PostService postService;
+
+	@MockitoBean
+	private SourceService sourceService;
 
 	@MockitoBean
 	private CustomUserDetailsService customUserDetailsService;
@@ -238,6 +246,34 @@ public class PostControllerV1Test {
 			.andExpect(MockMvcResultMatchers.status().isNotFound())
 			.andExpect(MockMvcResultMatchers.jsonPath("$.code").value("404"))
 			.andExpect(MockMvcResultMatchers.jsonPath("$.message").value("포스트가 존재하지 않습니다."))
+			.andDo(print());
+	}
+
+	@Test
+	@DisplayName("키워드 검색 소스 - 성공")
+	public void getKeywordSearchSources_Success() throws Exception {
+		// given
+		List<SourceDto> mockSources = IntStream.range(0, 5)
+			.mapToObj(
+				i -> new SourceDto("id-" + i, "url-" + i, "thumb-" + i, "title-" + i, LocalDateTime.now(), Platform.NAVER_NEWS))
+			.toList();
+		when(keywordService.getPostListByKeyword(eq(keywordText), any(PageRequest.class)))
+			.thenReturn(new PageImpl<>(postDtos));
+		when(sourceService.getTop5SourcesByPosts(anyList()))
+			.thenReturn(mockSources);
+
+		// when & then
+		mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/posts/search/sources")
+				.param("keyword", keywordText)
+				.param("page", String.valueOf(page))
+				.param("size", String.valueOf(size))
+				.contentType(MediaType.APPLICATION_JSON))
+			.andExpect(MockMvcResultMatchers.status().isOk())
+			.andExpect(MockMvcResultMatchers.jsonPath("$.code").value("200"))
+			.andExpect(MockMvcResultMatchers.jsonPath("$.message").value("성공적으로 조회되었습니다."))
+			.andExpect(MockMvcResultMatchers.jsonPath("$.data.list").isArray())
+			.andExpect(MockMvcResultMatchers.jsonPath("$.data.list.length()").value(5))
+			.andExpect(MockMvcResultMatchers.jsonPath("$.data.meta.page").value(0))
 			.andDo(print());
 	}
 }

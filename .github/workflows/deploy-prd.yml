@@ -1,4 +1,4 @@
-name: deploy-develop
+name: deploy-prd
 
 on:
   push:

@@ -173,4 +173,4 @@ mock:
 
 springdoc:
   swagger-ui:
-    url: http://localhost
+    url: http://localhost:8080/v3/api-docs

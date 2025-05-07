@@ -19,7 +19,6 @@ import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
-import io.swagger.v3.oas.models.servers.Server;
 import site.kkokkio.global.dto.Empty;
 import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.exception.doc.ApiErrorCodeExamples;
@@ -41,11 +40,7 @@ public class SwaggerConfig {
 			.description("프로젝트 '꼬끼오' 서비스의 백엔드 API 명세서입니다.");
 
 		return new OpenAPI()
-			.info(info)
-            .servers(List.of(
-                new Server()
-                    .url(swaggerServerUrl)
-            ));
+			.info(info);
 	}
 
 	// API 응답을 커스터마이징하는 메서드

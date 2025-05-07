@@ -284,7 +284,8 @@ docker run -d \
   -p 6379:6379 \
   -v /dockerProjects/redis_data:/data \
   -e TZ=Asia/Seoul \
-  redis:alpine
+  redis:alpine \
+  redis-server --notify-keyspace-events Ex --dir /data
 
 # mysql 컨테이너 (도커컴포즈 맞춤)
 docker run -d \

@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 public record TopSourceItemDto(
         @NonNull String url,
         @NonNull String title,
+        String description,
         String thumbnailUrl,
         @NonNull LocalDateTime publishedAt,
         @NonNull Platform platform,
@@ -22,6 +23,7 @@ public record TopSourceItemDto(
         return TopSourceItemDto.builder()
                 .url(source.getNormalizedUrl())
                 .title(source.getTitle())
+                .description(source.getDescription())
                 .thumbnailUrl(source.getThumbnailUrl())
                 .publishedAt(source.getPublishedAt())
                 .platform(source.getPlatform())

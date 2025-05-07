@@ -31,7 +31,6 @@ import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.infra.common.exception.RetryableExternalApiException;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -48,55 +47,63 @@ class SourceServiceTest {
     @InjectMocks
     private SourceService sourceService;
 
-    @Mock private PostService postService;
-    @Mock private PostSourceRepository postSourceRepository;
-    @Mock private SourceRepository sourceRepository;
-    @Mock private NewsApiPort newsApi;
-    @Mock private VideoApiPort videoApi;
-    @Mock private KeywordMetricHourlyService keywordMetricHourlyService;
-    @Mock private OpenGraphService openGraphService;
-    @Mock private KeywordSourceRepository keywordSourceRepository;
+    @Mock
+    private PostService postService;
+    @Mock
+    private PostSourceRepository postSourceRepository;
+    @Mock
+    private SourceRepository sourceRepository;
+    @Mock
+    private NewsApiPort newsApi;
+    @Mock
+    private VideoApiPort videoApi;
+    @Mock
+    private KeywordMetricHourlyService keywordMetricHourlyService;
+    @Mock
+    private OpenGraphService openGraphService;
+    @Mock
+    private KeywordSourceRepository keywordSourceRepository;
 
 
-	private List<Source> newsSources;
-	private List<PostSource> newsPostSources;
-	private List<Source> youtubeSources;
-	private List<PostSource> youtubePostSources;
+    private List<Source> newsSources;
+    private List<PostSource> newsPostSources;
+    private List<Source> youtubeSources;
+    private List<PostSource> youtubePostSources;
     private Long postId = 1L;
     private Post dummyPost;
 
-	@BeforeEach
-	void setUp() {
+    @BeforeEach
+    void setUp() {
         dummyPost = Post.builder().id(postId).build();
-		newsSources = Arrays.asList(
-			Source.builder().fingerprint("f1").normalizedUrl("https://news1").title("뉴스1").description("뉴스1 설명")
-                .thumbnailUrl("thumb1").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build(),
-			Source.builder().fingerprint("f2").normalizedUrl("https://news2").title("뉴스2").description("뉴스2 설명")
-                .thumbnailUrl("thumb2").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build(),
-			Source.builder().fingerprint("f3").normalizedUrl("https://news3").title("뉴스3").description("뉴스3 설명")
-                .thumbnailUrl("thumb3").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build()
-		);
+        newsSources = Arrays.asList(
+                Source.builder().fingerprint("f1").normalizedUrl("https://news1").title("뉴스1").description("뉴스1 설명")
+                        .thumbnailUrl("thumb1").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build(),
+                Source.builder().fingerprint("f2").normalizedUrl("https://news2").title("뉴스2").description("뉴스2 설명")
+                        .thumbnailUrl("thumb2").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build(),
+                Source.builder().fingerprint("f3").normalizedUrl("https://news3").title("뉴스3").description("뉴스3 설명")
+                        .thumbnailUrl("thumb3").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build()
+        );
 
         newsPostSources = Arrays.asList(
-            PostSource.builder().id(101L).post(dummyPost).source(newsSources.get(0)).build(),
-            PostSource.builder().id(102L).post(dummyPost).source(newsSources.get(1)).build(),
-            PostSource.builder().id(103L).post(dummyPost).source(newsSources.get(2)).build()
+                PostSource.builder().id(101L).post(dummyPost).source(newsSources.get(0)).build(),
+                PostSource.builder().id(102L).post(dummyPost).source(newsSources.get(1)).build(),
+                PostSource.builder().id(103L).post(dummyPost).source(newsSources.get(2)).build()
         );
-		youtubeSources = Arrays.asList(
-			Source.builder().fingerprint("f1").normalizedUrl("https://youtube1").title("유튜브1").description("유튜브1 설명")
-                .thumbnailUrl("thumb1").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build(),
-			Source.builder().fingerprint("f2").normalizedUrl("https://youtube2").title("유튜브2").description("유튜브2 설명")
-                .thumbnailUrl("thumb2").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build(),
-			Source.builder().fingerprint("f3").normalizedUrl("https://youtube3").title("유튜브3").description("유튜브3 설명")
-                .thumbnailUrl("thumb3").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).build()
-		);
+        youtubeSources = Arrays.asList(
+                Source.builder().fingerprint("f1").normalizedUrl("https://youtube1").title("유튜브1").description("유튜브1 설명")
+                        .thumbnailUrl("thumb1").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).build(),
+                Source.builder().fingerprint("f2").normalizedUrl("https://youtube2").title("유튜브2").description("유튜브2 설명")
+                        .thumbnailUrl("thumb2").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).build(),
+                Source.builder().fingerprint("f3").normalizedUrl("https://youtube3").title("유튜브3").description("유튜브3 설명")
+                        .thumbnailUrl("thumb3").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).build()
+        );
 
         youtubePostSources = Arrays.asList(
-            PostSource.builder().id(104L).post(dummyPost).source(youtubeSources.get(0)).build(),
-            PostSource.builder().id(105L).post(dummyPost).source(youtubeSources.get(1)).build(),
-            PostSource.builder().id(106L).post(dummyPost).source(youtubeSources.get(2)).build()
+                PostSource.builder().id(104L).post(dummyPost).source(youtubeSources.get(0)).build(),
+                PostSource.builder().id(105L).post(dummyPost).source(youtubeSources.get(1)).build(),
+                PostSource.builder().id(106L).post(dummyPost).source(youtubeSources.get(2)).build()
         );
-	}
+    }
 
     @Test
     @DisplayName("뉴스 출처 10개 조회 - 성공")
@@ -217,27 +224,27 @@ class SourceServiceTest {
         given(keywordMetricHourlyService.findHourlyMetrics()).willReturn(List.of(metric));
 
         NewsDto dto = NewsDto.builder()
-            .title("뉴스 제목")
-            .link("https://example.com/news")
-            .originalLink("https://example.com/origin")
-            .description("뉴스 설명")
-            .pubDate(LocalDateTime.now())
-            .build();
+                .title("뉴스 제목")
+                .link("https://example.com/news")
+                .originalLink("https://example.com/origin")
+                .description("뉴스 설명")
+                .pubDate(LocalDateTime.now())
+                .build();
 
         given(newsApi.fetchNews(eq(keywordText), anyInt(), anyInt(), eq("sim")))
-            .willReturn(Mono.just(List.of(dto)));
+                .willReturn(Mono.just(List.of(dto)));
 
         // when
         sourceService.searchNews();
 
         // then
         then(sourceRepository).should().insertIgnoreAll(argThat(sources ->
-            sources.size() == 1 &&
-            sources.getFirst().getTitle().equals("뉴스 제목")
+                sources.size() == 1 &&
+                        sources.getFirst().getTitle().equals("뉴스 제목")
         ));
         then(keywordSourceRepository).should().insertIgnoreAll(argThat(ksList ->
-            ksList.size() == 1 &&
-            ksList.getFirst().getKeyword().getId().equals(keywordId)
+                ksList.size() == 1 &&
+                        ksList.getFirst().getKeyword().getId().equals(keywordId)
         ));
         then(openGraphService).should().enrichAsync(any(Source.class));
     }
@@ -247,7 +254,7 @@ class SourceServiceTest {
     void searchNews_empty() {
         // given
         KeywordMetricHourlyDto metric = new KeywordMetricHourlyDto(1L, "키워드",
-            Platform.NAVER_NEWS, LocalDateTime.now(), 0, 0, false);
+                Platform.NAVER_NEWS, LocalDateTime.now(), 0, 0, false);
         given(keywordMetricHourlyService.findHourlyMetrics())
                 .willReturn(List.of(metric));
 
@@ -268,9 +275,9 @@ class SourceServiceTest {
     void searchNews_error() {
         // given
         KeywordMetricHourlyDto metric1 = new KeywordMetricHourlyDto(1L, "실패키워드",
-            Platform.NAVER_NEWS, LocalDateTime.now(), 0, 0, false);
+                Platform.NAVER_NEWS, LocalDateTime.now(), 0, 0, false);
         KeywordMetricHourlyDto metric2 = new KeywordMetricHourlyDto(2L, "정상키워드",
-            Platform.NAVER_NEWS, LocalDateTime.now(), 0, 0, false);
+                Platform.NAVER_NEWS, LocalDateTime.now(), 0, 0, false);
         given(keywordMetricHourlyService.findHourlyMetrics())
                 .willReturn(List.of(metric1, metric2));
 
@@ -283,10 +290,10 @@ class SourceServiceTest {
                 .build();
 
         given(newsApi.fetchNews(eq("실패키워드"), anyInt(), anyInt(), anyString()))
-            .willReturn(Mono.error(new RetryableExternalApiException(503, "서버 오류")));
+                .willReturn(Mono.error(new RetryableExternalApiException(503, "서버 오류")));
 
         given(newsApi.fetchNews(eq("정상키워드"), anyInt(), anyInt(), anyString()))
-            .willReturn(Mono.just(List.of(dto)));
+                .willReturn(Mono.just(List.of(dto)));
 
         // when
         sourceService.searchNews();
@@ -330,25 +337,25 @@ class SourceServiceTest {
 
         // Mocking할 Repository의 반환 값 (Page<TopSourceItemDto>) 생성
         List<TopSourceItemDto> mockSourceItemDtoList = Arrays.asList(
-                TopSourceItemDto.builder().url("http://youtube.com/v1").title("영상제목1")
+                TopSourceItemDto.builder().url("http://youtube.com/v1").title("영상제목1").description(null)
                         .thumbnailUrl("thumb1").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(90).build(),
-                TopSourceItemDto.builder().url("http://youtube.com/v2").title("영상제목2")
+                TopSourceItemDto.builder().url("http://youtube.com/v2").title("영상제목2").description(null)
                         .thumbnailUrl("thumb2").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(70).build(),
-                TopSourceItemDto.builder().url("http://youtube.com/v3").title("영상제목3")
+                TopSourceItemDto.builder().url("http://youtube.com/v3").title("영상제목3").description(null)
                         .thumbnailUrl("thumb3").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(30).build(),
-                TopSourceItemDto.builder().url("http://youtube.com/v4").title("영상제목4")
+                TopSourceItemDto.builder().url("http://youtube.com/v4").title("영상제목4").description(null)
                         .thumbnailUrl("thumb4").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(77).build(),
-                TopSourceItemDto.builder().url("http://youtube.com/v5").title("영상제목5")
+                TopSourceItemDto.builder().url("http://youtube.com/v5").title("영상제목5").description(null)
                         .thumbnailUrl("thumb5").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(70).build(),
-                TopSourceItemDto.builder().url("http://youtube.com/v6").title("영상제목6")
+                TopSourceItemDto.builder().url("http://youtube.com/v6").title("영상제목6").description(null)
                         .thumbnailUrl("thumb6").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(86).build(),
-                TopSourceItemDto.builder().url("http://youtube.com/v7").title("영상제목7")
+                TopSourceItemDto.builder().url("http://youtube.com/v7").title("영상제목7").description(null)
                         .thumbnailUrl("thumb7").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(43).build(),
-                TopSourceItemDto.builder().url("http://youtube.com/v8").title("영상제목8")
+                TopSourceItemDto.builder().url("http://youtube.com/v8").title("영상제목8").description(null)
                         .thumbnailUrl("thumb8").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(86).build(),
-                TopSourceItemDto.builder().url("http://youtube.com/v9").title("영상제목9")
+                TopSourceItemDto.builder().url("http://youtube.com/v9").title("영상제목9").description(null)
                         .thumbnailUrl("thumb9").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(42).build(),
-                TopSourceItemDto.builder().url("http://youtube.com/v10").title("영상제목10")
+                TopSourceItemDto.builder().url("http://youtube.com/v10").title("영상제목10").description(null)
                         .thumbnailUrl("thumb10").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(55).build()
         );
 
@@ -357,7 +364,7 @@ class SourceServiceTest {
 
         // Repository가 반환할 Mock Page<TopSourceItemDto> 객체 생성
         Page<TopSourceItemDto> mockSourceItemDtoPage = new PageImpl<>(
-                mockSourceItemDtoList, pageable, 50);
+                mockSourceItemDtoList, pageable, mockSourceItemDtoList.size());
 
         // keywordMetricHourlyService.findHourlyMetrics() 호출 시 mockTopKeywords 반환
         given(keywordMetricHourlyService.findHourlyMetrics()).willReturn(mockTopKeywords);
@@ -383,6 +390,7 @@ class SourceServiceTest {
                 .isEqualTo(mockSourceItemDtoList.getFirst().url());
         assertThat(result.list().getFirst().title())
                 .isEqualTo(mockSourceItemDtoList.getFirst().title());
+        assertThat(result.list().getFirst().description()).isNull();
         assertThat(result.list().getFirst().thumbnailUrl())
                 .isEqualTo(mockSourceItemDtoList.getFirst().thumbnailUrl());
         assertThat(result.list().getFirst().publishedAt())
@@ -397,6 +405,7 @@ class SourceServiceTest {
                 .isEqualTo(mockSourceItemDtoList.get(1).url());
         assertThat(result.list().get(1).title())
                 .isEqualTo(mockSourceItemDtoList.get(1).title());
+        assertThat(result.list().get(1).description()).isNull();
         assertThat(result.list().get(1).thumbnailUrl())
                 .isEqualTo(mockSourceItemDtoList.get(1).thumbnailUrl());
         assertThat(result.list().get(1).publishedAt())
@@ -552,25 +561,25 @@ class SourceServiceTest {
 
         // Mocking할 Repository의 반환 값 (Page<TopSourceItemDto>) 생성
         List<TopSourceItemDto> mockSourceItemDtoList = Arrays.asList(
-                TopSourceItemDto.builder().url("http://news.naver.com/article/1").title("뉴스제목1")
+                TopSourceItemDto.builder().url("http://news.naver.com/article/1").title("뉴스제목1").description("네이버 뉴스 요약 1")
                         .thumbnailUrl("thumb1").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(90).build(),
-                TopSourceItemDto.builder().url("http://news.naver.com/article/2").title("뉴스제목2")
+                TopSourceItemDto.builder().url("http://news.naver.com/article/2").title("뉴스제목2").description("네이버 뉴스 요약 2")
                         .thumbnailUrl("thumb2").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(70).build(),
-                TopSourceItemDto.builder().url("http://news.naver.com/article/3").title("뉴스제목3")
+                TopSourceItemDto.builder().url("http://news.naver.com/article/3").title("뉴스제목3").description("네이버 뉴스 요약 3")
                         .thumbnailUrl("thumb3").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(30).build(),
-                TopSourceItemDto.builder().url("http://news.naver.com/article/4").title("뉴스제목4")
+                TopSourceItemDto.builder().url("http://news.naver.com/article/4").title("뉴스제목4").description("네이버 뉴스 요약 4")
                         .thumbnailUrl("thumb4").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(77).build(),
-                TopSourceItemDto.builder().url("http://news.naver.com/article/5").title("뉴스제목5")
+                TopSourceItemDto.builder().url("http://news.naver.com/article/5").title("뉴스제목5").description("네이버 뉴스 요약 5")
                         .thumbnailUrl("thumb5").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(70).build(),
-                TopSourceItemDto.builder().url("http://news.naver.com/article/6").title("뉴스제목6")
+                TopSourceItemDto.builder().url("http://news.naver.com/article/6").title("뉴스제목6").description("네이버 뉴스 요약 6")
                         .thumbnailUrl("thumb6").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(86).build(),
-                TopSourceItemDto.builder().url("http://news.naver.com/article/7").title("뉴스제목7")
+                TopSourceItemDto.builder().url("http://news.naver.com/article/7").title("뉴스제목7").description("네이버 뉴스 요약 7")
                         .thumbnailUrl("thumb7").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(43).build(),
-                TopSourceItemDto.builder().url("http://news.naver.com/article/8").title("뉴스제목8")
+                TopSourceItemDto.builder().url("http://news.naver.com/article/8").title("뉴스제목8").description("네이버 뉴스 요약 8")
                         .thumbnailUrl("thumb8").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(86).build(),
-                TopSourceItemDto.builder().url("http://news.naver.com/article/9").title("뉴스제목9")
+                TopSourceItemDto.builder().url("http://news.naver.com/article/9").title("뉴스제목9").description("네이버 뉴스 요약 9")
                         .thumbnailUrl("thumb9").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(42).build(),
-                TopSourceItemDto.builder().url("http://news.naver.com/article/10").title("뉴스제목10")
+                TopSourceItemDto.builder().url("http://news.naver.com/article/10").title("뉴스제목10").description("네이버 뉴스 요약 10")
                         .thumbnailUrl("thumb10").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(55).build()
         );
 
@@ -579,7 +588,7 @@ class SourceServiceTest {
 
         // Repository가 반환할 Mock Page<TopSourceItemDto> 객체 생성
         Page<TopSourceItemDto> mockSourceItemDtoPage = new PageImpl<>(
-                mockSourceItemDtoList, pageable, 50);
+                mockSourceItemDtoList, pageable, mockSourceItemDtoList.size());
 
         // keywordMetricHourlyService.findHourlyMetrics() 호출 시 mockTopKeywords 반환
         given(keywordMetricHourlyService.findHourlyMetrics()).willReturn(mockTopKeywords);
@@ -605,6 +614,8 @@ class SourceServiceTest {
                 .isEqualTo(mockSourceItemDtoList.getFirst().url());
         assertThat(result.list().getFirst().title())
                 .isEqualTo(mockSourceItemDtoList.getFirst().title());
+        assertThat(result.list().getFirst().description())
+                .isEqualTo(mockSourceItemDtoList.getFirst().description());
         assertThat(result.list().getFirst().thumbnailUrl())
                 .isEqualTo(mockSourceItemDtoList.getFirst().thumbnailUrl());
         assertThat(result.list().getFirst().publishedAt())
@@ -619,6 +630,8 @@ class SourceServiceTest {
                 .isEqualTo(mockSourceItemDtoList.get(1).url());
         assertThat(result.list().get(1).title())
                 .isEqualTo(mockSourceItemDtoList.get(1).title());
+        assertThat(result.list().get(1).description())
+                .isEqualTo(mockSourceItemDtoList.get(1).description());
         assertThat(result.list().get(1).thumbnailUrl())
                 .isEqualTo(mockSourceItemDtoList.get(1).thumbnailUrl());
         assertThat(result.list().get(1).publishedAt())
@@ -706,7 +719,7 @@ class SourceServiceTest {
 
         // Repository가 반환할 Mock 빈 Page<Source> 객체 생성 (내용은 비어있고, 전체 개수는 0)
         Page<TopSourceItemDto> mockEmptySourceItemDtoPage = new PageImpl<>(
-                mockEmptySourceItemDtoList,pageable, 0);
+                mockEmptySourceItemDtoList, pageable, 0);
 
         // keywordMetricHourlyService.findHourlyMetrics() 호출 시 비어있지 않은 목록 반환
         given(keywordMetricHourlyService.findHourlyMetrics()).willReturn(mockTopKeywords);
@@ -768,10 +781,10 @@ class SourceServiceTest {
         // 키워드1에 대한 응답
         List<VideoDto> video1 = Arrays.asList(
                 VideoDto.builder().id("v1_id_k1").title("영상1 제목 k1").publishedAt(
-                        LocalDateTime.now().minusDays(1)).thumbnailUrl("thumb1_k1")
+                                LocalDateTime.now().minusDays(1)).thumbnailUrl("thumb1_k1")
                         .description("desc1_k1").build(),
                 VideoDto.builder().id("v2_id_k1").title("영상2 제목 k1").publishedAt(
-                        LocalDateTime.now().minusDays(2)).thumbnailUrl("thumb2_k1")
+                                LocalDateTime.now().minusDays(2)).thumbnailUrl("thumb2_k1")
                         .description("desc2_k1").build()
         );
 
@@ -781,16 +794,23 @@ class SourceServiceTest {
         // 키워드2에 대한 응답 (일부러 중복되는 영상 포함)
         List<VideoDto> video2 = Arrays.asList(
                 VideoDto.builder().id("v3_id_k2").title("영상3 제목 k2").publishedAt(
-                        LocalDateTime.now().minusDays(3)).thumbnailUrl("thumb3_k2")
+                                LocalDateTime.now().minusDays(3)).thumbnailUrl("thumb3_k2")
                         .description("desc3_k2").build(),
                 // 중복 영상
                 VideoDto.builder().id("v2_id_k1").title("영상2 제목 k1").publishedAt(
-                        LocalDateTime.now().minusDays(2)).thumbnailUrl("thumb2_k1")
+                                LocalDateTime.now().minusDays(2)).thumbnailUrl("thumb2_k1")
                         .description("desc2_k1").build()
         );
 
         given(videoApi.fetchVideos(eq(keywordText2), anyInt()))
                 .willReturn(Mono.just(video2));
+
+        // 예상되는 중복 제거된 VideoDto 목록
+        List<VideoDto> expectedDistinctVideoDtos = Arrays.asList(
+                video1.get(0),
+                video1.get(1),
+                video2.get(0)
+        );
 
         /// when
         // searchYoutube 메소드 실행
@@ -802,26 +822,38 @@ class SourceServiceTest {
         then(videoApi).should().fetchVideos(eq(keywordText2), anyInt());
 
         // 2. sourceRepository.insertIgnoreAll 호출 검증
-        // 예상되는 Source 리스트: videos1과 videos2의 모든 VideoDto를 Source로 변환 후 중복 제거된 리스트
-        List<Source> expextedSources = new ArrayList<>();
-
-        // VideoDto의 toEntity 메소드가 정확한 Source 객체를 생성하는지 확인 필요
-        expextedSources.add(video1.get(0).toEntity(Platform.YOUTUBE));
-        expextedSources.add(video1.get(1).toEntity(Platform.YOUTUBE));
-        expextedSources.add(video2.get(0).toEntity(Platform.YOUTUBE));
-
         // argThat을 사용하여 전달된 리스트의 크기와 내용 검증
         then(sourceRepository).should().insertIgnoreAll(argThat(sources -> {
-            assertThat(sources).hasSize(3);
 
-            // Source 엔티티의 equals/hashCode 구현이 fingerprint 기반인지 확인 필요
-            List<String> fingerprints = sources.stream()
+            // 저장되는 Source 리스트의 크기 검증
+            assertThat(sources).hasSize(expectedDistinctVideoDtos.size());
+
+            // 저장되는 각 Source 엔티티의 필드 검증
+            assertThat(sources).allSatisfy(source -> {
+                // Service가 VideoDto.toEntity를 호출하여 Source를 만들 때 description이 잘 담기는지 여기서 확인
+                assertThat(source.getDescription()).isNotNull().isNotEmpty();
+
+                // fingerprint 검증: Service 로직대로 fingerprint는 URL 해시이며 null이 아니어야 함
+                assertThat(source.getFingerprint()).isNotNull().isNotEmpty();
+
+                // normalizedUrl 검증: Service 로직대로 normalizedUrl는 VideoDto.id로 구성되며 null이 아니어야 함
+                assertThat(source.getNormalizedUrl()).isNotNull().isNotEmpty();
+
+                assertThat(source.getTitle()).isNotNull().isNotEmpty();
+                assertThat(source.getPublishedAt()).isNotNull();
+                assertThat(source.getPlatform()).isEqualTo(Platform.YOUTUBE);
+            });
+
+            // 저장되는 Source 엔티티들의 fingerprint 집합이 예상되는 distinct Source fingerprint 집합과 일치하는지 확인
+            // 예상되는 fingerprint는 테스트 코드에서 Mock VideoDto.toEntity().getFingerprint()를 호출하여 계산
+            List<String> savedSourceFingerprints = sources.stream()
                     .map(Source::getFingerprint).toList();
-            assertThat(fingerprints).containsExactlyInAnyOrder(
-                    video1.get(0).toEntity(Platform.YOUTUBE).getFingerprint(),
-                    video1.get(1).toEntity(Platform.YOUTUBE).getFingerprint(),
-                    video2.get(0).toEntity(Platform.YOUTUBE).getFingerprint()
-            );
+            List<String> expectedDistinctFingerprints = expectedDistinctVideoDtos.stream()
+                    .map(dto -> dto.toEntity(Platform.YOUTUBE).getFingerprint())
+                    .toList();
+
+            assertThat(savedSourceFingerprints).containsExactlyInAnyOrderElementsOf(expectedDistinctFingerprints);
+
             return true;
         }));
 

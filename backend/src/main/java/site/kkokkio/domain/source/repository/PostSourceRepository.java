@@ -72,6 +72,7 @@ public interface PostSourceRepository extends JpaRepository<PostSource, Long>, P
             SELECT new site.kkokkio.domain.source.dto.TopSourceItemDto(
                 s.normalizedUrl,
                 s.title,
+                s.description,
                 s.thumbnailUrl,
                 s.publishedAt,
                 s.platform,

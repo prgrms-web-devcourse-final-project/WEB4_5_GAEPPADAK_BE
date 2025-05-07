@@ -38,6 +38,9 @@ public class MemberControllerV1 {
 	@PostMapping("/signup")
 	public RsData<MemberResponse> createMember(@RequestBody @Validated MemberSignUpRequest request) {
 		MemberResponse memberResponse = memberService.createMember(request);
+
+		memberService.siginUpUnverified(memberResponse);
+
 		return new RsData<>("200", "회원가입이 완료되었습니다.", memberResponse);
 	}
 

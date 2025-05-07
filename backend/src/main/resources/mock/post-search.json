@@ -1,0 +1,23 @@
+[
+  {
+    "postId": 1,
+    "keyword": "주식",
+    "title": "개인 투자자 77%, \"국내 자본시장 확대 필요\"…방법은 투자인센티브 강...",
+    "summary": "글로벌 경제 불확실성 확대에도 응답자 중 가장 많은 32.4%가 올해 투자 비중을 늘릴 자산으로 주식을 꼽았다. 예·적금(15.3%), 금(8.5%), 채권(5.1%), 부동산(3.4%), 가상자산(2.7%), 달러화(2.6%) 등이 그 뒤를 이었다.",
+    "thumbnailUrl": "http://example.com/thumbnails/post/default1.jpg"
+  },
+  {
+    "postId": 2,
+    "keyword": "로봇",
+    "title": "오늘의 로봇기업 주식시세(2025-04-30)",
+    "summary": "로봇 기업 관련 주식 시세 정보입니다.",
+    "thumbnailUrl": "http://example.com/thumbnails/post/default2.jpg"
+  },
+  {
+    "postId": 10,
+    "keyword": "도서전",
+    "title": "서울국제도서전 공공성 회복해야”…7개 출판문화단체 연대 성명",
+    "summary": "도서전의 주식회사 전환 백지화와 지분 구조 재검토, 지속 가능한 공적 지원 확대 등이 이뤄져야 한다고... 도서전을 주식회사로 전환했습니다.",
+    "thumbnailUrl": "http://example.com/thumbnails/post/default10.jpg"
+  }
+]

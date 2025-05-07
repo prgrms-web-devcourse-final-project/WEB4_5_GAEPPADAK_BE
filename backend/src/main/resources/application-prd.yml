@@ -1,0 +1,25 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate # Entity ↔ DB 스키마 일치 여부만 검사, 실제 반영은 안 함
+
+  flyway:
+    enabled: true
+    validate-on-migrate: true # 마이그레이션 SQL 수정 여부 감지
+    clean-disabled: true # DB 삭제 차단
+
+logging:
+  level:
+    root: WARN
+    org.hibernate.SQL: OFF                     # 쿼리 로그 OFF
+    org.hibernate.orm.jdbc.bind: OFF           # 바인딩 로그 OFF
+    org.hibernate.orm.jdbc.extract: OFF        # JDBC extract 로그 OFF
+    org.springframework.transaction.interceptor: WARN
+    org.flywaydb.core: WARN                    # Flyway 실패나 경고만 로그
+
+
+schedule:
+  cron: 0 0 * * * * # 매시간마다 실행
+
+mock:
+  enable: false

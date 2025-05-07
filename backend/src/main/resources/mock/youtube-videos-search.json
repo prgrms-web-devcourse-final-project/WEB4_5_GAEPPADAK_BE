@@ -1,0 +1,99 @@
+{
+  "kind": "YoutubeListResponse",
+  "etag": "example_etag_response",
+  "nextPageToken": "example_next_page_token",
+  "regionCode": "KR",
+  "pageInfo": {
+    "totalResults": 500,
+    "resultsPerPage": 10
+  },
+  "items": [
+    {
+      "kind": "YoutubeResult",
+      "etag": "example_etag_item_1",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "mockVideoId1"
+      },
+      "snippet": {
+        "publishedAt": "2025-05-03T03:00:00Z",
+        "channelId": "mockChannelId1",
+        "title": "Mock 영상 제목 1: 인기있는 컨텐츠",
+        "description": "이 영상은 테스트 목적으로 생성된 가짜 영상입니다. 실제 데이터가 아닙니다.",
+        "thumbnails": {
+          "default": {
+            "url": "http://example.com/thumbnails/mockVideoId1/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "http://example.com/thumbnails/mockVideoId1/medium.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "http://example.com/thumbnails/mockVideoId1/high.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Mock 채널 1",
+        "liveBroadcastContent": "none",
+        "publishTime": "2025-05-03T03:00:00Z"
+      }
+    },
+    {
+      "kind": "YoutubeResult",
+      "etag": "example_etag_item_2",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "mockVideoId2"
+      },
+      "snippet": {
+        "publishedAt": "2025-05-02T18:30:00Z",
+        "channelId": "mockChannelId2",
+        "title": "Mock 영상 제목 2: 또 다른 영상 예시",
+        "description": "두 번째 테스트 영상입니다. 다른 데이터를 포함합니다.",
+        "thumbnails": {
+          "default": {
+            "url": "http://example.com/thumbnails/mockVideoId2/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "http://example.com/thumbnails/mockVideoId2/medium.jpg",
+            "width": 320,
+            "height": 180
+          }
+        },
+        "channelTitle": "Mock 채널 2",
+        "liveBroadcastContent": "none",
+        "publishTime": "2025-05-02T18:30:00Z"
+      }
+    },
+    {
+      "kind": "YoutubeResult",
+      "etag": "example_etag_item_3",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "mockVideoId3"
+      },
+      "snippet": {
+        "publishedAt": "2025-05-01T10:00:00Z",
+        "channelId": "mockChannelId1",
+        "title": "Mock 영상 제목 3: 이전 영상",
+        "description": "세 번째 테스트 영상입니다.",
+        "thumbnails": {
+          "default": {
+            "url": "http://example.com/thumbnails/mockVideoId3/default.jpg",
+            "width": 120,
+            "height": 90
+          }
+        },
+        "channelTitle": "Mock 채널 1",
+        "liveBroadcastContent": "none",
+        "publishTime": "2025-05-01T10:00:00Z"
+      }
+    }
+  ]
+}

@@ -5,8 +5,8 @@
 ## 👥 Team Introduction
 
 | <img src="https://avatars.githubusercontent.com/u/84301295?v=4" width="100"> | <img src="https://avatars.githubusercontent.com/u/69628269?v=4" width="100"> | <img src="https://avatars.githubusercontent.com/u/15260002?v=4" width="100"> | <img src="https://avatars.githubusercontent.com/u/78626811?v=4" width="100"> | <img src="https://avatars.githubusercontent.com/u/70743878?v=4" width="100"> | <img src="https://avatars.githubusercontent.com/u/115456416?v=4" width="100"> |
-| :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------: | :---------------------------------------------------------------------------: |
-|   이하은 <br> [haeun9988](https://github.com/haeun9988) <br> Product Owner   |  이화영 <br> [2hwayoung](https://github.com/2hwayoung) <br> Backend Leader   |          김경래 <br> [godaos](https://github.com/godaos) <br> 비고           |          김하연 <br> [xaxeon](https://github.com/xaxeon) <br> 비고           |  이태경 <br> [dlfjsld1](https://github.com/dlfjsld1) <br> AWS Administrator  |       윤상민 <br> [skvhffpdyd](https://github.com/skvhffpdyd) <br> 비고       |
+|:----------------------------------------------------------------------------:|:----------------------------------------------------------------------------:|:----------------------------------------------------------------------------:|:----------------------------------------------------------------------------:|:----------------------------------------------------------------------------:|:-----------------------------------------------------------------------------:|
+|    이하은 <br> [haeun9988](https://github.com/haeun9988) <br> Product Owner     |    이화영 <br> [2hwayoung](https://github.com/2hwayoung) <br> Backend Leader    |             김경래 <br> [godaos](https://github.com/godaos) <br> 비고             |             김하연 <br> [xaxeon](https://github.com/xaxeon) <br> 비고             |   이태경 <br> [dlfjsld1](https://github.com/dlfjsld1) <br> AWS Administrator    |         윤상민 <br> [skvhffpdyd](https://github.com/skvhffpdyd) <br> 비고          |
 
 ## 📊 Project Overview
 
@@ -16,7 +16,8 @@
 
 ### 기획 의도
 
-알고리즘 기반 개인화 서비스로 인해 발생하는 확증 편향과 에코챔버 문제를 해결하고자, 실시간 인기 검색어를 중심으로 다수의 사회적 관심사를 반영한 정보를 제공하여 사용자의 시야를 넓히고 관심사를 확장시키는 서비스입니다.
+알고리즘 기반 개인화 서비스로 인해 발생하는 확증 편향과 에코챔버 문제를 해결하고자, 실시간 인기 검색어를 중심으로 다수의 사회적 관심사를 반영한 정보를 제공하여 사용자의 시야를 넓히고 관심사를 확장시키는
+서비스입니다.
 
 - 실시간 검색어를 기준으로 현재 인기 있는 주제에 대한 정보를 찾을 수 있도록 도와준다.
 - 많은 서비스가 개인의 관심사에 대한 알고리즘을 바탕으로 정보를 제공하는데, 많은 사람들이 관심있는 주제를 토대로 정보를 제공
@@ -40,6 +41,18 @@
 - 비동기 메시징으로 고트래픽 상황에서도 유실 없이 처리
 - 스케줄링을 활용해 데이터 수집 및 전처리 워크플로우 자동화
 - 비정형 뉴스 데이터를 구조화하고 저장하는 데이터 가공 로직 설계
+
+## 🌐 서비스 접속 주소 (Backend Endpoints)
+
+배포된 백엔드 서버의 접속 주소입니다.
+
+* **개발 환경 (Development)**: `https://api.deploy.kkokkio.site`
+* **운영 환경 (Production)**: `https://api.prd.kkokkio.site`
+
+Swagger 문서는 각 주소에 `/swagger-ui/index.html` 경로를 붙여 접근할 수 있습니다.
+
+* **개발 환경 Swagger**: `https://api.deploy.kkokkio.site/swagger-ui/index.html`
+* **운영 환경 Swagger**: `https://api.prd.kkokkio.site/swagger-ui/index.html`
 
 ## 🛠️ Technology Stack
 
@@ -132,6 +145,9 @@ git clone https://github.com/prgrms-web-devcourse-final-project/WEB4_5_GAEPPADAK
 ✅ Using Doppler (Recommended)
 
 > Doppler는 .env 환경 변수 파일을 안전하게 관리해주는 도구입니다.
+> 현재 프로젝트는 backend와 infra 두 폴더 안에서 Doppler를 사용하도록 구성되어 있습니다.
+> 각각의 폴더 안에서 npm run doppler 명령어를 별도로 실행해야 합니다.
+> 처음 실행하는 경우, doppler setup으로 설정할 프로젝트와 환경을 먼저 선택해 주세요.
 
 ```bash
 # Install Doppler CLI
@@ -150,28 +166,18 @@ doppler setup
 npm run doppler
 ```
 
-**3️⃣ Run Database (MySQL via Docker Compose)**
+**3️⃣ Run Server & Database **
 
 ```bash
-# Start MySQL container with Docker Compose
-docker-compose up -d
+# Start MySQL & SpringBoot container with Docker Compose
+npm run docker
 
 # Monitor logs (logs are mapped locally)
-tail -f ./mysql_logs/general.log
+tail -f ./infra/mysql_logs/general.log
 
-# Stop Containers
-docker-compose down
+# Reset Containers
+npm run docker:reset
 
 ```
-
-**4️⃣ Run Backend (Spring Boot)**
-
-```bash
-cd backend
-
-./gradlew bootRun
-```
-
-- Port: 8080
 
 - Swagger Docs: http://localhost:8080/swagger-ui/index.html

@@ -1,0 +1,62 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:db_test;MODE=MySQL # H2 메모리 DB (MySQL 모드)
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    database: h2
+    hibernate:
+      ddl-auto: create-drop # 테스트 시작 시 테이블 생성, 종료 시 삭제
+
+  main:
+    allow-bean-definition-overriding: true
+
+resilience4j:
+  retry:
+    configs:
+      default:
+        max-attempts: 2
+        wait-duration: 0ms
+        enable-exponential-backoff: false
+        retry-exceptions:
+          - site.kkokkio.infra.common.exception.RetryableExternalApiException
+        ignore-exceptions:
+          - site.kkokkio.infra.common.exception.ClientBadRequestException
+    instances:
+      NAVER_NEWS_RETRY:
+        base-config: default
+      YOUTUBE_VIDEO_RETRY: # 유튜브 재시도 인스턴스
+        base-config: default
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 2
+        failure-rate-threshold: 50
+        record-exceptions:
+          - site.kkokkio.infra.common.exception.RetryableExternalApiException
+        ignore-exceptions:
+          - site.kkokkio.infra.common.exception.ClientBadRequestException
+    instances:
+      NAVER_NEWS_CIRCUIT_BREAKER:
+        base-config: default
+      YOUTUBE_VIDEO_CIRCUIT_BREAKER: # 유튜브 서킷 브레이커 인스턴스
+        base-config: default
+  ratelimiter:
+    configs:
+      default:
+        limit-for-period: 2
+        limit-refresh-period: 1s
+        timeout-duration: 0
+    instances:
+      NAVER_NEWS_RATE_LIMITER:
+        base-config: default
+      YOUTUBE_VIDEO_RATE_LIMITER: # 유튜브 레이트 리미터 인스턴스
+        base-config: default
+
+management:
+  observations:
+    enable:
+      http.client.requests: false

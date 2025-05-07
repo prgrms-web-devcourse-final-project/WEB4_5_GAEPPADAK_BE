@@ -1,3 +1,172 @@
+server:
+  port: ${SERVER_PORT:8080}
+
 spring:
   application:
     name: kkokkio
+
+  batch: # spring Batch 스키마 생성 설정
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false
+
+  profiles:
+    active: ${SPRING_ACTIVE_PROFILES:dev}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+
+  config:
+    import: optional:file:./.env[.properties]
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?serverTimezone=UTC&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&connectTimeout=20000&useSSL=false
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      auto-commit: false # 트랜잭션의 자동 커밋을 비활성화하여 명시적 commit 필요
+
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    open-in-view: false # 영속성 컨텍스트를 뷰까지 열지 않음 (성능 및 Side-effect 방지)
+    properties:
+      hibernate:
+        format_sql: true
+        highlight_sql: true
+        use_sql_comments: true
+        default_batch_fetch_size: 100
+
+  flyway: # 공통 flyway 설정
+    enabled: false # 기본은 꺼두고, 환경별로 override
+    baseline-on-migrate: true # 초기 테이블 존재 시 baseline 적용
+    baseline-version: 0
+    fail-on-missing-locations: true
+    locations: classpath:db/migration # migration 스크립트 위치
+
+  jwt:
+    secret-key: ${JWT_SECRET_KEY:test123}
+    expiration: ${JWT_EXPIRATION:600000}
+
+  jackson:
+    serialization:
+      FAIL_ON_EMPTY_BEANS: false # 빈 객체도 직렬화가 가능하도록 설정 (Empty)
+
+  mail:
+    host: smtp.gmail.com # SMTP 서버 호스트 (Gmail)
+    port: 587 # TLS 사용할 때 포트
+    username: ${MAIL_USERNAME:test@test.com} # 환경 변수로부터 가져올 Gmail 계정
+    password: ${MAIL_PASSWORD:test123!} # 환경 변수로부터 가져올 앱 비밀번호
+    protocol: smtp # 프로토콜 (기본값 smtp)
+    default-encoding: UTF-8 # 메일 본문 인코딩
+    test-connection: false # 애플리케이션 구동 시 메일 서버 연결 테스트 여부
+    properties:
+      mail.smtp.auth: true # SMTP 인증 사용
+      mail.smtp.starttls.enable: true # STARTTLS 사용 (TLS)
+      mail.smtp.starttls.required: true # TLS 필수
+      mail.smtp.connectiontimeout: 5000 # 서버 연결 제한 시간(ms)
+      mail.smtp.timeout: 5000 # 응답 대기 제한 시간(ms)
+      mail.smtp.writetimeout: 5000 # 데이터 전송 제한 시간(ms)
+      mail.smtp.ssl.trust: smtp.gmail.com # SSL 인증서 검증 대상
+      mail.debug: false # 디버그 로깅 (true로 켜면 javax.mail 디버그 로그 출력)
+
+custom:
+  mail:
+    auth-code-expiration-millis: 300000 # 인증시간(5분)
+
+schedule:
+  cron: 0 0 12 * * * # 낮 12시에 실행 0 0 12 * * *
+
+resilience4j:
+  retry:
+    configs:
+      default:
+        max-attempts: 3 # 최대 재시도 수
+        wait-duration: 1s # 재시도 할 때마다 기다리는 고정시간
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - site.kkokkio.infra.common.exception.RetryableExternalApiException
+        ignore-exceptions:
+          - site.kkokkio.infra.common.exception.ClientBadRequestException
+    instances:
+      NAVER_NEWS_RETRY:
+        base-config: default
+      YOUTUBE_VIDEO_RETRY: # 유튜브 재시도 인스턴스
+        base-config: default
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-type: COUNT_BASED # COUNT_BASED: sliding-window-size 만큼의 마지막 call들이 기록되고 집계된다
+        sliding-window-size: 10 # CLOSED 상태에서 집계되는 슬라이딩 윈도우 크기
+        failure-rate-threshold: 50 # 실패 비율 임계치를 백분율로 설정
+        wait-duration-in-open-state: 20s # OPEN에서 HALF_OPEN 상태로 전환하기 전 기다리는 시간
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: true
+        record-exceptions:
+          - site.kkokkio.infra.common.exception.RetryableExternalApiException
+        ignore-exceptions:
+          - site.kkokkio.infra.common.exception.ClientBadRequestException
+    instances:
+      NAVER_NEWS_CIRCUIT_BREAKER:
+        base-config: default
+      YOUTUBE_VIDEO_CIRCUIT_BREAKER: # 유튜브 서킷 브레이커 인스턴스
+        base-config: default
+  ratelimiter:
+    configs:
+      default:
+        limit-for-period: 8 # 초당 8 건
+        limit-refresh-period: 1s
+        timeout-duration: 1s
+        subscribe-for-events: true
+    instances:
+      NAVER_NEWS_RATE_LIMITER:
+        base-config: default
+      YOUTUBE_VIDEO_RATE_LIMITER: # 유튜브 레이트 리미터 인스턴스
+        base-config: default
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /api/actuator
+  endpoint:
+    health:
+      probes:
+        enabled: true # readiness/liveness 포함
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true
+  server:
+    port: 8081
+
+google:
+  trends:
+    rss:
+      url: ${GOOGLE_TRENDS_RSS_URL:https://trends.google.co.kr/trending/rss?geo=KR}
+      namespace: ${GOOGLE_TRENDS_NAMESPACE_URL:https://trends.google.com/trending/rss}
+
+naver:
+  base-url: ${NAVER_BASE_URL:https://openapi.naver.com}
+  client-id: ${NAVER_CLIENT_ID:test-id}
+  client-secret: ${NAVER_CLIENT_SECRET:test-secret}
+  search:
+    news-path: ${NAVER_SEARCH_NEWS_PATH:/v1/search/news.json}
+
+youtube:
+  api:
+    key: ${YOUTUBE_API_KEY:test-id}
+    base-url: ${YOUTUBE_BASE_URL:https://www.googleapis.com}
+    search:
+      path: ${YOUTUBE_PATH:/youtube/v3/search}
+
+mock:
+  enabled: true
+  news-file: naver-news-search.json
+  youtube-file: youtube-videos-search.json
+  post-file: post-search.json

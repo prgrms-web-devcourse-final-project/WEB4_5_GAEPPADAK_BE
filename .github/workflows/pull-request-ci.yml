@@ -30,8 +30,14 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      SPRING_ACTIVE_PROFILES: test
-      # JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+      SPRING_PROFILES_ACTIVE: test
+      JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+      JWT_EXPIRATION: ${{ secrets.JWT_EXPIRATION }}
+      GOOGLE_TRENDS_RSS_URL: ${{ secrets.GOOGLE_TRENDS_RSS_URL }}
+      GOOGLE_TRENDS_NAMESPACE_URL: ${{ secrets.GOOGLE_TRENDS_NAMESPACE_URL }}
+      REDIS_PORT: ${{ secrets.REDIS_PORT }}
+      REDIS_HOST: ${{ secrets.REDIS_HOST }}
+      
 
     steps:
       - uses: actions/checkout@v3

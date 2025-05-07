@@ -4,11 +4,14 @@
   "version": "1.0.0",
   "workspaces": [
     "backend",
-    "infra"
+    "infra/dev",
+    "infra/prd"
   ],
   "scripts": {
     "doppler": "npm run doppler:setup && turbo run doppler",
-    "doppler:setup": "doppler setup --no-interactive"
+    "doppler:setup": "doppler setup --no-interactive",
+    "docker": "cd backend && docker-compose up -d",
+    "docker:reset": "cd backend && docker-compose down -v && docker-compose up -d"
   },
   "devDependencies": {
     "turbo": "1.13.4"

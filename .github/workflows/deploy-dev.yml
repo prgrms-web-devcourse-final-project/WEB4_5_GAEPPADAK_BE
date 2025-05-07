@@ -67,11 +67,11 @@ jobs:
         id: export_image
         run: echo "image_name=team04-kkokkio-dev" >> $GITHUB_OUTPUT
 
-      - name: 빌드 앤 푸시
+      - name: 빌드 앤  푸시
         uses: docker/build-push-action@v3
         with:
           context: backend
-          file: Dockerfile.dev
+          file: backend/Dockerfile.dev
           push: true
           cache-from: type=registry,ref=ghcr.io/${{ steps.export_owner.outputs.owner_lc }}/${{ steps.export_image.outputs.image_name }}:cache
           cache-to: type=registry,ref=ghcr.io/${{ steps.export_owner.outputs.owner_lc }}/${{ steps.export_image.outputs.image_name }}:cache,mode=max

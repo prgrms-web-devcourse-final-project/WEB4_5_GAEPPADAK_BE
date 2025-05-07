@@ -17,7 +17,7 @@ spring:
 logging:
   level:
     root: INFO
-    org.hibernate.SQL: DEBUG  # 쿼리 로그
+    org.hibernate.SQL: DEBUG # 쿼리 로그
     org.hibernate.orm.jdbc.bind: DEBUG # 바인딩 파라미터 출력
     org.hibernate.orm.jdbc.extract: DEBUG # JDBC 추출 로그
     org.springframework.transaction.interceptor: DEBUG # 트랜잭션 경계 확인

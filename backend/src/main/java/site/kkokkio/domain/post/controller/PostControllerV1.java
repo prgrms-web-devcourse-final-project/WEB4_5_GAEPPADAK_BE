@@ -97,9 +97,20 @@ public class PostControllerV1 {
     @GetMapping("/search/sources")
     public RsData<PostSearchSourceListResponse> getKeywordSearchSources(
 		@RequestParam String keyword,
-		@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+		@RequestParam(value = "sort", required = false, defaultValue = "createdAt") String sortField, // 정렬할 필드
+		@RequestParam(value = "order", required = false, defaultValue = "DESC") Sort.Direction orderDirection, // 정렬 방향 필드 추가
+		@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable defaultPageable
     ) {
-		Page<PostDto> postDtoList = keywordService.getPostListByKeyword(keyword, pageable);
+		if(sortField.equals("title"))
+			sortField = "post.title";
+
+		Sort sort = Sort.by(orderDirection, sortField);
+		Pageable customPaging = PageRequest.of(
+			defaultPageable.getPageNumber(),
+			defaultPageable.getPageSize(),
+			sort
+		);
+		Page<PostDto> postDtoList = keywordService.getPostListByKeyword(keyword, customPaging);
         List<SourceDto> searchSourceList = sourceService.getTop5SourcesByPosts(postDtoList.toList());
 		PostSearchSourceListResponse response = PostSearchSourceListResponse.from(searchSourceList, postDtoList);
 		return new RsData<>(

@@ -1,4 +1,4 @@
-name: deploy-develop
+name: deploy-prd
 
 on:
   push:
@@ -9,8 +9,7 @@ on:
       - 'backend/settings.gradle'
       - 'backend/Dockerfile'
     branches:
-      #     TODO:첫 병합 후 develop에서 main으로 변경할 것
-      - develop
+      - main
 jobs:
   makeTagAndRelease:
     runs-on: ubuntu-latest

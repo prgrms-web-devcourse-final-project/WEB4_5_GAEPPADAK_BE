@@ -1,8 +1,7 @@
 package site.kkokkio.domain.post.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
+import java.io.IOException;
+import java.util.List;
 
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
@@ -16,18 +15,21 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import site.kkokkio.domain.post.controller.dto.PostSearchSourceListResponse;
 import site.kkokkio.domain.keyword.service.KeywordService;
 import site.kkokkio.domain.post.controller.dto.PostDetailResponse;
 import site.kkokkio.domain.post.controller.dto.TopPostResponse;
 import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.dto.PostListResponse;
 import site.kkokkio.domain.post.service.PostService;
+import site.kkokkio.domain.source.dto.SourceDto;
+import site.kkokkio.domain.source.service.SourceService;
 import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.exception.doc.ApiErrorCodeExamples;
 import site.kkokkio.global.exception.doc.ErrorCode;
-
-import java.io.IOException;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/posts")
@@ -36,6 +38,7 @@ import java.util.List;
 public class PostControllerV1 {
 	private final PostService postService;
 	private final KeywordService keywordService;
+	private final SourceService sourceService;
 
 	@Operation(summary = "포스트 조회")
 	@ApiErrorCodeExamples({ErrorCode.POST_NOT_FOUND_2})
@@ -85,6 +88,26 @@ public class PostControllerV1 {
 			response
 		);
 	}
+
+    @Operation(
+        summary = "키워드 검색 출처 5개 최신순 조회 (페이지네이션)",
+        description = "키워드 검색 결과인 포스트 목록 기준으로 최신순 출처 목록을 조회힙니다. (없을 경우 빈 배열 반환)"
+    )
+    @ApiErrorCodeExamples({})
+    @GetMapping("/search/sources")
+    public RsData<PostSearchSourceListResponse> getKeywordSearchSources(
+		@RequestParam String keyword,
+		@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+		Page<PostDto> postDtoList = keywordService.getPostListByKeyword(keyword, pageable);
+        List<SourceDto> searchSourceList = sourceService.getTop5SourcesByPosts(postDtoList.toList());
+		PostSearchSourceListResponse response = PostSearchSourceListResponse.from(searchSourceList, postDtoList);
+		return new RsData<>(
+			"200",
+			"성공적으로 조회되었습니다.",
+			response
+		);
+    }
 
 	@Operation(summary = "실시간 키워드에 해당하는 포스트 리스트 조회")
 	@ApiErrorCodeExamples({ErrorCode.POST_NOT_FOUND_2})

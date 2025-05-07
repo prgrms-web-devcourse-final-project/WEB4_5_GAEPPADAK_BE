@@ -55,15 +55,15 @@ class SourceControllerV1Test {
 	void getNewsSources_Success() throws Exception {
 		// given
 		List<SourceDto> mockNewsList = List.of(
-			new SourceDto("https://news.com", "https://image.jpg", "뉴스 제목1", LocalDateTime.parse("2024-04-29T15:30:00"),
+			new SourceDto("source-1", "https://news.com", "https://image.jpg", "뉴스 제목1", LocalDateTime.parse("2024-04-29T15:30:00"),
 				Platform.NAVER_NEWS),
-			new SourceDto("https://news.com", "https://image.jpg", "뉴스 제목2", LocalDateTime.parse("2024-04-29T15:30:00"),
+			new SourceDto("source-2", "https://news.com", "https://image.jpg", "뉴스 제목2", LocalDateTime.parse("2024-04-29T15:30:00"),
 				Platform.NAVER_NEWS),
-			new SourceDto("https://news.com", "https://image.jpg", "뉴스 제목3", LocalDateTime.parse("2024-04-29T15:30:00"),
+			new SourceDto("source-3", "https://news.com", "https://image.jpg", "뉴스 제목3", LocalDateTime.parse("2024-04-29T15:30:00"),
 				Platform.NAVER_NEWS),
-			new SourceDto("https://news.com", "https://image.jpg", "뉴스 제목4", LocalDateTime.parse("2024-04-29T15:30:00"),
+			new SourceDto("source-4", "https://news.com", "https://image.jpg", "뉴스 제목4", LocalDateTime.parse("2024-04-29T15:30:00"),
 				Platform.NAVER_NEWS),
-			new SourceDto("https://news.com", "https://image.jpg", "뉴스 제목5", LocalDateTime.parse("2024-04-29T15:30:00"),
+			new SourceDto("source-5", "https://news.com", "https://image.jpg", "뉴스 제목5", LocalDateTime.parse("2024-04-29T15:30:00"),
 				Platform.NAVER_NEWS)
 		);
 		given(sourceService.getTop10NewsSourcesByPostId(anyLong())).willReturn(mockNewsList);
@@ -121,15 +121,15 @@ class SourceControllerV1Test {
 	void getVideoSources_Success() throws Exception {
 		// given
 		List<SourceDto> mockVideoList = List.of(
-			new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목1",
+			new SourceDto("source-1", "https://youtube.com", "https://image.jpg", "영상 제목1",
 				LocalDateTime.parse("2024-04-29T15:30:00"), Platform.YOUTUBE),
-			new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목2",
+			new SourceDto("source-2", "https://youtube.com", "https://image.jpg", "영상 제목2",
 				LocalDateTime.parse("2024-04-29T15:30:00"), Platform.YOUTUBE),
-			new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목3",
+			new SourceDto("source-3", "https://youtube.com", "https://image.jpg", "영상 제목3",
 				LocalDateTime.parse("2024-04-29T15:30:00"), Platform.YOUTUBE),
-			new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목4",
+			new SourceDto("source-4", "https://youtube.com", "https://image.jpg", "영상 제목4",
 				LocalDateTime.parse("2024-04-29T15:30:00"), Platform.YOUTUBE),
-			new SourceDto("https://youtube.com", "https://image.jpg", "영상 제목5",
+			new SourceDto("source-5", "https://youtube.com", "https://image.jpg", "영상 제목5",
 				LocalDateTime.parse("2024-04-29T15:30:00"), Platform.YOUTUBE)
 		);
 		given(sourceService.getTop10VideoSourcesByPostId(anyLong())).willReturn(mockVideoList);

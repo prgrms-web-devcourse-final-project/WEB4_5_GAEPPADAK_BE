@@ -10,6 +10,7 @@ import site.kkokkio.global.enums.Platform;
 
 @Builder
 public record SourceDto(
+	@NonNull String id,
 	@NonNull String url,
 	String thumbnailUrl,
 	@NonNull String title,
@@ -18,6 +19,7 @@ public record SourceDto(
 	) {
 	public static SourceDto from(Source source) {
 		return SourceDto.builder()
+			.id(source.getFingerprint())
 			.url(source.getNormalizedUrl())
 			.thumbnailUrl(source.getThumbnailUrl())
 			.title(source.getTitle())

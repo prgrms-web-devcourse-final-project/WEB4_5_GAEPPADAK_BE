@@ -7,11 +7,21 @@
 
 **/mysql_logs/
 
-### custom ###
-infra/.terraform.lock.hcl
-/infra/.terraform
-/infra/terraform.lock.hcl
-/infra/terraform.tfstate
-/infra/terraform.tfstate.backup
+### infra custom ###
 /infra/secrets.tf
-/infra/.env
+
+/infra/dev/.terraform
+/infra/dev/.turbo
+/infra/dev/terraform.lock.hcl
+/infra/dev/terraform.tfstate
+/infra/dev/terraform.tfstate.backup
+/infra/dev/.env
+infra/dev/.terraform.lock.hcl
+
+/infra/prd/.terraform
+/infra/prd/.turbo
+/infra/prd/terraform.lock.hcl
+/infra/prd/terraform.tfstate
+/infra/prd/terraform.tfstate.backup
+/infra/prd/.env
+infra/prd/.terraform.lock.hcl

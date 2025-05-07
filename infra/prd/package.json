@@ -1,0 +1,8 @@
+{
+  "name": "@kkokkio/infra-prd",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "doppler": "doppler secrets download --no-file --format env-no-quotes > .env && echo '테라폼 prd 서버용 .env 파일을 생성했습니다.'"
+  }
+}

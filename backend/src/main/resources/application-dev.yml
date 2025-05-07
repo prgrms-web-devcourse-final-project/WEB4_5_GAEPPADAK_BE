@@ -22,3 +22,7 @@ logging:
     org.hibernate.orm.jdbc.extract: DEBUG # JDBC 추출 로그
     org.springframework.transaction.interceptor: DEBUG # 트랜잭션 경계 확인
     org.flywaydb.core: INFO # 마이그레이션 진행 로그
+
+springdoc:
+  swagger-ui:
+    url: https://api.deploy.kkokkio.site

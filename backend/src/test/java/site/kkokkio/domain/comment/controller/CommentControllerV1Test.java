@@ -165,7 +165,7 @@ class CommentControllerV1Test {
 				.with(csrf())
 				.accept(APPLICATION_JSON))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.code").value("204"))
+			.andExpect(jsonPath("$.code").value("200"))
 			.andExpect(jsonPath("$.message").value("댓글이 삭제되었습니다."));
 	}
 

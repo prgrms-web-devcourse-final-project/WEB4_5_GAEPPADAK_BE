@@ -15,6 +15,7 @@ public enum ErrorCode {
 	COMMENT_DELETE_FORBIDDEN("403", "본인 댓글만 삭제할 수 있습니다."),
 	COMMENT_LIKE_FORBIDDEN("403", "본인 댓글은 좋아요 할 수 없습니다."),
 	COMMENT_LIKE_BAD_REQUEST("400", "이미 좋아요를 누른 댓글입니다."),
+	COMMENT_UNLIKE_BAD_REQUEST("400", "이미 좋아요가 취소된 상태입니다."),
 	EMAIL_ALREADY_EXIST("409", "이미 사용중인 이메일입니다."),
 	EMAIL_NOT_FOUND("404", "존재하지 않는 이메일입니다."),
 	EMAIL_UNAUTHORIZED("401", "메일이 인증되지 않은 회원입니다."),
@@ -26,7 +27,11 @@ public enum ErrorCode {
 	KEYWORD_METRIC_HOURLY_NOT_FOUND("404", "KeywordMetricHourly를 찾을 수 없습니다."),
 	KEYWORDS_NOT_FOUND_1("404", "키워드를 불러오지 못했습니다."),
 	KEYWORDS_NOT_FOUND_2("404", "Keyword를 찾을 수 없습니다."),
-	NAVER_BAD_GATEWAY("502", "Empty response from Naver News API");
+	NAVER_BAD_GATEWAY("502", "Empty response from Naver News API"),
+	TOKEN_EXPIRED("401", "토큰이 만료되어 인증할 수 없음"),
+	UNSUPPORTED_TOKEN("400", "지원하지 않는 토큰 형식"),
+	MALFORMED_TOKEN("400", "클라이언트가 보낸 토큰 자체가 형식적으로 잘못됨"),
+	CREDENTIALS_MISMATCH("401", "토큰 서명 불일치 등으로 인증 실패");
 
 	private final String code;
 	private final String message;

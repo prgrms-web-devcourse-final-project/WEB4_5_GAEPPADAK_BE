@@ -154,12 +154,10 @@ public class SourceService {
 	 */
 	@Transactional
 	public void searchYoutube() {
-		log.info(">>>>>>> searchYoutube 메소드 시작");
-
 		// 1. 최신 Top10 키워드 조회
 		List<KeywordMetricHourlyDto> topKeywords = keywordMetricHourlyService.findHourlyMetrics();
-		List<Source> allSourcesToSave = new ArrayList<>();
-		List<KeywordSource> allKeywordSourcesToSave = new ArrayList<>();
+		List<Source> sources = new ArrayList<>();
+		List<KeywordSource> keywordSources = new ArrayList<>();
 
 		// 2. 키워드별 영상 검색 및 Entity 변환
 		for (KeywordMetricHourlyDto metric : topKeywords) {
@@ -171,8 +169,7 @@ public class SourceService {
 					videoApi.fetchVideos(text, MAX_SOURCE_COUNT_PER_POST)
 							.onErrorResume(e -> {
 								// API 호출 실패 시 로그 기록 및 빈 목록 반환하여 전체 중단 방지
-								log.error("Youtube API 실패. keyword={}, error={}",
-										text, e.toString());
+								log.error("Youtube API 실패. keyword={}, error={}", text, e.toString());
 								return Mono.just(Collections.emptyList());
 							}).block()
 			).orElseGet(Collections::emptyList);
@@ -186,10 +183,10 @@ public class SourceService {
 			for (VideoDto video : videoList) {
 				// VideoDto를 Source 엔티티로 변환
 				Source src = video.toEntity(VIDEO_PLATFORM);
-				allSourcesToSave.add(src); // Source 리스트에 추가
+				sources.add(src); // Source 리스트에 추가
 
 				// Keyword와 Source 연결하는 KeywordSource 엔티티 생성
-				allKeywordSourcesToSave.add(KeywordSource.builder()
+				keywordSources.add(KeywordSource.builder()
 						.keyword(keywordRef)
 						.source(src)
 						.build()
@@ -198,40 +195,24 @@ public class SourceService {
 		}
 
 		// 3. 저장할 데이터가 있는지 확인
-		if (allSourcesToSave.isEmpty()) {
+		if (sources.isEmpty()) {
 			log.info("저장할 Youtube Source가 없습니다.");
 			return; // 저장할 데이터 없으면 종료
 		}
 
 		// 4. Source 리스트에서 중복 제거 (Optional)
-		List<Source> distinctSources = allSourcesToSave.stream().distinct().toList();
-		log.info("처리할 중복 제거된 Source {}개", distinctSources.size());
+		List<Source> distinctSources = sources.stream().distinct().toList();
 
 		// 5. Source 데이터 저장 (INSERT IGNORE 사용)
 		// sourceRepositoryCustom는 @Autowired 필요
 		sourceRepository.insertIgnoreAll(distinctSources);
-		log.info("{}개의 Youtube Source 저장 시도 (INSERT IGNORE 사용)", distinctSources.size());
 
 		// 6. KeywordSource 데이터 저장 (INSERT IGNORE 사용)
-		// distinctSources에 있는 Source의 fingerprint를 기준으로 allKeywordSourcesToSave를 필터링
-		// distinct() 과정에서 제거된 Source와 연결된 KeywordSource는 저장 대상에서 제외
-		List<String> distinctSourceFingerprints = distinctSources.stream()
-				.map(Source::getFingerprint).toList();
-		List<KeywordSource> distinctKeywordSources = allKeywordSourcesToSave.stream()
-						.filter(ks -> ks.getSource() != null &&
-								ks.getSource().getFingerprint() != null &&
-								distinctSourceFingerprints.contains(ks.getSource()
-										.getFingerprint())).toList();
-
 		// keywordSourceRepository는 @Autowired 필요
-		keywordSourceRepository.insertIgnoreAll(distinctKeywordSources);
-		log.info(">>> {}개의 KeywordSource 저장 시도 (INSERT IGNORE 사용)",
-				distinctSourceFingerprints.size());
+		keywordSourceRepository.insertIgnoreAll(keywordSources);
 
 		// 7. OpenGraph 정보 비동기 보강 (Source 엔티티에 URL 필드 필요)
 		distinctSources.forEach(openGraphService::enrichAsync);
-
-		log.info(">>>>>>> searchYoutube 메소드 완료");
 	}
 
 	/**

@@ -99,9 +99,7 @@ public class MemberService {
 		// 쿠키에서 access-token 추출
 		String token = jwtUtils.getJwtFromCookies(request)
 			.orElseThrow(() -> new CustomAuthException(
-				CustomAuthException.AuthErrorType.CREDENTIALS_MISMATCH,
-				"인증 토큰이 없습니다."
-			));
+				CustomAuthException.AuthErrorType.MISSING_TOKEN));
 
 		// 토큰 검증
 		jwtUtils.isValidToken(token);

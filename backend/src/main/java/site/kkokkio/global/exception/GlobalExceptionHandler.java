@@ -1,6 +1,5 @@
 package site.kkokkio.global.exception;
 
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
@@ -66,9 +65,7 @@ public class GlobalExceptionHandler {
 			);
 	}
 
-	/**
-	 * 메일 전송(MessagingException) 에러 처리
-	 */
+	// 메일 전송(MessagingException) 에러 처리
 	@ExceptionHandler(MessagingException.class)
 	public ResponseEntity<RsData<Void>> handleMessagingException(MessagingException e) {
 		e.printStackTrace();// 로깅
@@ -82,17 +79,32 @@ public class GlobalExceptionHandler {
 			);
 	}
 
+	// Token 전역 예외 처리
 	@ExceptionHandler(CustomAuthException.class)
-	public ResponseEntity<Map<String, Object>> handleCustomAuthException(CustomAuthException e) {
+	public ResponseEntity<RsData<Void>> handleCustomAuthException(CustomAuthException ex) {
+		CustomAuthException.AuthErrorType type = ex.getAuthErrorType();
 
-		Map<String, Object> body = Map.of(
-			"status_code", HttpStatus.UNAUTHORIZED.value(),   // 401
-			"err_code", e.getAuthErrorType().name(),      // ex) "TOKEN_EXPIRED"
-			"message", e.getMessage()                    // ex) "만료된 토큰: 2025-05-04T09:56:00"
+		RsData<Void> body = new RsData<>(
+			type.getHttpStatus(),
+			ex.getMessage()
 		);
-		return ResponseEntity
-			.status(HttpStatus.UNAUTHORIZED)
-			.body(body);
+
+		String status;
+		switch (type) {
+			case MISSING_TOKEN:
+			case TOKEN_EXPIRED:
+			case CREDENTIALS_MISMATCH:
+				status = "401";
+				break;
+			case MALFORMED_TOKEN:
+			case UNSUPPORTED_TOKEN:
+				status = "400";
+				break;
+			default:
+				status = "500";
+		}
+
+		return ResponseEntity.status(Integer.parseInt(status)).body(body);
 	}
 
 }

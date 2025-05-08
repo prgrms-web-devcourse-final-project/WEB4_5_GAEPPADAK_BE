@@ -66,7 +66,7 @@ public class AuthControllerV1 {
 
 	@Operation(summary = "로그아웃")
 	@PostMapping("/logout")
-	@ApiErrorCodeExamples({ErrorCode.LOGOUT_BAD_REQUEST, ErrorCode.LOGOUT_INTERNAL_SERVER_ERROR})
+	@ApiErrorCodeExamples({ErrorCode.LOGOUT_BAD_REQUEST})
 	public RsData<Void> logout(HttpServletRequest request, HttpServletResponse response) {
 		authService.logout(request, response);
 		return new RsData<>("200", "로그아웃 되었습니다.");

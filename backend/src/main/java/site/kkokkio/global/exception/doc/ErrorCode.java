@@ -28,10 +28,10 @@ public enum ErrorCode {
 	KEYWORDS_NOT_FOUND_1("404", "키워드를 불러오지 못했습니다."),
 	KEYWORDS_NOT_FOUND_2("404", "Keyword를 찾을 수 없습니다."),
 	NAVER_BAD_GATEWAY("502", "Empty response from Naver News API"),
-	AUTH_TOKEN_EXPIRED("401", "만료된 토큰"),
-	AUTH_UNSUPPORTED_TOKEN("401", "지원하지 않는 토큰 형식"),
-	AUTH_MALFORMED_TOKEN("401", "토큰 구조 오류"),
-	AUTH_CREDENTIALS_MISMATCH("401", "토큰 정보 불일치");
+	TOKEN_EXPIRED("401", "토큰이 만료되어 인증할 수 없음"),
+	UNSUPPORTED_TOKEN("400", "지원하지 않는 토큰 형식"),
+	MALFORMED_TOKEN("400", "클라이언트가 보낸 토큰 자체가 형식적으로 잘못됨"),
+	CREDENTIALS_MISMATCH("401", "토큰 서명 불일치 등으로 인증 실패");
 
 	private final String code;
 	private final String message;

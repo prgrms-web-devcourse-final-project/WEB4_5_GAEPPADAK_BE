@@ -54,8 +54,8 @@ public class CommentControllerV1 {
 	}
 
 	@Operation(summary = "댓글 작성")
-	@ApiErrorCodeExamples({ErrorCode.AUTH_TOKEN_EXPIRED, ErrorCode.AUTH_UNSUPPORTED_TOKEN,
-		ErrorCode.AUTH_MALFORMED_TOKEN, ErrorCode.AUTH_CREDENTIALS_MISMATCH, ErrorCode.POST_NOT_FOUND_3})
+	@ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
+		ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH, ErrorCode.POST_NOT_FOUND_3})
 	@PostMapping("/posts/{postId}/comments")
 	public RsData<CommentDto> createComment(
 		@PathVariable("postId") Long postId,
@@ -70,8 +70,8 @@ public class CommentControllerV1 {
 	}
 
 	@Operation(summary = "댓글 수정")
-	@ApiErrorCodeExamples({ErrorCode.AUTH_TOKEN_EXPIRED, ErrorCode.AUTH_UNSUPPORTED_TOKEN,
-		ErrorCode.AUTH_MALFORMED_TOKEN, ErrorCode.AUTH_CREDENTIALS_MISMATCH,
+	@ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
+		ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH,
 		ErrorCode.COMMENT_UPDATE_FORBIDDEN, ErrorCode.COMMENT_NOT_FOUND})
 	@PatchMapping("/comments/{commentId}")
 	public RsData<CommentDto> updateComment(
@@ -88,8 +88,8 @@ public class CommentControllerV1 {
 	}
 
 	@Operation(summary = "댓글 삭제")
-	@ApiErrorCodeExamples({ErrorCode.AUTH_TOKEN_EXPIRED, ErrorCode.AUTH_UNSUPPORTED_TOKEN,
-		ErrorCode.AUTH_MALFORMED_TOKEN, ErrorCode.AUTH_CREDENTIALS_MISMATCH,
+	@ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
+		ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH,
 		ErrorCode.COMMENT_DELETE_FORBIDDEN, ErrorCode.COMMENT_NOT_FOUND})
 	@DeleteMapping("/comments/{commentId}")
 	public RsData<Empty> deleteComment(
@@ -104,8 +104,8 @@ public class CommentControllerV1 {
 	}
 
 	@Operation(summary = "댓글 좋아요")
-	@ApiErrorCodeExamples({ErrorCode.AUTH_TOKEN_EXPIRED, ErrorCode.AUTH_UNSUPPORTED_TOKEN,
-		ErrorCode.AUTH_MALFORMED_TOKEN, ErrorCode.AUTH_CREDENTIALS_MISMATCH,
+	@ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
+		ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH,
 		ErrorCode.COMMENT_LIKE_BAD_REQUEST, ErrorCode.COMMENT_LIKE_FORBIDDEN,
 		ErrorCode.COMMENT_NOT_FOUND})
 	@PostMapping("/comments/{commentId}/like")
@@ -122,9 +122,9 @@ public class CommentControllerV1 {
 	}
 
 	@Operation(summary = "댓글 좋아요 취소")
-	@ApiErrorCodeExamples({ErrorCode.AUTH_TOKEN_EXPIRED, ErrorCode.AUTH_UNSUPPORTED_TOKEN,
-		ErrorCode.AUTH_MALFORMED_TOKEN, ErrorCode.AUTH_CREDENTIALS_MISMATCH,
-		ErrorCode.COMMENT_LIKE_FORBIDDEN, ErrorCode.COMMENT_NOT_FOUND})
+	@ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
+		ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH,
+		ErrorCode.COMMENT_UNLIKE_BAD_REQUEST, ErrorCode.COMMENT_LIKE_FORBIDDEN, ErrorCode.COMMENT_NOT_FOUND})
 	@DeleteMapping("/comments/{commentId}/like")
 	public RsData<CommentDto> unlikeComment(
 		@PathVariable("commentId") Long commentId,

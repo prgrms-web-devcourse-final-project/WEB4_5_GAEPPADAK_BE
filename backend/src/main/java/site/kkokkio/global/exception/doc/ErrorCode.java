@@ -27,7 +27,11 @@ public enum ErrorCode {
 	KEYWORD_METRIC_HOURLY_NOT_FOUND("404", "KeywordMetricHourly를 찾을 수 없습니다."),
 	KEYWORDS_NOT_FOUND_1("404", "키워드를 불러오지 못했습니다."),
 	KEYWORDS_NOT_FOUND_2("404", "Keyword를 찾을 수 없습니다."),
-	NAVER_BAD_GATEWAY("502", "Empty response from Naver News API");
+	NAVER_BAD_GATEWAY("502", "Empty response from Naver News API"),
+	AUTH_TOKEN_EXPIRED("401", "만료된 토큰"),
+	AUTH_UNSUPPORTED_TOKEN("401", "지원하지 않는 토큰 형식"),
+	AUTH_MALFORMED_TOKEN("401", "토큰 구조 오류"),
+	AUTH_CREDENTIALS_MISMATCH("401", "토큰 정보 불일치");
 
 	private final String code;
 	private final String message;

@@ -95,7 +95,6 @@ public class MemberService {
 
 	// 회원 정보 조회
 	public MemberResponse getMemberInfo(HttpServletRequest request) {
-
 		// 쿠키에서 access-token 추출
 		String token = jwtUtils.getJwtFromCookies(request)
 			.orElseThrow(() -> new CustomAuthException(
@@ -103,10 +102,14 @@ public class MemberService {
 
 		// 토큰 검증
 		jwtUtils.isValidToken(token);
-
-		//페이로드에서 사용자 이메일 추출
+		// 페이로드에서 사용자 이메일 추출
 		Claims claims = jwtUtils.getPayload(token);
+
+		// claims.subject 유효성 검사
 		String email = claims.getSubject();
+		if (email == null || email.isBlank()) {
+			throw new CustomAuthException(CustomAuthException.AuthErrorType.MALFORMED_TOKEN);
+		}
 
 		// 멤버 조회 및 응답 DTO 변환
 		Member memberInfo = findByEmail(email);

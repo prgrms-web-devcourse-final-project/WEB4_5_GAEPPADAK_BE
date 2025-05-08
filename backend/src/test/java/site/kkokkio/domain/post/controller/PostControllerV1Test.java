@@ -255,7 +255,7 @@ public class PostControllerV1Test {
 		// given
 		List<SourceDto> mockSources = IntStream.range(0, 5)
 			.mapToObj(
-				i -> new SourceDto("id-" + i, "url-" + i, "thumb-" + i, "title-" + i, LocalDateTime.now(), Platform.NAVER_NEWS))
+				i -> new SourceDto("commentId-" + i, "url-" + i, "thumb-" + i, "title-" + i, LocalDateTime.now(), Platform.NAVER_NEWS))
 			.toList();
 		when(keywordService.getPostListByKeyword(eq(keywordText), any(PageRequest.class)))
 			.thenReturn(new PageImpl<>(postDtos));
@@ -273,7 +273,7 @@ public class PostControllerV1Test {
 			.andExpect(MockMvcResultMatchers.jsonPath("$.message").value("성공적으로 조회되었습니다."))
 			.andExpect(MockMvcResultMatchers.jsonPath("$.data.list").isArray())
 			.andExpect(MockMvcResultMatchers.jsonPath("$.data.list.length()").value(5))
-			.andExpect(MockMvcResultMatchers.jsonPath("$.data.list[0].sourceId").value("id-1"))
+			.andExpect(MockMvcResultMatchers.jsonPath("$.data.list[0].sourceId").value("commentId-0"))
 			.andExpect(MockMvcResultMatchers.jsonPath("$.data.meta.page").value(0))
 			.andDo(print());
 	}

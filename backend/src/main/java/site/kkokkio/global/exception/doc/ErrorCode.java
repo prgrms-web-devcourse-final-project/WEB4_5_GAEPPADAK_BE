@@ -15,6 +15,7 @@ public enum ErrorCode {
 	COMMENT_DELETE_FORBIDDEN("403", "본인 댓글만 삭제할 수 있습니다."),
 	COMMENT_LIKE_FORBIDDEN("403", "본인 댓글은 좋아요 할 수 없습니다."),
 	COMMENT_LIKE_BAD_REQUEST("400", "이미 좋아요를 누른 댓글입니다."),
+	COMMENT_UNLIKE_BAD_REQUEST("400", "이미 좋아요가 취소된 상태입니다."),
 	EMAIL_ALREADY_EXIST("409", "이미 사용중인 이메일입니다."),
 	EMAIL_NOT_FOUND("404", "존재하지 않는 이메일입니다."),
 	EMAIL_UNAUTHORIZED("401", "메일이 인증되지 않은 회원입니다."),

@@ -110,6 +110,9 @@ public class CommentService {
 		if (comment.getMember().getId().equals(member.getId())) {
 			throw new ServiceException("403", "본인 댓글은 좋아요 할 수 없습니다.");
 		}
+		if (!commentLikeRepository.existsByComment(comment)) {
+			throw new ServiceException("400", "이미 좋아요가 취소된 상태입니다.");
+		}
 
 		if (commentLikeRepository.existsByComment(comment)) {
 			commentLikeRepository.deleteByComment(comment);

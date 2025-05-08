@@ -8,9 +8,8 @@ import lombok.Getter;
 public enum ErrorCode {
 	LOGOUT_BAD_REQUEST("401", "로그인 상태가 아닙니다."),
 	LOGOUT_INTERNAL_SERVER_ERROR("500", "비밀번호가 올바르지 않습니다."),
-	REFRESH_TOKEN_NOT_FOUND("401-1", "리프레시 토큰이 없습니다."),
-	REFRESH_TOKEN_MISMATCH("401-2", "유효하지 않은 리프레시 토큰입니다."),
-	REFRESH_TOKEN_INTERNAL_ERROR("500", "리프레시 토큰 처리 중 서버 오류가 발생했습니다."),
+	REFRESH_TOKEN_NOT_FOUND("401", "리프레시 토큰이 없습니다."),
+	REFRESH_TOKEN_MISMATCH("401", "유효하지 않은 리프레시 토큰입니다."),
 	MEMBER_ME_BAD_REQUEST("400", "마이페이지 조회 실패"),
 	COMMENT_NOT_FOUND("404", "존재하지 않는 댓글입니다."),
 	COMMENT_UPDATE_FORBIDDEN("403", "본인 댓글만 수정할 수 있습니다."),

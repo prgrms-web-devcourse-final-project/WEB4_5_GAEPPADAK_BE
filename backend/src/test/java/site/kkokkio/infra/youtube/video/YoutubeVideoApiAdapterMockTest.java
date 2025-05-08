@@ -1,14 +1,15 @@
 package site.kkokkio.infra.youtube.video;
 
+import static org.assertj.core.api.Assertions.*;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+
 import reactor.test.StepVerifier;
 import site.kkokkio.domain.source.dto.VideoDto;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 
 @SpringBootTest
@@ -33,7 +34,7 @@ public class YoutubeVideoApiAdapterMockTest {
                     VideoDto firstVideo = list.getFirst();
 
                     // mockVideoId1에 해당하는 데이터로 검증
-                    assertThat(firstVideo.id()).isEqualTo("mockVideoId1");
+                    assertThat(firstVideo.url()).isEqualTo("https://www.youtube.com/watch?v=mockVideoId1");
                     assertThat(firstVideo.title()).isEqualTo("Mock 영상 제목 1: 인기있는 컨텐츠");
                     assertThat(firstVideo.description()).isEqualTo(
                             "이 영상은 테스트 목적으로 생성된 가짜 영상입니다. 실제 데이터가 아닙니다.");

@@ -153,7 +153,7 @@ public class JwtUtils {
 	public void setRefreshTokenInCookie(String token, HttpServletResponse response) {
 		ResponseCookie cookie = ResponseCookie.from("refreshToken", token)
 			.httpOnly(true)     // 자바스크립트 접근 차단 (XSS 방지)
-			.path("/auth")      // 인증 경로에서만 접근 가능
+			.path("/api/v1/auth")      // 인증 경로에서만 접근 가능
 
 			// Todo: 프론트, 백엔드 도메인 일치 후(Strict)적용
 			.sameSite("None")   // 외부 사이트 요청 허용 (CORS 환경 대응)

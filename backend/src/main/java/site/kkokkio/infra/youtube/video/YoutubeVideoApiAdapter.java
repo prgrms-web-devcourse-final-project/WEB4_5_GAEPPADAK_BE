@@ -1,27 +1,5 @@
 package site.kkokkio.infra.youtube.video;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
-import io.github.resilience4j.retry.annotation.Retry;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.ClientResponse;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.UriBuilder;
-import reactor.core.publisher.Mono;
-import site.kkokkio.domain.source.dto.VideoDto;
-import site.kkokkio.domain.source.port.out.VideoApiPort;
-import site.kkokkio.global.exception.ServiceException;
-import site.kkokkio.infra.common.exception.ExternalApiErrorUtil;
-import site.kkokkio.infra.common.exception.RetryableExternalApiException;
-import site.kkokkio.infra.youtube.video.dto.*;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,6 +8,37 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriBuilder;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.github.resilience4j.retry.annotation.Retry;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
+import site.kkokkio.domain.source.dto.VideoDto;
+import site.kkokkio.domain.source.port.out.VideoApiPort;
+import site.kkokkio.global.exception.ServiceException;
+import site.kkokkio.infra.common.exception.ExternalApiErrorUtil;
+import site.kkokkio.infra.common.exception.RetryableExternalApiException;
+import site.kkokkio.infra.youtube.video.dto.ResourceId;
+import site.kkokkio.infra.youtube.video.dto.SearchSnippet;
+import site.kkokkio.infra.youtube.video.dto.ThumbnailDetails;
+import site.kkokkio.infra.youtube.video.dto.YoutubeError;
+import site.kkokkio.infra.youtube.video.dto.YoutubeErrorDetail;
+import site.kkokkio.infra.youtube.video.dto.YoutubeErrorResponse;
+import site.kkokkio.infra.youtube.video.dto.YoutubeSearchItem;
+import site.kkokkio.infra.youtube.video.dto.YoutubeVideosSearchResponse;
 
 @Slf4j
 @Component
@@ -193,9 +202,11 @@ public class YoutubeVideoApiAdapter implements VideoApiPort {
             }
         }
 
+        String youtubeUrl = "https://www.youtube.com/watch?v=" + id.getVideoId();
+
         try {
             return Optional.of(VideoDto.builder()
-                    .id(id.getVideoId())
+                    .url(youtubeUrl)
                     .title(snippet.getTitle())
                     .description(snippet.getDescription())
                     .thumbnailUrl(thumbnailUrl)

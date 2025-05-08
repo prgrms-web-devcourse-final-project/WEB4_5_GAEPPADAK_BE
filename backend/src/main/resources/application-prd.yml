@@ -21,7 +21,7 @@ schedule:
   cron: 0 0 * * * * # 매시간마다 실행
 
 mock:
-  enable: false
+  enabled: false
 
 swagger:
   url: https://api.prd.kkokkio.site

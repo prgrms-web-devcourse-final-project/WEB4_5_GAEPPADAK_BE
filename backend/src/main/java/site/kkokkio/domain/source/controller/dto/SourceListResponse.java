@@ -14,6 +14,7 @@ public record SourceListResponse(
 
 	@Builder
 	private record SourceList(
+		@NonNull String sourceId,
 		@NonNull String url,
 		@NonNull String thumbnailUrl,
 		@NonNull String title
@@ -23,6 +24,7 @@ public record SourceListResponse(
 		return SourceListResponse.builder()
 			.list(sources.stream()
 				.map(source -> SourceList.builder()
+					.sourceId(source.sourceId())
 					.url(source.url())
 					.thumbnailUrl(source.thumbnailUrl())
 					.title(source.title())

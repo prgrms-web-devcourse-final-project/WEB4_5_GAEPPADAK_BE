@@ -1,17 +1,18 @@
 package site.kkokkio.domain.source.repository;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
 import site.kkokkio.domain.source.dto.TopSourceItemDto;
 import site.kkokkio.domain.source.entity.PostSource;
 import site.kkokkio.domain.source.entity.Source;
 import site.kkokkio.global.enums.Platform;
-
-import java.util.List;
 
 @Repository
 public interface PostSourceRepository extends JpaRepository<PostSource, Long>, PostSourceRepositoryCustom {
@@ -70,6 +71,7 @@ public interface PostSourceRepository extends JpaRepository<PostSource, Long>, P
 	 */
 	@Query("""
             SELECT new site.kkokkio.domain.source.dto.TopSourceItemDto(
+            	s.fingerprint,
                 s.normalizedUrl,
                 s.title,
                 s.description,

@@ -9,7 +9,7 @@ import site.kkokkio.domain.comment.entity.Comment;
 
 @Builder
 public record CommentDto(
-	@NonNull Long id,
+	@NonNull Long commentId,
 	@NonNull UUID memberId,
 	@NonNull String nickname,
 	@NonNull String body,
@@ -18,7 +18,7 @@ public record CommentDto(
 ) {
 	public static CommentDto from(Comment comment) {
 		return CommentDto.builder()
-			.id(comment.getId())
+			.commentId(comment.getId())
 			.memberId(comment.getMember().getId())
 			.nickname(comment.getMember().getNickname())
 			.body(comment.getBody())

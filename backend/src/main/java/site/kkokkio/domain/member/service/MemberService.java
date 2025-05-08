@@ -1,5 +1,8 @@
 package site.kkokkio.domain.member.service;
 
+import java.time.Duration;
+
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +26,7 @@ public class MemberService {
 	private final MemberRepository memberRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtUtils jwtUtils;
+	private final RedisTemplate<String, String> redisTemplate;
 
 	// 회원 가입
 	@Transactional
@@ -51,6 +55,14 @@ public class MemberService {
 		return new MemberResponse(member);
 	}
 
+	// // Redis에 가입 할 회원 ID 저장
+	public void siginUpUnverified(MemberResponse response) {
+		// Redis에 가입 할 회원 ID 저장
+		String redisKey = "SIGNUP_UNVERIFIED:" + response.getEmail();
+		redisTemplate.opsForValue()
+			.set(redisKey, "1", Duration.ofMinutes(5)); // 5분
+	}
+
 	// 이메일로 회원 조회
 	// (로그인, 토큰 재발급 등에서 사용)
 	public Member findByEmail(String email) {
@@ -72,7 +84,7 @@ public class MemberService {
 	//
 	// 	// JWT 토큰 발생 시 포함할 사용자 정보 설정
 	// 	Map<String, Object> claims = new HashMap<>();
-	// 	claims.put("id", member.getId());
+	// 	claims.put("commentId", member.getId());
 	// 	claims.put("email", member.getEmail());
 	// 	claims.put("nickname", member.getNickname());
 	// 	claims.put("role", member.getRole());
@@ -96,7 +108,7 @@ public class MemberService {
 
 		//페이로드에서 사용자 이메일 추출
 		Claims claims = jwtUtils.getPayload(token);
-		String email = claims.get("email", String.class);
+		String email = claims.getSubject();
 
 		// 멤버 조회 및 응답 DTO 변환
 		Member memberInfo = findByEmail(email);

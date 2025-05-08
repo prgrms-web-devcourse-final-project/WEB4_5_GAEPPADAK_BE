@@ -1,5 +1,18 @@
 package site.kkokkio.domain.source.service;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.anyInt;
+import static org.mockito.BDDMockito.anyString;
+import static org.mockito.BDDMockito.eq;
+import static org.mockito.BDDMockito.*;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -7,7 +20,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+
 import reactor.core.publisher.Mono;
 import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
@@ -29,17 +47,6 @@ import site.kkokkio.domain.source.repository.SourceRepository;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.infra.common.exception.RetryableExternalApiException;
-
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SourceServiceTest {
@@ -337,25 +344,25 @@ class SourceServiceTest {
 
         // Mocking할 Repository의 반환 값 (Page<TopSourceItemDto>) 생성
         List<TopSourceItemDto> mockSourceItemDtoList = Arrays.asList(
-                TopSourceItemDto.builder().url("http://youtube.com/v1").title("영상제목1").description(null)
+                TopSourceItemDto.builder().sourceId("source-id-1").url("http://youtube.com/v1").title("영상제목1").description(null)
                         .thumbnailUrl("thumb1").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(90).build(),
-                TopSourceItemDto.builder().url("http://youtube.com/v2").title("영상제목2").description(null)
+                TopSourceItemDto.builder().sourceId("source-id-2").url("http://youtube.com/v2").title("영상제목2").description(null)
                         .thumbnailUrl("thumb2").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(70).build(),
-                TopSourceItemDto.builder().url("http://youtube.com/v3").title("영상제목3").description(null)
+                TopSourceItemDto.builder().sourceId("source-id-3").url("http://youtube.com/v3").title("영상제목3").description(null)
                         .thumbnailUrl("thumb3").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(30).build(),
-                TopSourceItemDto.builder().url("http://youtube.com/v4").title("영상제목4").description(null)
+                TopSourceItemDto.builder().sourceId("source-id-4").url("http://youtube.com/v4").title("영상제목4").description(null)
                         .thumbnailUrl("thumb4").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(77).build(),
-                TopSourceItemDto.builder().url("http://youtube.com/v5").title("영상제목5").description(null)
+                TopSourceItemDto.builder().sourceId("source-id-5").url("http://youtube.com/v5").title("영상제목5").description(null)
                         .thumbnailUrl("thumb5").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(70).build(),
-                TopSourceItemDto.builder().url("http://youtube.com/v6").title("영상제목6").description(null)
+                TopSourceItemDto.builder().sourceId("source-id-6").url("http://youtube.com/v6").title("영상제목6").description(null)
                         .thumbnailUrl("thumb6").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(86).build(),
-                TopSourceItemDto.builder().url("http://youtube.com/v7").title("영상제목7").description(null)
+                TopSourceItemDto.builder().sourceId("source-id-7").url("http://youtube.com/v7").title("영상제목7").description(null)
                         .thumbnailUrl("thumb7").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(43).build(),
-                TopSourceItemDto.builder().url("http://youtube.com/v8").title("영상제목8").description(null)
+                TopSourceItemDto.builder().sourceId("source-id-8").url("http://youtube.com/v8").title("영상제목8").description(null)
                         .thumbnailUrl("thumb8").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(86).build(),
-                TopSourceItemDto.builder().url("http://youtube.com/v9").title("영상제목9").description(null)
+                TopSourceItemDto.builder().sourceId("source-id-9").url("http://youtube.com/v9").title("영상제목9").description(null)
                         .thumbnailUrl("thumb9").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(42).build(),
-                TopSourceItemDto.builder().url("http://youtube.com/v10").title("영상제목10").description(null)
+                TopSourceItemDto.builder().sourceId("source-id-10").url("http://youtube.com/v10").title("영상제목10").description(null)
                         .thumbnailUrl("thumb10").publishedAt(LocalDateTime.now()).platform(Platform.YOUTUBE).score(55).build()
         );
 
@@ -561,25 +568,25 @@ class SourceServiceTest {
 
         // Mocking할 Repository의 반환 값 (Page<TopSourceItemDto>) 생성
         List<TopSourceItemDto> mockSourceItemDtoList = Arrays.asList(
-                TopSourceItemDto.builder().url("http://news.naver.com/article/1").title("뉴스제목1").description("네이버 뉴스 요약 1")
+                TopSourceItemDto.builder().sourceId("source-id-1").url("http://news.naver.com/article/1").title("뉴스제목1").description("네이버 뉴스 요약 1")
                         .thumbnailUrl("thumb1").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(90).build(),
-                TopSourceItemDto.builder().url("http://news.naver.com/article/2").title("뉴스제목2").description("네이버 뉴스 요약 2")
+                TopSourceItemDto.builder().sourceId("source-id-2").url("http://news.naver.com/article/2").title("뉴스제목2").description("네이버 뉴스 요약 2")
                         .thumbnailUrl("thumb2").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(70).build(),
-                TopSourceItemDto.builder().url("http://news.naver.com/article/3").title("뉴스제목3").description("네이버 뉴스 요약 3")
+                TopSourceItemDto.builder().sourceId("source-id-3").url("http://news.naver.com/article/3").title("뉴스제목3").description("네이버 뉴스 요약 3")
                         .thumbnailUrl("thumb3").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(30).build(),
-                TopSourceItemDto.builder().url("http://news.naver.com/article/4").title("뉴스제목4").description("네이버 뉴스 요약 4")
+                TopSourceItemDto.builder().sourceId("source-id-4").url("http://news.naver.com/article/4").title("뉴스제목4").description("네이버 뉴스 요약 4")
                         .thumbnailUrl("thumb4").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(77).build(),
-                TopSourceItemDto.builder().url("http://news.naver.com/article/5").title("뉴스제목5").description("네이버 뉴스 요약 5")
+                TopSourceItemDto.builder().sourceId("source-id-5").url("http://news.naver.com/article/5").title("뉴스제목5").description("네이버 뉴스 요약 5")
                         .thumbnailUrl("thumb5").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(70).build(),
-                TopSourceItemDto.builder().url("http://news.naver.com/article/6").title("뉴스제목6").description("네이버 뉴스 요약 6")
+                TopSourceItemDto.builder().sourceId("source-id-6").url("http://news.naver.com/article/6").title("뉴스제목6").description("네이버 뉴스 요약 6")
                         .thumbnailUrl("thumb6").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(86).build(),
-                TopSourceItemDto.builder().url("http://news.naver.com/article/7").title("뉴스제목7").description("네이버 뉴스 요약 7")
+                TopSourceItemDto.builder().sourceId("source-id-7").url("http://news.naver.com/article/7").title("뉴스제목7").description("네이버 뉴스 요약 7")
                         .thumbnailUrl("thumb7").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(43).build(),
-                TopSourceItemDto.builder().url("http://news.naver.com/article/8").title("뉴스제목8").description("네이버 뉴스 요약 8")
+                TopSourceItemDto.builder().sourceId("source-id-8").url("http://news.naver.com/article/8").title("뉴스제목8").description("네이버 뉴스 요약 8")
                         .thumbnailUrl("thumb8").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(86).build(),
-                TopSourceItemDto.builder().url("http://news.naver.com/article/9").title("뉴스제목9").description("네이버 뉴스 요약 9")
+                TopSourceItemDto.builder().sourceId("source-id-9").url("http://news.naver.com/article/9").title("뉴스제목9").description("네이버 뉴스 요약 9")
                         .thumbnailUrl("thumb9").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(42).build(),
-                TopSourceItemDto.builder().url("http://news.naver.com/article/10").title("뉴스제목10").description("네이버 뉴스 요약 10")
+                TopSourceItemDto.builder().sourceId("source-id-10").url("http://news.naver.com/article/10").title("뉴스제목10").description("네이버 뉴스 요약 10")
                         .thumbnailUrl("thumb10").publishedAt(LocalDateTime.now()).platform(Platform.NAVER_NEWS).score(55).build()
         );
 
@@ -780,10 +787,10 @@ class SourceServiceTest {
         // videoApi.fetchVideos()가 각 키워드에 대해 VideoDto 목록을 담은 Mono를 반환하도록 설정
         // 키워드1에 대한 응답
         List<VideoDto> video1 = Arrays.asList(
-                VideoDto.builder().id("v1_id_k1").title("영상1 제목 k1").publishedAt(
+                VideoDto.builder().url("https://www.youtube.com/watch?v=v1_id_k1").title("영상1 제목 k1").publishedAt(
                                 LocalDateTime.now().minusDays(1)).thumbnailUrl("thumb1_k1")
                         .description("desc1_k1").build(),
-                VideoDto.builder().id("v2_id_k1").title("영상2 제목 k1").publishedAt(
+                VideoDto.builder().url("https://www.youtube.com/watch?v=v2_id_k1").title("영상2 제목 k1").publishedAt(
                                 LocalDateTime.now().minusDays(2)).thumbnailUrl("thumb2_k1")
                         .description("desc2_k1").build()
         );
@@ -793,11 +800,11 @@ class SourceServiceTest {
 
         // 키워드2에 대한 응답 (일부러 중복되는 영상 포함)
         List<VideoDto> video2 = Arrays.asList(
-                VideoDto.builder().id("v3_id_k2").title("영상3 제목 k2").publishedAt(
+                VideoDto.builder().url("https://www.youtube.com/watch?v=v3_id_k2").title("영상3 제목 k2").publishedAt(
                                 LocalDateTime.now().minusDays(3)).thumbnailUrl("thumb3_k2")
                         .description("desc3_k2").build(),
                 // 중복 영상
-                VideoDto.builder().id("v2_id_k1").title("영상2 제목 k1").publishedAt(
+                VideoDto.builder().url("https://www.youtube.com/watch?v=v2_id_k1").title("영상2 제목 k1").publishedAt(
                                 LocalDateTime.now().minusDays(2)).thumbnailUrl("thumb2_k1")
                         .description("desc2_k1").build()
         );
@@ -934,7 +941,7 @@ class SourceServiceTest {
 
         // 키워드2에 대해 정상 응답 설정
         List<VideoDto> video2 = Arrays.asList(
-                VideoDto.builder().id("v_id_k2").title("정상 영상 제목 k2")
+                VideoDto.builder().url("https://www.youtube.com/watch?v=v_id_k2").title("정상 영상 제목 k2")
                         .publishedAt(LocalDateTime.now().minusDays(1))
                         .thumbnailUrl("thumb_k2").description("desc_k2").build()
         );

@@ -25,7 +25,6 @@ import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import site.kkokkio.domain.member.controller.dto.MemberLoginResponse;
-import site.kkokkio.domain.member.dto.TokenDto;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.global.enums.MemberRole;
 import site.kkokkio.global.exception.ServiceException;
@@ -89,6 +88,8 @@ class AuthServiceV1Test {
 			"role", MemberRole.USER
 		);
 
+		member.setEmailVerified(true); // 테스트 통과를 위해 임시 이메일 인증
+
 		// given
 		given(memberService.findByEmail(email)).willReturn(member);
 		given(passwordEncoder.matches(rawPw, encPw)).willReturn(true);
@@ -133,17 +134,19 @@ class AuthServiceV1Test {
 		String rt = "refresh-token";
 
 		Claims claims = mock(Claims.class);
-		given(claims.get("email", String.class)).willReturn(email);
+		given(claims.getSubject()).willReturn(email);
 
 		given(jwtUtils.getRefreshTokenFromCookies(request)).willReturn(Optional.of(rt));
 		given(jwtUtils.getPayload(rt)).willReturn(claims);
 		given(valueOperations.get("refreshToken:" + email)).willReturn(rt);
 		given(jwtUtils.createToken(email, claims)).willReturn("new-access");
+		willDoNothing().given(jwtUtils).setJwtInCookie(eq("new-access"), eq(response));
 
-		TokenDto result = authService.refreshToken(request, response);
+		// when
+		authService.refreshToken(request, response);
 
-		assertThat(result.accessToken()).isEqualTo("new-access");
-		assertThat(result.refreshToken()).isEqualTo(rt);
+		// then
+		then(jwtUtils).should().setJwtInCookie("new-access", response);
 	}
 
 	@Test

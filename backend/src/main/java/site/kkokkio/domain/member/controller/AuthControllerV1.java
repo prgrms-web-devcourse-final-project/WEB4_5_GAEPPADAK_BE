@@ -4,7 +4,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.member.controller.dto.EmailVerificationRequest;
 import site.kkokkio.domain.member.controller.dto.MemberLoginRequest;
 import site.kkokkio.domain.member.controller.dto.MemberLoginResponse;
-import site.kkokkio.domain.member.dto.TokenDto;
 import site.kkokkio.domain.member.service.AuthService;
 import site.kkokkio.domain.member.service.MailService;
 import site.kkokkio.domain.member.service.MemberService;
@@ -61,9 +59,9 @@ public class AuthControllerV1 {
 	@PostMapping("/refresh")
 	@ApiErrorCodeExamples({ErrorCode.REFRESH_TOKEN_NOT_FOUND,
 		ErrorCode.REFRESH_TOKEN_MISMATCH, ErrorCode.REFRESH_TOKEN_INTERNAL_ERROR})
-	public RsData<TokenDto> refreshToken(HttpServletRequest request, HttpServletResponse response) {
-		TokenDto tokenDto = authService.refreshToken(request, response);
-		return new RsData<>("200", "토큰이 재발급되었습니다.", tokenDto);
+	public RsData<Void> refreshToken(HttpServletRequest request, HttpServletResponse response) {
+		authService.refreshToken(request, response);
+		return new RsData<>("200", "토큰이 재발급되었습니다.");
 	}
 
 	@Operation(summary = "로그아웃")
@@ -76,7 +74,7 @@ public class AuthControllerV1 {
 
 	@Operation(summary = "이메일 인증 코드 전송")
 	@PostMapping("/verify-email")
-	public RsData<Void> requestAuthCode(@RequestParam String email) throws MessagingException {
+	public RsData<Void> requestAuthCode(String email) throws MessagingException {
 
 		boolean isSend = mailService.sendAuthCode(email);
 		return isSend

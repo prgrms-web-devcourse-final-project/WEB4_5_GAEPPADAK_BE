@@ -26,7 +26,7 @@ public record NewsDto(
                      .normalizedUrl(normalized)
                      .title(sanitizedTitle)
                      .description(sanitizedDescription)
-                     .thumbnailUrl(null)
+                     .thumbnailUrl(null) // Naver News API에서 제공하지 않음
                      .publishedAt(pubDate)
                      .platform(platform)
                      .build();

@@ -58,7 +58,7 @@ public class AuthControllerV1 {
 	@Operation(summary = "토큰 재발급")
 	@PostMapping("/refresh")
 	@ApiErrorCodeExamples({ErrorCode.REFRESH_TOKEN_NOT_FOUND,
-		ErrorCode.REFRESH_TOKEN_MISMATCH, ErrorCode.REFRESH_TOKEN_INTERNAL_ERROR})
+		ErrorCode.REFRESH_TOKEN_MISMATCH})
 	public RsData<Void> refreshToken(HttpServletRequest request, HttpServletResponse response) {
 		authService.refreshToken(request, response);
 		return new RsData<>("200", "토큰이 재발급되었습니다.");

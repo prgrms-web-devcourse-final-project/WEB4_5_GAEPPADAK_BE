@@ -173,6 +173,7 @@ mock:
   news-file: naver-news-search.json
   youtube-file: youtube-videos-search.json
   post-file: post-search.json
+  keyword-file: keywords.txt
 
 swagger:
   url: http://localhost:8080

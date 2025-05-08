@@ -15,7 +15,7 @@ public class CustomAuthException extends RuntimeException {
 
 	@RequiredArgsConstructor
 	public enum AuthErrorType {
-		MISSING_TOKEN("401", "인증 토큰이 없습니다."),
+		MISSING_TOKEN("401", "인증 토큰이 없어 인증 실패"),
 		TOKEN_EXPIRED("401", "토큰이 만료되어 인증할 수 없음"),
 		UNSUPPORTED_TOKEN("400", "지원하지 않는 토큰 형식"),
 		MALFORMED_TOKEN("400", "클라이언트가 보낸 토큰 자체가 형식적으로 잘못됨"),

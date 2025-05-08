@@ -93,7 +93,7 @@ public class CommentControllerV1 {
 	) {
 		commentService.deleteCommentById(commentId, userDetails.getMember().getId());
 		return new RsData<>(
-			"204",
+			"200",
 			"댓글이 삭제되었습니다."
 		);
 	}

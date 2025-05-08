@@ -48,11 +48,6 @@ public class KeywordMetricHourlyService {
 		return responses;
 	}
 
-	@Transactional
-	public void clearAllKeywordMetricHourly() {
-		keywordMetricHourlyRepository.deleteAll();
-	}
-
 	public void evaluateNovelty() {
 		// TODO: need to implement
 	}

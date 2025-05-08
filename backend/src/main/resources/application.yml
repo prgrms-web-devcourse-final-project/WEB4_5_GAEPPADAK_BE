@@ -166,6 +166,13 @@ youtube:
     search:
       path: ${YOUTUBE_PATH:/youtube/v3/search}
 
+ai:
+  gemini:
+    key: ${GEMINI_API_KEY:test-gemini-key}
+    project-id: ${GEMINI_PROJECT_ID:test-gemini-project-id}
+    model: ${GEMINI_MODEL:gemini-2.0-flash}
+    base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta/openai}
+
 mock:
   enabled: true
   news-file: naver-news-search.json

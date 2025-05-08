@@ -37,7 +37,6 @@ resource "aws_subnet" "subnet_1" {
     ResourceName = "${var.prefix}-subnet-1"
     Name         = "team04-kkokkio"
     Team         = "devcos5-team04"
-    env          = "dev"
   }
 }
 

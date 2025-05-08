@@ -96,7 +96,7 @@ public class MemberService {
 
 		//페이로드에서 사용자 이메일 추출
 		Claims claims = jwtUtils.getPayload(token);
-		String email = claims.get("email", String.class);
+		String email = claims.getSubject();
 
 		// 멤버 조회 및 응답 DTO 변환
 		Member memberInfo = findByEmail(email);

@@ -128,7 +128,7 @@ class MemberServiceV1Test {
 		// 페이로드에서 email 추출
 		Claims claims = mock(Claims.class);
 		given(jwtUtils.getPayload("valid.token")).willReturn(claims);
-		given(claims.get("email", String.class)).willReturn("user@example.com");
+		given(claims.getSubject()).willReturn("user@example.com");
 
 		// MemberServiceV1 내부 findByEmail 호출
 		Member member = Member.builder()

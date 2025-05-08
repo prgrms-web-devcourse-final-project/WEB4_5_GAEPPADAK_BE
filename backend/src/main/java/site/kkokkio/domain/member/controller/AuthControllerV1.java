@@ -17,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.member.controller.dto.EmailVerificationRequest;
 import site.kkokkio.domain.member.controller.dto.MemberLoginRequest;
 import site.kkokkio.domain.member.controller.dto.MemberLoginResponse;
-import site.kkokkio.domain.member.dto.TokenDto;
 import site.kkokkio.domain.member.service.AuthService;
 import site.kkokkio.domain.member.service.MailService;
 import site.kkokkio.domain.member.service.MemberService;
@@ -61,9 +60,9 @@ public class AuthControllerV1 {
 	@PostMapping("/refresh")
 	@ApiErrorCodeExamples({ErrorCode.REFRESH_TOKEN_NOT_FOUND,
 		ErrorCode.REFRESH_TOKEN_MISMATCH, ErrorCode.REFRESH_TOKEN_INTERNAL_ERROR})
-	public RsData<TokenDto> refreshToken(HttpServletRequest request, HttpServletResponse response) {
-		TokenDto tokenDto = authService.refreshToken(request, response);
-		return new RsData<>("200", "토큰이 재발급되었습니다.", tokenDto);
+	public RsData<Void> refreshToken(HttpServletRequest request, HttpServletResponse response) {
+		authService.refreshToken(request, response);
+		return new RsData<>("200", "토큰이 재발급되었습니다.");
 	}
 
 	@Operation(summary = "로그아웃")

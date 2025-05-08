@@ -21,7 +21,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import site.kkokkio.domain.member.controller.dto.MemberLoginResponse;
-import site.kkokkio.domain.member.dto.TokenDto;
 import site.kkokkio.domain.member.service.AuthService;
 import site.kkokkio.domain.member.service.MailService;
 import site.kkokkio.domain.member.service.MemberService;
@@ -121,18 +120,13 @@ public class AuthControllerV1Test {
 	@DisplayName("토큰 재발급 - 성공")
 	void refreshTokenSuccess() throws Exception {
 		// given
-		TokenDto tokenDto = new TokenDto("newAccessToken", "existingRefreshToken");
-
-		given(authService.refreshToken(any(HttpServletRequest.class), any(HttpServletResponse.class)))
-			.willReturn(tokenDto);
+		willCallRealMethod().given(jwtUtils).setJwtInCookie(anyString(), any(HttpServletResponse.class));
 
 		// when & then
 		mockMvc.perform(post("/api/v1/auth/refresh"))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("200"))
-			.andExpect(jsonPath("$.message").value("토큰이 재발급되었습니다."))
-			.andExpect(jsonPath("$.data.accessToken").value("newAccessToken"))
-			.andExpect(jsonPath("$.data.refreshToken").value("existingRefreshToken"));
+			.andExpect(jsonPath("$.message").value("토큰이 재발급되었습니다."));
 	}
 
 	@Test

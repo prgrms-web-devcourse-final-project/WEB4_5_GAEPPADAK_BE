@@ -13,7 +13,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.member.controller.dto.MemberLoginResponse;
-import site.kkokkio.domain.member.dto.TokenDto;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.global.util.JwtUtils;
@@ -59,12 +58,12 @@ public class AuthService {
 
 	/** Refresh Token 검증 후 Access/Refresh 재발급 + Redis 갱신 + 쿠키 업데이트 */
 	@Transactional
-	public TokenDto refreshToken(HttpServletRequest request, HttpServletResponse response) {
+	public void refreshToken(HttpServletRequest request, HttpServletResponse response) {
 		String rt = jwtUtils.getRefreshTokenFromCookies(request)
 			.orElseThrow(() -> new ServiceException("401-1", "리프레시 토큰이 없습니다."));
 
 		// 페이로드에서 이메일 추출
-		String email = jwtUtils.getPayload(rt).get("email", String.class);
+		String email = jwtUtils.getPayload(rt).getSubject();
 
 		// Redis에 저장된 refreshToken와 비교
 		String savedRt = redisTemplate.opsForValue().get("refreshToken:" + email);
@@ -78,8 +77,6 @@ public class AuthService {
 
 		// 쿠키에도 업데이트
 		jwtUtils.setJwtInCookie(newAt, response);
-
-		return new TokenDto(newAt, rt);
 	}
 
 	/** 로그아웃 -> Access Token 블랙리스트 등록 + Refresh Token 삭제 + 쿠키 삭제 */

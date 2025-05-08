@@ -159,7 +159,7 @@ class MemberServiceV1Test {
 			.satisfies(ex -> {
 				CustomAuthException cae = (CustomAuthException)ex;
 				assertThat(cae.getAuthErrorType())
-					.isEqualTo(CustomAuthException.AuthErrorType.CREDENTIALS_MISMATCH);
+					.isEqualTo(CustomAuthException.AuthErrorType.MISSING_TOKEN);
 			});
 	}
 }

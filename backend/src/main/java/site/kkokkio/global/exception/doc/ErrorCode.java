@@ -35,6 +35,10 @@ public enum ErrorCode {
 	CREDENTIALS_MISMATCH("401", "토큰 서명 불일치 등으로 인증 실패"),
 	SOURCE_NOT_FOUND_1("404", "유튜브 비디오를 불러오지 못했습니다."),
 	SOURCE_NOT_FOUND_2("404", "뉴스를 불러오지 못했습니다.");
+	CREDENTIALS_MISMATCH("401", "토큰 서명 불일치 등으로 인증 실패");
+	NAVER_BAD_GATEWAY("502", "Empty response from Naver News API"),
+	SOURCE_NOT_FOUND_1("400","유튜브 비디오를 불러오지 못했습니다."),
+	SOURCE_NOT_FOUND_2("400", "뉴스를 불러오지 못했습니다.");
 
 	private final String code;
 	private final String message;

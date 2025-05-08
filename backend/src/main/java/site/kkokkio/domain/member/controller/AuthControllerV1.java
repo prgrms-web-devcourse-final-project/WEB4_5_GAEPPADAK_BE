@@ -37,7 +37,7 @@ public class AuthControllerV1 {
 
 	// 로그인
 	@Operation(summary = "로그인")
-	@ApiErrorCodeExamples({ErrorCode.EMAIL_NOT_FOUND, ErrorCode.PASSWORD_UNAUTHORIZED})
+	@ApiErrorCodeExamples({ErrorCode.EMAIL_NOT_FOUND, ErrorCode.PASSWORD_UNAUTHORIZED, ErrorCode.EMAIL_UNAUTHORIZED})
 	@PostMapping("/login")
 	public RsData<MemberLoginResponse> login(
 		@RequestBody @Validated MemberLoginRequest request,

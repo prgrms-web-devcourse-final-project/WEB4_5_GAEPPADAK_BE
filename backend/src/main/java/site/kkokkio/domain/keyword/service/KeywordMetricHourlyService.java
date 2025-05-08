@@ -1,5 +1,6 @@
 package site.kkokkio.domain.keyword.service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,10 +23,13 @@ public class KeywordMetricHourlyService {
 		return keywordMetricHourlyRepository.save(keywordMetricHourly);
 	}
 
-	// 가장 최근의 인기 키워드 10개 조회
+	// 인기 키워드 10개 조회
 	@Transactional(readOnly = true)
 	public List<KeywordMetricHourlyDto> findHourlyMetrics() {
-		List<KeywordMetricHourly> metrics = keywordMetricHourlyRepository.findTop10ByOrderByCreatedAtDesc();
+
+		List<KeywordMetricHourly> metrics = keywordMetricHourlyRepository.findTop10HourlyMetricsClosestToNowNative(
+			LocalDateTime.now()
+		);
 		if(metrics == null || metrics.isEmpty()) {
 			throw new ServiceException("404", "키워드를 불러오지 못했습니다.");
 		}

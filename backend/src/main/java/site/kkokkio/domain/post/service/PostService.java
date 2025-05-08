@@ -108,7 +108,11 @@ public class PostService {
                 now);
 
         List<PostDto> topPosts = topKeywordMetrics.stream()
-                .filter(metric -> metric.getPost() != null)
+                .peek(metric -> {
+                    if (metric.getPost() == null) {
+                        throw new ServiceException("500", "해당 키워드에 post가 존재하지 않습니다.");
+                    }
+                }) // post_id가 null인 키워드 발견 시 서버 문제 예외처리
                 .map(metric -> PostDto.from(metric.getPost(), metric.getKeyword().getText()))
                 .toList();
 

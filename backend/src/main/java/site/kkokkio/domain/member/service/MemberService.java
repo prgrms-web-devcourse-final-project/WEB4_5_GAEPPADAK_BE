@@ -1,5 +1,8 @@
 package site.kkokkio.domain.member.service;
 
+import java.time.Duration;
+
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +26,7 @@ public class MemberService {
 	private final MemberRepository memberRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtUtils jwtUtils;
+	private final RedisTemplate<String, String> redisTemplate;
 
 	// 회원 가입
 	@Transactional
@@ -49,6 +53,14 @@ public class MemberService {
 			.build();
 		memberRepository.save(member);
 		return new MemberResponse(member);
+	}
+
+	// // Redis에 가입 할 회원 ID 저장
+	public void siginUpUnverified(MemberResponse response) {
+		// Redis에 가입 할 회원 ID 저장
+		String redisKey = "SIGNUP_UNVERIFIED:" + response.getEmail();
+		redisTemplate.opsForValue()
+			.set(redisKey, "1", Duration.ofMinutes(5)); // 5분
 	}
 
 	// 이메일로 회원 조회

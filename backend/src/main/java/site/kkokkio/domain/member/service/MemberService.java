@@ -34,10 +34,10 @@ public class MemberService {
 
 		// 중복 검사
 		if (memberRepository.existsByEmail(request.email())) {
-			throw new ServiceException("409-1", "이미 사용중인 이메일입니다.");
+			throw new ServiceException("409", "이미 사용중인 이메일입니다.");
 		}
 		if (memberRepository.existsByNickname(request.nickname())) {
-			throw new ServiceException("409-2", "이미 사용중인 닉네임입니다.");
+			throw new ServiceException("409", "이미 사용중인 닉네임입니다.");
 		}
 
 		// 비밀번호 암호화

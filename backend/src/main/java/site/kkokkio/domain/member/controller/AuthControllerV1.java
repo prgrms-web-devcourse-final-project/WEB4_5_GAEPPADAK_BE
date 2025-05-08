@@ -37,7 +37,7 @@ public class AuthControllerV1 {
 
 	// 로그인
 	@Operation(summary = "로그인")
-	@ApiErrorCodeExamples({ErrorCode.EMAIL_NOT_FOUND, ErrorCode.PASSWORD_UNAUTHORIZED})
+	@ApiErrorCodeExamples({ErrorCode.EMAIL_NOT_FOUND, ErrorCode.PASSWORD_UNAUTHORIZED, ErrorCode.EMAIL_UNAUTHORIZED})
 	@PostMapping("/login")
 	public RsData<MemberLoginResponse> login(
 		@RequestBody @Validated MemberLoginRequest request,
@@ -58,7 +58,7 @@ public class AuthControllerV1 {
 	@Operation(summary = "토큰 재발급")
 	@PostMapping("/refresh")
 	@ApiErrorCodeExamples({ErrorCode.REFRESH_TOKEN_NOT_FOUND,
-		ErrorCode.REFRESH_TOKEN_MISMATCH, ErrorCode.REFRESH_TOKEN_INTERNAL_ERROR})
+		ErrorCode.REFRESH_TOKEN_MISMATCH})
 	public RsData<Void> refreshToken(HttpServletRequest request, HttpServletResponse response) {
 		authService.refreshToken(request, response);
 		return new RsData<>("200", "토큰이 재발급되었습니다.");
@@ -66,7 +66,7 @@ public class AuthControllerV1 {
 
 	@Operation(summary = "로그아웃")
 	@PostMapping("/logout")
-	@ApiErrorCodeExamples({ErrorCode.LOGOUT_BAD_REQUEST, ErrorCode.LOGOUT_INTERNAL_SERVER_ERROR})
+	@ApiErrorCodeExamples({ErrorCode.LOGOUT_BAD_REQUEST})
 	public RsData<Void> logout(HttpServletRequest request, HttpServletResponse response) {
 		authService.logout(request, response);
 		return new RsData<>("200", "로그아웃 되었습니다.");

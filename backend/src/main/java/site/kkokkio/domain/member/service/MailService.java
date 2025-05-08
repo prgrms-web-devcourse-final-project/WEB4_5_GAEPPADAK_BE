@@ -103,17 +103,22 @@ public class MailService {
 		String authCode = sendSimpleMessage(email); // 이메일 인증 코드 발송
 
 		if (authCode != null) {
-			// Redis에 인증 코드 저장 (만료 시간 설정)
-			ValueOperations<String, String> values = redisTemplate.opsForValue();
-			// 키 이름에 접두어 추가해서 저장
-			String key = EMAIL_AUTH_PREFIX + email;
-
-			// Redis에 저장하고 만료 시간 설정 (밀리초를 초 단위로 변환)
-			values.set(key, authCode, Duration.ofSeconds(300)); // 5분
-
+			storeAuthCodeInRedis(email, authCode);
 			return true;
 		}
 		return false;
+	}
+
+	// 인증 코드 Redis 저장
+	@Transactional
+	public void storeAuthCodeInRedis(String email, String authCode) {
+		// Redis에 인증 코드 저장 (만료 시간 설정)
+		ValueOperations<String, String> values = redisTemplate.opsForValue();
+		// 키 이름에 접두어 추가해서 저장
+		String key = EMAIL_AUTH_PREFIX + email;
+
+		// Redis에 저장하고 만료 시간 설정 (밀리초를 초 단위로 변환)
+		values.set(key, authCode, Duration.ofSeconds(300)); // 5분
 	}
 
 	// 인증 코드 검증

@@ -14,6 +14,7 @@ public record SourceListResponse(
 
 	@Builder
 	private record SourceList(
+		@NonNull String id,
 		@NonNull String url,
 		@NonNull String thumbnailUrl,
 		@NonNull String title

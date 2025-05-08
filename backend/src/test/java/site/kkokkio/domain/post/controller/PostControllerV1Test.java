@@ -273,6 +273,7 @@ public class PostControllerV1Test {
 			.andExpect(MockMvcResultMatchers.jsonPath("$.message").value("성공적으로 조회되었습니다."))
 			.andExpect(MockMvcResultMatchers.jsonPath("$.data.list").isArray())
 			.andExpect(MockMvcResultMatchers.jsonPath("$.data.list.length()").value(5))
+			.andExpect(MockMvcResultMatchers.jsonPath("$.data.list[0].sourceId").value("id-1"))
 			.andExpect(MockMvcResultMatchers.jsonPath("$.data.meta.page").value(0))
 			.andDo(print());
 	}

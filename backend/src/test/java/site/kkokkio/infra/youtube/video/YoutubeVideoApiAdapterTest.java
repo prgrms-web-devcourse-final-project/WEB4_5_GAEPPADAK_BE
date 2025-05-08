@@ -1,11 +1,13 @@
 package site.kkokkio.infra.youtube.video;
 
-import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
-import io.github.resilience4j.circuitbreaker.CircuitBreaker;
-import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
-import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
-import io.github.resilience4j.ratelimiter.RequestNotPermitted;
-import io.github.resilience4j.retry.RetryRegistry;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Collections;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,18 +30,17 @@ import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.ExchangeFunction;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
+import io.github.resilience4j.retry.RetryRegistry;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import site.kkokkio.domain.source.dto.VideoDto;
 import site.kkokkio.infra.common.exception.RetryableExternalApiException;
-
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.Collections;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -130,7 +131,7 @@ public class YoutubeVideoApiAdapterTest {
             assertThat(list).hasSize(1);
 
             VideoDto video = list.getFirst();
-            assertThat(video.id()).isEqualTo("testVideoId1");
+            assertThat(video.url()).isEqualTo("https://www.youtube.com/watch?v=testVideoId1");
             assertThat(video.title()).isEqualTo("testTitle");
             assertThat(video.description()).isEqualTo("testDescription 1");
             assertThat(video.thumbnailUrl()).isEqualTo("http://test.com/thumb1.jpg");

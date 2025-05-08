@@ -1,14 +1,29 @@
 package site.kkokkio.domain.source.controller;
 
+import static org.hamcrest.Matchers.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
 import site.kkokkio.domain.source.controller.dto.TopSourceListResponse;
 import site.kkokkio.domain.source.dto.SourceDto;
 import site.kkokkio.domain.source.dto.TopSourceItemDto;
@@ -17,16 +32,6 @@ import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.global.security.CustomUserDetailsService;
 import site.kkokkio.global.util.JwtUtils;
-
-import java.time.LocalDateTime;
-import java.util.List;
-
-import static org.hamcrest.Matchers.nullValue;
-import static org.mockito.BDDMockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = SourceControllerV1.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -70,6 +75,7 @@ class SourceControllerV1Test {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200"))
                 .andExpect(jsonPath("$.message").value("성공적으로 조회되었습니다."))
+                .andExpect(jsonPath("$.data.list[0].sourceId").value("source-1"))
                 .andExpect(jsonPath("$.data.list[0].url").value("https://news.com"))
                 .andExpect(jsonPath("$.data.list[0].thumbnailUrl").value("https://image.jpg"))
                 .andExpect(jsonPath("$.data.list[0].title").value("뉴스 제목1"));
@@ -136,6 +142,7 @@ class SourceControllerV1Test {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200"))
                 .andExpect(jsonPath("$.message").value("성공적으로 조회되었습니다."))
+                .andExpect(jsonPath("$.data.list[0].sourceId").value("source-1"))
                 .andExpect(jsonPath("$.data.list[0].url").value("https://youtube.com"))
                 .andExpect(jsonPath("$.data.list[0].thumbnailUrl").value("https://image.jpg"))
                 .andExpect(jsonPath("$.data.list[0].title").value("영상 제목1"));
@@ -149,6 +156,7 @@ class SourceControllerV1Test {
         // Mocking 할 서비스 메소드의 반환 값 생성
         List<TopSourceItemDto> mockItemList = List.of(
                 TopSourceItemDto.builder()
+                        .sourceId("source-commentId-1")
                         .url("https://youtube.com/watch?v=video1")
                         .title("유튜브 인기 영상 제목 1")
                         .description(null)
@@ -157,6 +165,7 @@ class SourceControllerV1Test {
                         .platform(Platform.YOUTUBE)
                         .build(),
                 TopSourceItemDto.builder()
+                        .sourceId("source-commentId-2")
                         .url("https://youtube.com/watch?v=video2")
                         .title("유튜브 인기 영상 제목 2")
                         .description(null)
@@ -165,6 +174,7 @@ class SourceControllerV1Test {
                         .platform(Platform.YOUTUBE)
                         .build(),
                 TopSourceItemDto.builder()
+                        .sourceId("source-commentId-3")
                         .url("https://youtube.com/watch?v=video3")
                         .title("유튜브 인기 영상 제목 3")
                         .description(null)
@@ -173,6 +183,7 @@ class SourceControllerV1Test {
                         .platform(Platform.YOUTUBE)
                         .build(),
                 TopSourceItemDto.builder()
+                        .sourceId("source-commentId-4")
                         .url("https://youtube.com/watch?v=video4")
                         .title("유튜브 인기 영상 제목 4")
                         .description(null)
@@ -208,6 +219,7 @@ class SourceControllerV1Test {
                 .andExpect(jsonPath("$.data.meta").exists())
 
                 // 첫번째 값 검증
+                .andExpect(jsonPath("$.data.list[0].sourceId").value("source-commentId-1"))
                 .andExpect(jsonPath("$.data.list[0].url").value("https://youtube.com/watch?v=video1"))
                 .andExpect(jsonPath("$.data.list[0].title").value("유튜브 인기 영상 제목 1"))
                 .andExpect(jsonPath("$.data.list[0].description").value(nullValue()))
@@ -271,6 +283,7 @@ class SourceControllerV1Test {
         // Mocking 할 서비스 메소드의 반환 값 생성
         List<TopSourceItemDto> mockItemList = List.of(
                 TopSourceItemDto.builder()
+                        .sourceId("source-commentId-1")
                         .url("https://news.naver.com/article/1")
                         .title("네이버 인기 뉴스 제목 1")
                         .description("네이버 요약 뉴스 내용 1")
@@ -279,6 +292,7 @@ class SourceControllerV1Test {
                         .platform(Platform.NAVER_NEWS)
                         .build(),
                 TopSourceItemDto.builder()
+                        .sourceId("source-commentId-2")
                         .url("https://news.naver.com/article/2")
                         .title("네이버 인기 뉴스 제목 2")
                         .description("네이버 요약 뉴스 내용 2")
@@ -287,6 +301,7 @@ class SourceControllerV1Test {
                         .platform(Platform.NAVER_NEWS)
                         .build(),
                 TopSourceItemDto.builder()
+                        .sourceId("source-commentId-3")
                         .url("https://news.naver.com/article/3")
                         .title("네이버 인기 뉴스 제목 3")
                         .description("네이버 요약 뉴스 내용 3")
@@ -295,6 +310,7 @@ class SourceControllerV1Test {
                         .platform(Platform.NAVER_NEWS)
                         .build(),
                 TopSourceItemDto.builder()
+                        .sourceId("source-commentId-4")
                         .url("https://news.naver.com/article/4")
                         .title("네이버 인기 뉴스 제목 4")
                         .description("네이버 요약 뉴스 내용 4")
@@ -330,6 +346,7 @@ class SourceControllerV1Test {
                 .andExpect(jsonPath("$.data.meta").exists())
 
                 // 첫번째 값 검증
+                .andExpect(jsonPath("$.data.list[0].sourceId").value("source-commentId-1"))
                 .andExpect(jsonPath("$.data.list[0].url").value("https://news.naver.com/article/1"))
                 .andExpect(jsonPath("$.data.list[0].title").value("네이버 인기 뉴스 제목 1"))
                 .andExpect(jsonPath("$.data.list[0].description").value("네이버 요약 뉴스 내용 1"))

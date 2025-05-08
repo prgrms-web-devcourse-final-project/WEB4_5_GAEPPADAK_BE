@@ -72,7 +72,7 @@ public class MemberService {
 	//
 	// 	// JWT 토큰 발생 시 포함할 사용자 정보 설정
 	// 	Map<String, Object> claims = new HashMap<>();
-	// 	claims.put("id", member.getId());
+	// 	claims.put("commentId", member.getId());
 	// 	claims.put("email", member.getEmail());
 	// 	claims.put("nickname", member.getNickname());
 	// 	claims.put("role", member.getRole());

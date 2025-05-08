@@ -37,7 +37,7 @@ public record PostSearchSourceListResponse(
 
 	@Builder
 	private record SearchSourceList(
-		@NonNull String id,
+		@NonNull String sourceId,
 		@NonNull String url,
 		String thumbnailUrl,
 		@NonNull String title,
@@ -45,7 +45,7 @@ public record PostSearchSourceListResponse(
 		) {
 		public static SearchSourceList from(SourceDto sourceDto) {
 			return SearchSourceList.builder()
-				.id(sourceDto.id())
+				.sourceId(sourceDto.sourceId())
 				.url(sourceDto.url())
 				.thumbnailUrl(sourceDto.thumbnailUrl())
 				.title(sourceDto.title())

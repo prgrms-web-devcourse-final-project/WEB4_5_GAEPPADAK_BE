@@ -72,6 +72,7 @@ class CommentControllerV1Test {
 				.accept(APPLICATION_JSON))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.data.list[0].commentId").value(1))
 			.andExpect(jsonPath("$.data.list[0].body").value("댓글"));
 	}
 
@@ -94,6 +95,7 @@ class CommentControllerV1Test {
 				.content(objectMapper.writeValueAsString(request)))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.data.commentId").value(1))
 			.andExpect(jsonPath("$.data.body").value("새 댓글"));
 	}
 
@@ -133,6 +135,7 @@ class CommentControllerV1Test {
 				.content(objectMapper.writeValueAsString(request)))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.data.commentId").value(1))
 			.andExpect(jsonPath("$.data.body").value("수정된 댓글"));
 	}
 
@@ -182,6 +185,7 @@ class CommentControllerV1Test {
 				.with(csrf()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.data.commentId").value(1))
 			.andExpect(jsonPath("$.data.likeCount").value(1));
 	}
 
@@ -201,6 +205,7 @@ class CommentControllerV1Test {
 				.with(csrf()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.data.commentId").value(1))
 			.andExpect(jsonPath("$.data.likeCount").value(0));
 	}
 }

@@ -58,7 +58,7 @@ public class SourceControllerV1 {
             summary = "실시간 인기 유튜브 비디오 목록 조회 (페이지네이션)",
             description = "키워드를 통해 YouTube Data API를 호출하여 현재 한국에서 인기 있는 YouTube 비디오 목록을 가져옵니다."
     )
-	@ApiErrorCodeExamples({ErrorCode.KEYWORDS_NOT_FOUND_1})
+	@ApiErrorCodeExamples({ErrorCode.SOURCE_NOT_FOUND_1})
     @GetMapping("/videos/top")
     public RsData<TopSourceListResponse> getTopYoutubeSources(
             @ParameterObject @PageableDefault(
@@ -80,7 +80,7 @@ public class SourceControllerV1 {
             summary = "실시간 인기 네이버 뉴스 목록 조회 (페이지네이션)",
             description = "키워드를 통해 네이버 뉴스 API를 호출하여 현재 한국에서 인기 있는 네이버 뉴스 목록을 가져옵니다."
     )
-	@ApiErrorCodeExamples({ErrorCode.KEYWORDS_NOT_FOUND_1})
+	@ApiErrorCodeExamples({ErrorCode.SOURCE_NOT_FOUND_2})
     @GetMapping("/news/top")
     public RsData<TopSourceListResponse> getTopNaverNewsSources(
             @ParameterObject @PageableDefault(

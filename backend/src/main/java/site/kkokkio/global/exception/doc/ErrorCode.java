@@ -32,6 +32,9 @@ public enum ErrorCode {
 	UNSUPPORTED_TOKEN("400", "지원하지 않는 토큰 형식"),
 	MALFORMED_TOKEN("400", "클라이언트가 보낸 토큰 자체가 형식적으로 잘못됨"),
 	CREDENTIALS_MISMATCH("401", "토큰 서명 불일치 등으로 인증 실패");
+	NAVER_BAD_GATEWAY("502", "Empty response from Naver News API"),
+	SOURCE_NOT_FOUND_1("400","유튜브 비디오를 불러오지 못했습니다."),
+	SOURCE_NOT_FOUND_2("400", "뉴스를 불러오지 못했습니다.");
 
 	private final String code;
 	private final String message;

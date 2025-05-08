@@ -82,6 +82,10 @@ services:
       - "6379:6379"
     volumes: # 마운트할 볼륨 설정
       - ./redis_data:/data
+    command: [
+      "redis-server",
+      "--notify-keyspace-events", "Ex"
+    ]
 
 networks:
   monitoring:

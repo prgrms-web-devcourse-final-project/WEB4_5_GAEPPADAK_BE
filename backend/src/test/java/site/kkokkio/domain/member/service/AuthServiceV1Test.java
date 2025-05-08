@@ -88,6 +88,8 @@ class AuthServiceV1Test {
 			"role", MemberRole.USER
 		);
 
+		member.setEmailVerified(true); // 테스트 통과를 위해 임시 이메일 인증
+
 		// given
 		given(memberService.findByEmail(email)).willReturn(member);
 		given(passwordEncoder.matches(rawPw, encPw)).willReturn(true);

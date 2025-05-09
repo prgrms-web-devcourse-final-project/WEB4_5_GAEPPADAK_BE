@@ -34,10 +34,10 @@ public class MemberService {
 
 		// 중복 검사
 		if (memberRepository.existsByEmail(request.email())) {
-			throw new ServiceException("409-1", "이미 사용중인 이메일입니다.");
+			throw new ServiceException("409", "이미 사용중인 이메일입니다.");
 		}
 		if (memberRepository.existsByNickname(request.nickname())) {
-			throw new ServiceException("409-2", "이미 사용중인 닉네임입니다.");
+			throw new ServiceException("409", "이미 사용중인 닉네임입니다.");
 		}
 
 		// 비밀번호 암호화
@@ -95,20 +95,21 @@ public class MemberService {
 
 	// 회원 정보 조회
 	public MemberResponse getMemberInfo(HttpServletRequest request) {
-
 		// 쿠키에서 access-token 추출
 		String token = jwtUtils.getJwtFromCookies(request)
 			.orElseThrow(() -> new CustomAuthException(
-				CustomAuthException.AuthErrorType.CREDENTIALS_MISMATCH,
-				"인증 토큰이 없습니다."
-			));
+				CustomAuthException.AuthErrorType.MISSING_TOKEN));
 
 		// 토큰 검증
 		jwtUtils.isValidToken(token);
-
-		//페이로드에서 사용자 이메일 추출
+		// 페이로드에서 사용자 이메일 추출
 		Claims claims = jwtUtils.getPayload(token);
+
+		// claims.subject 유효성 검사
 		String email = claims.getSubject();
+		if (email == null || email.isBlank()) {
+			throw new CustomAuthException(CustomAuthException.AuthErrorType.MALFORMED_TOKEN);
+		}
 
 		// 멤버 조회 및 응답 DTO 변환
 		Member memberInfo = findByEmail(email);

@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.NonNull;
-import site.kkokkio.domain.source.entity.Source;
 import site.kkokkio.global.enums.Platform;
 
 @Builder
@@ -19,17 +18,4 @@ public record TopSourceItemDto(
         @NonNull LocalDateTime publishedAt,
         @NonNull Platform platform,
         int score
-) {
-    public static TopSourceItemDto fromSource(Source source) {
-        return TopSourceItemDto.builder()
-                .sourceId(source.getFingerprint())
-                .url(source.getNormalizedUrl())
-                .title(source.getTitle())
-                .description(source.getDescription())
-                .thumbnailUrl(source.getThumbnailUrl())
-                .publishedAt(source.getPublishedAt())
-                .platform(source.getPlatform())
-                .score(0)
-                .build();
-    }
-}
+) {}

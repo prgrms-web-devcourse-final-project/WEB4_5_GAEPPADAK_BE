@@ -39,6 +39,7 @@ public class KeywordMetricHourlyServiceTest {
 	void findHourlyMetricsTest() {
 		// given
 		List<KeywordMetricHourly> mockMetrics = new ArrayList<>();
+
 		for (int i = 1; i <= 10; i++) {
 			Keyword keyword = Keyword.builder().id((long) i).text("키워드 " + i).build();
 			KeywordMetricHourlyId id = KeywordMetricHourlyId.builder()
@@ -54,7 +55,7 @@ public class KeywordMetricHourlyServiceTest {
 				.build();
 			mockMetrics.add(metric);
 		}
-		when(keywordMetricHourlyRepository.findTop10ByOrderByCreatedAtDesc()).thenReturn(mockMetrics);
+		when(keywordMetricHourlyRepository.findTop10HourlyMetricsClosestToNowNative(any(LocalDateTime.class))).thenReturn(mockMetrics);
 
 		// when
 		List<KeywordMetricHourlyDto> responses = keywordMetricHourlyService.findHourlyMetrics();
@@ -75,7 +76,7 @@ public class KeywordMetricHourlyServiceTest {
 	@DisplayName("인기 키워드 조회 실패 - 키워드 존재 X")
 	void findHourlyMetricsTest_Exception_WhenNoKeywordsFound() {
 		// given
-		when(keywordMetricHourlyRepository.findTop10ByOrderByCreatedAtDesc()).thenReturn(new ArrayList<>());
+		when(keywordMetricHourlyRepository.findTop10HourlyMetricsClosestToNowNative(any(LocalDateTime.class))).thenReturn(new ArrayList<>());
 
 		// when
 		// then
@@ -90,7 +91,7 @@ public class KeywordMetricHourlyServiceTest {
 	@DisplayName("인기 키워드 조회 실패 - null 반환")
 	void findHourlyMetrics_Exception_WhenRepositoryReturnsNull() {
 		// given
-		when(keywordMetricHourlyRepository.findTop10ByOrderByCreatedAtDesc()).thenReturn(null);
+		when(keywordMetricHourlyRepository.findTop10HourlyMetricsClosestToNowNative(any(LocalDateTime.class))).thenReturn(null);
 
 		// when
 		// then

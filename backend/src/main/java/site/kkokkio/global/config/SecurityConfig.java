@@ -84,10 +84,11 @@ public class SecurityConfig {
 			.authorizeHttpRequests(authorize ->
 				authorize
 					// — USER 로그인 필요
-					.requestMatchers(HttpMethod.POST, "/api/v1/posts/*/comments").authenticated()
-					.requestMatchers(HttpMethod.PATCH, "/api/v1/comments/*").authenticated()
-					.requestMatchers(HttpMethod.DELETE, "/api/v1/comments/*").authenticated()
-					.requestMatchers(HttpMethod.POST, "/api/v1/comments/*/like").authenticated()
+					.requestMatchers(HttpMethod.POST, "/api/v1/posts/*/comments").authenticated()		// 댓글 작성
+					.requestMatchers(HttpMethod.PATCH, "/api/v1/comments/*").authenticated()			// 댓글 수정
+					.requestMatchers(HttpMethod.DELETE, "/api/v1/comments/*").authenticated()			// 댓글 삭제
+					.requestMatchers(HttpMethod.POST, "/api/v1/comments/*/like").authenticated()		// 댓글 좋아요
+					.requestMatchers(HttpMethod.DELETE, "/api/v1/comments/*/like").authenticated()	// 댓글 좋아요 취소
 
 					// 그 외 모든 요청 허용
 					.anyRequest().permitAll()
@@ -102,14 +103,14 @@ public class SecurityConfig {
 		CorsConfiguration configuration = new CorsConfiguration();
 		// 모든 출처 허용 (운영 환경 배포 시 수정 필요)
 		configuration.setAllowedOriginPatterns(Arrays.asList(
-			"https://login.aleph.kr",// Todo: 임시 프론트 배포 URL1
+			"https://login.aleph.kr", // Todo: 임시 프론트 배포 URL1
 			"https://www.app4.qwas.shop", // Todo: 임시 프론트 배포 URL2
 			"https://web.api.deploy.kkokkio.site:3000", // 프론트 API URL
 			"http://localhost:3000", // 로컬용
 			"https://api.deploy.kkokkio.site", // 백엔드 dev API URL
 			"https://api.prd.kkokkio.site"// 백엔드 prod API URL
 		)); // 프론트 사이트 추가
-		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // 허용 HTTP 메소드
+		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS")); // 허용 HTTP 메소드
 		// configuration.setAllowedHeaders(Arrays.asList("*")); // HTTP 헤더(모두 허용)
 		configuration.setAllowCredentials(true); // 쿠키 등 자격 증명
 		// 클라이언트 노출 헤더

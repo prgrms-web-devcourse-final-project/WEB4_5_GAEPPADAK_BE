@@ -115,6 +115,8 @@ public class CommentService {
 			commentLikeRepository.deleteByComment(comment);
 			comment.decreaseLikeCount();
 			commentRepository.save(comment);
+		} else {
+			throw new ServiceException("400", "이미 좋아요가 취소된 상태입니다.");
 		}
 		return CommentDto.from(comment);
 	}

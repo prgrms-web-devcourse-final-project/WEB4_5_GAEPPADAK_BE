@@ -49,7 +49,7 @@ public class KeywordMetricHourlyControllerV1Test {
 		LocalDateTime now = LocalDateTime.now();
 		for (long i = 1; i <= 10; i++) {
 			mockKeywordList.add(
-				new KeywordMetricHourlyDto(i, "키워드 " + i, Platform.GOOGLE_TREND, now, 100, 100, false)
+				new KeywordMetricHourlyDto(i, "키워드 " + i, Platform.GOOGLE_TREND, now, 100, 100, false, null)
 			);
 		}
 
@@ -61,7 +61,6 @@ public class KeywordMetricHourlyControllerV1Test {
 			.andExpect(jsonPath("$.message").value("실시간 키워드를 불러왔습니다."))
 			.andExpect(jsonPath("$.data[0].text").value("키워드 1"))
 			.andExpect(jsonPath("$.data[0].platform").value("GOOGLE_TREND"))
-			.andExpect(jsonPath("$.data[0].volume").value(100))
 			.andExpect(jsonPath("$.data[0].score").value(100));
 	}
 

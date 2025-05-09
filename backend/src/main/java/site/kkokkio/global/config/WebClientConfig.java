@@ -1,6 +1,5 @@
 package site.kkokkio.global.config;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,9 +13,9 @@ public class WebClientConfig {
     public WebClient naverWebClient(
             @Value("${naver.base-url}") String baseUrl) {
         return WebClient.builder()
-                .baseUrl(baseUrl)
-                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .build();
+            .baseUrl(baseUrl)
+            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .build();
     }
 
     /**
@@ -26,16 +25,16 @@ public class WebClientConfig {
      * @return Youtube API 호출용 WebClient
      */
     @Bean
-    @Qualifier("youtubeWebClient")
     public WebClient youtubeWebClient(
             @Value("${youtube.api.base-url}") String baseUrl
     ) {
         return WebClient.builder()
-                // YouTube API는 API 키를 주로 쿼리 파라미터로 사용하므로,
-                // defaultHeader에 API 키를 추가하는 것보다 어댑터에서
-                // 직접 쿼리 파라미터로 추가하는 방식이 더 일반적임
-                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .build();
+            // YouTube API는 API 키를 주로 쿼리 파라미터로 사용하므로,
+            // defaultHeader에 API 키를 추가하는 것보다 어댑터에서
+            // 직접 쿼리 파라미터로 추가하는 방식이 더 일반적임
+            .baseUrl(baseUrl)
+            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .build();
     }
 
 }

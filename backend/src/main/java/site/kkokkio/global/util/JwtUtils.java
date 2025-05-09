@@ -226,20 +226,16 @@ public class JwtUtils {
 		return key;
 	}
 
-	// 예외 처리 중앙화
+	// JWT 레이어 예외 처리 중앙화
 	private void handleAuthException(Exception e) {
 		if (e instanceof ExpiredJwtException) {
-			throw new CustomAuthException(CustomAuthException.AuthErrorType.TOKEN_EXPIRED,
-				"만료된 토큰: " + ((ExpiredJwtException)e).getClaims().getExpiration());
+			throw new CustomAuthException(CustomAuthException.AuthErrorType.TOKEN_EXPIRED);
 		} else if (e instanceof MalformedJwtException || e instanceof IllegalArgumentException) {
-			throw new CustomAuthException(CustomAuthException.AuthErrorType.MALFORMED_TOKEN,
-				"토큰 구조 오류: " + e.getMessage());
+			throw new CustomAuthException(CustomAuthException.AuthErrorType.MALFORMED_TOKEN);
 		} else if (e instanceof UnsupportedJwtException) {
-			throw new CustomAuthException(CustomAuthException.AuthErrorType.UNSUPPORTED_TOKEN,
-				"지원하지 않는 토큰 형식: " + e.getMessage());
+			throw new CustomAuthException(CustomAuthException.AuthErrorType.UNSUPPORTED_TOKEN);
 		} else if (e instanceof SecurityException) {
-			throw new CustomAuthException(CustomAuthException.AuthErrorType.CREDENTIALS_MISMATCH,
-				"토큰 정보 불일치: " + e.getMessage());
+			throw new CustomAuthException(CustomAuthException.AuthErrorType.CREDENTIALS_MISMATCH);
 		}
 	}
 }

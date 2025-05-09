@@ -64,7 +64,7 @@ public class AuthService {
 	@Transactional
 	public void refreshToken(HttpServletRequest request, HttpServletResponse response) {
 		String rt = jwtUtils.getRefreshTokenFromCookies(request)
-			.orElseThrow(() -> new ServiceException("401-1", "리프레시 토큰이 없습니다."));
+			.orElseThrow(() -> new ServiceException("401", "리프레시 토큰이 없습니다."));
 
 		// 페이로드에서 이메일 추출
 		String email = jwtUtils.getPayload(rt).getSubject();
@@ -72,7 +72,7 @@ public class AuthService {
 		// Redis에 저장된 refreshToken와 비교
 		String savedRt = redisTemplate.opsForValue().get("refreshToken:" + email);
 		if (savedRt == null || !savedRt.equals(rt)) {
-			throw new ServiceException("401-2", "유효하지 않은 리프레시 토큰입니다.");
+			throw new ServiceException("401", "유효하지 않은 리프레시 토큰입니다.");
 		}
 
 		// 새로운 토큰 발급

@@ -10,8 +10,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +18,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.entity.Keyword;
@@ -167,7 +167,7 @@ public class PostServiceTest {
 		String KeywordText = "키워드";
 
 		KeywordMetricHourlyDto metric = new KeywordMetricHourlyDto(keywordId, KeywordText, Platform.GOOGLE_TREND,
-			bucketAt, 0, 0, false);
+			bucketAt, 0, 0, false, null);
 		given(keywordMetricHourlyService.findHourlyMetrics()).willReturn(List.of(metric));
 
 		Keyword keyword = Keyword.builder().id(keywordId).text(KeywordText).build();
@@ -208,7 +208,7 @@ public class PostServiceTest {
 		Long keywordId = 1L;
 		LocalDateTime bucketAt = LocalDateTime.now().withMinute(0).withSecond(0).withNano(0);
 		KeywordMetricHourlyDto metric = new KeywordMetricHourlyDto(keywordId, "chatgpt", Platform.GOOGLE_TREND,
-			bucketAt, 0, 0, true);
+			bucketAt, 0, 0, true, 999L);
 		Keyword keyword = Keyword.builder().id(keywordId).text("chatgpt").build();
 		Source source = createSource("http://example.com");
 
@@ -246,7 +246,7 @@ public class PostServiceTest {
 		Long keywordId = 1L;
 		LocalDateTime now = LocalDateTime.of(2025, 5, 1, 0, 0);
 		KeywordMetricHourlyDto metric = new KeywordMetricHourlyDto(keywordId, "없음", Platform.GOOGLE_TREND, now, 0, 0,
-			false);
+			false, null);
 
 		given(keywordMetricHourlyService.findHourlyMetrics()).willReturn(List.of(metric));
 		given(keywordSourceRepository.findTopSourcesByKeywordIdsLimited(List.of(keywordId), 10)).willReturn(List.of());

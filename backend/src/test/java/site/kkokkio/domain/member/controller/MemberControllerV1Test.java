@@ -125,16 +125,13 @@ class MemberControllerV1Test {
 		// given: 토큰 누락 시 CustomAuthException 발생
 		given(memberService.getMemberInfo(any(HttpServletRequest.class)))
 			.willThrow(new CustomAuthException(
-				CustomAuthException.AuthErrorType.CREDENTIALS_MISMATCH,
-				"인증 토큰이 없습니다."
-			));
+				CustomAuthException.AuthErrorType.MISSING_TOKEN));
 
 		// when & then
 		mockMvc.perform(get("/api/v1/member/me")
 				.accept(MediaType.APPLICATION_JSON))
 			.andExpect(status().isUnauthorized())
-			.andExpect(jsonPath("$.status_code").value(401))
-			.andExpect(jsonPath("$.err_code").value("CREDENTIALS_MISMATCH"))
-			.andExpect(jsonPath("$.message").value("인증 토큰이 없습니다."));
+			.andExpect(jsonPath("$.code").value(401))
+			.andExpect(jsonPath("$.message").value("인증 토큰이 없어 인증 실패"));
 	}
 }

@@ -44,7 +44,8 @@ public class MemberControllerV1 {
 
 	// 회원 정보 조회
 	@Operation(summary = "회원조회")
-	@ApiErrorCodeExamples({ErrorCode.MEMBER_ME_BAD_REQUEST})
+	@ApiErrorCodeExamples({ErrorCode.MISSING_TOKEN, ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
+		ErrorCode.UNSUPPORTED_TOKEN, ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH})
 	@GetMapping("/me")
 	public RsData<MemberResponse> getMember(HttpServletRequest request) {
 		MemberResponse memberInfo = memberService.getMemberInfo(request);

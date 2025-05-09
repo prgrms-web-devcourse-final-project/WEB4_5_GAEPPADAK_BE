@@ -35,6 +35,7 @@ public class KeywordMetricHourlyService {
 		}
 		List<KeywordMetricHourlyDto> responses = new ArrayList<>();
 		for (KeywordMetricHourly metric : metrics) {
+			Long postId = (metric.getPost() != null) ? metric.getPost().getId() : null;
 			responses.add(new KeywordMetricHourlyDto(
 				metric.getId().getKeywordId(),
 				metric.getKeyword().getText(),
@@ -42,7 +43,8 @@ public class KeywordMetricHourlyService {
 				metric.getId().getBucketAt(),
 				metric.getVolume(),
 				metric.getScore(),
-				metric.isLowVariation()
+				metric.isLowVariation(),
+				postId
 			));
 		}
 		return responses;

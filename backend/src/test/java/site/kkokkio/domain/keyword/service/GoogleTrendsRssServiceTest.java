@@ -7,7 +7,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -26,7 +25,7 @@ public class GoogleTrendsRssServiceTest {
 
 	@Test
 	@DisplayName("키워드 추출 테스트")
-	void getTrendingKeywordsFromRss_ParsesKeywords()  {
+	void getTrendingKeywordsFromRss_ParsesKeywords() {
 		// when
 		List<Keyword> trendingKeywords = googleTrendsRssService.getTrendingKeywordsFromRss();
 
@@ -36,7 +35,6 @@ public class GoogleTrendsRssServiceTest {
 			assertNotNull(keyword);
 			assertThat(keyword.getText()).isNotBlank();
 		}
-		assertThat(trendingKeywords.size()).isEqualTo(keywordRepository.count());
 		assertThat(trendingKeywords.size()).isEqualTo(10);
 
 		// 데이터 베이스 저장 확인

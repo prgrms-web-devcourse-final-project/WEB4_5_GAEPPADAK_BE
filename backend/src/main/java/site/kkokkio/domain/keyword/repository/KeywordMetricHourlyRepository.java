@@ -12,15 +12,19 @@ import site.kkokkio.domain.keyword.entity.KeywordMetricHourlyId;
 
 @Repository
 public interface KeywordMetricHourlyRepository extends JpaRepository<KeywordMetricHourly, KeywordMetricHourlyId> {
-	@Query(value = "SELECT kmh.* " +
-		"FROM keyword_metric_hourly kmh " +
-		"WHERE kmh.bucket_at = (SELECT bucket_at FROM keyword_metric_hourly " +
-		"WHERE bucket_at <= :now " +
-		"GROUP BY bucket_at " +
-		"ORDER BY bucket_at DESC " +
-		"LIMIT 1) " +
-		"ORDER BY kmh.score DESC " +
-		"LIMIT 10", nativeQuery = true)
+	@Query(value = """
+		SELECT kmh.*
+		FROM keyword_metric_hourly kmh
+		WHERE kmh.bucket_at = (
+		  SELECT MAX(bucket_at)
+		  FROM keyword_metric_hourly
+		  WHERE bucket_at <= :now
+		)
+		ORDER BY kmh.score DESC
+		LIMIT 10
+		""",
+		nativeQuery = true)
 	List<KeywordMetricHourly> findTop10HourlyMetricsClosestToNowNative(LocalDateTime now);
+
 	List<KeywordMetricHourly> findTop10ById_BucketAtOrderByScoreDesc(LocalDateTime bucketAt);
 }

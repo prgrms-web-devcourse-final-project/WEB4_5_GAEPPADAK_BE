@@ -1,8 +1,7 @@
-package site.kkokkio.domain.report.entity;
+package site.kkokkio.domain.post.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import site.kkokkio.domain.comment.entity.Comment;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.global.enums.ReportProcessingStatus;
 import site.kkokkio.global.enums.ReportReason;
@@ -13,22 +12,22 @@ import site.kkokkio.global.util.BaseTimeEntity;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@Table(name = "comment_report",
+@Table(name = "post_report",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"comment_id", "reporter_id"})
+                @UniqueConstraint(columnNames = {"post_id", "reporter_id"})
         })
-public class CommentReport extends BaseTimeEntity {
+public class PostReport extends BaseTimeEntity {
 
     // 신고 ID
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "comment_report_id")
+    @Column(name = "post_report_id")
     private Long id;
 
-    // 신고된 댓글과의 관계
+    // 신고된 포스트와의 관계
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "comment_id", nullable = false)
-    private Comment comment;
+    @JoinColumn(name = "post_id", nullable = false)
+    private Post post;
 
     // 신고한 사용자와의 관계
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -41,7 +40,7 @@ public class CommentReport extends BaseTimeEntity {
     @Builder.Default
     private ReportReason reason = ReportReason.BAD_CONTENT;
 
-    // 관리자 처리 상태
+    // 관리자 처리 상태 필드
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     @Builder.Default

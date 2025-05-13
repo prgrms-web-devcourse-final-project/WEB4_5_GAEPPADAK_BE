@@ -13,15 +13,15 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 import site.kkokkio.domain.comment.controller.dto.CommentCreateRequest;
 import site.kkokkio.domain.comment.dto.CommentDto;
-import site.kkokkio.domain.report.dto.CommentReportRequestDto;
+import site.kkokkio.domain.comment.dto.CommentReportRequestDto;
 import site.kkokkio.domain.comment.entity.Comment;
 import site.kkokkio.domain.comment.repository.CommentLikeRepository;
 import site.kkokkio.domain.comment.repository.CommentRepository;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.repository.PostRepository;
-import site.kkokkio.domain.report.entity.CommentReport;
-import site.kkokkio.domain.report.repository.CommentReportRepository;
+import site.kkokkio.domain.comment.entity.CommentReport;
+import site.kkokkio.domain.comment.repository.CommentReportRepository;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
 
@@ -330,7 +330,7 @@ class CommentServiceTest {
 		when(commentRepository.save(comment)).thenReturn(comment);
 
 		// Service 메서드 호출
-		commentService.reportComment(commentId, reporter, request);
+		commentService.reportComment(commentId, reporter, request.reason());
 
 		/// 검증
 		verify(commentRepository).findById(commentId);
@@ -355,7 +355,7 @@ class CommentServiceTest {
 
 		// ServiceException 발생 예상 및 검증
 		ServiceException exception = assertThrows(ServiceException.class, () ->
-				commentService.reportComment(commentId, reporter, request));
+				commentService.reportComment(commentId, reporter, request.reason()));
 
 		// 예외 메시지 및 코드 검증
 		assertEquals("404", exception.getCode());
@@ -381,7 +381,7 @@ class CommentServiceTest {
 
 		// ServiceException 발생 예상 및 검증
 		ServiceException exception = assertThrows(ServiceException.class, () ->
-				commentService.reportComment(commentId, reporter, request));
+				commentService.reportComment(commentId, reporter, request.reason()));
 		
 		// 예외 메시지 및 코드 검증
 		assertEquals("404", exception.getCode());
@@ -415,7 +415,7 @@ class CommentServiceTest {
 
 		// ServiceException 발생 예상 및 검증
 		ServiceException exception = assertThrows(ServiceException.class, () ->
-				commentService.reportComment(commentId, reporter, request));
+				commentService.reportComment(commentId, reporter, request.reason()));
 
 		// 예외 메시지 및 코드 검증
 		assertEquals("403", exception.getCode());
@@ -456,7 +456,7 @@ class CommentServiceTest {
 
 		// ServiceException 발생 예상 및 검증
 		ServiceException exception = assertThrows(ServiceException.class, () ->
-				commentService.reportComment(commentId, reporter, request));
+				commentService.reportComment(commentId, reporter, request.reason()));
 
 		// 예외 메시지 및 코드 검증
 		assertEquals("400", exception.getCode());

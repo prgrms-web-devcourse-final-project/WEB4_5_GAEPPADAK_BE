@@ -1,9 +1,9 @@
-package site.kkokkio.domain.report.repository;
+package site.kkokkio.domain.post.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.post.entity.Post;
-import site.kkokkio.domain.report.entity.PostReport;
+import site.kkokkio.domain.post.entity.PostReport;
 
 public interface PostReportRepository extends JpaRepository<PostReport, Long> {
 

@@ -24,7 +24,7 @@ import site.kkokkio.global.exception.doc.ErrorCode;
 import site.kkokkio.global.security.CustomUserDetails;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 @Tag(name = "Comment API V1", description = "댓글 관련 API 엔드포인트 V1")
 public class CommentControllerV1 {
@@ -32,7 +32,7 @@ public class CommentControllerV1 {
 
     @Operation(summary = "댓글 목록 조회")
     @ApiErrorCodeExamples({ErrorCode.POST_NOT_FOUND_3})
-    @GetMapping("/posts/{postId}/comments")
+    @GetMapping("/v1/posts/{postId}/comments")
     public RsData<CommentListResponse> getCommentList(
             @PathVariable("postId") Long postId,
             @ParameterObject @PageableDefault(sort = "likeCount") Pageable pageable
@@ -51,7 +51,7 @@ public class CommentControllerV1 {
     @Operation(summary = "댓글 작성")
     @ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
             ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH, ErrorCode.POST_NOT_FOUND_3})
-    @PostMapping("/posts/{postId}/comments")
+    @PostMapping("/v1/posts/{postId}/comments")
     public RsData<CommentDto> createComment(
             @PathVariable("postId") Long postId,
             @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -68,7 +68,7 @@ public class CommentControllerV1 {
     @ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
             ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH,
             ErrorCode.COMMENT_UPDATE_FORBIDDEN, ErrorCode.COMMENT_NOT_FOUND})
-    @PatchMapping("/comments/{commentId}")
+    @PatchMapping("/v1/comments/{commentId}")
     public RsData<CommentDto> updateComment(
             @PathVariable("commentId") Long commentId,
             @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -86,7 +86,7 @@ public class CommentControllerV1 {
     @ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
             ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH,
             ErrorCode.COMMENT_DELETE_FORBIDDEN, ErrorCode.COMMENT_NOT_FOUND})
-    @DeleteMapping("/comments/{commentId}")
+    @DeleteMapping("/v1/comments/{commentId}")
     public RsData<Empty> deleteComment(
             @PathVariable("commentId") Long commentId,
             @AuthenticationPrincipal CustomUserDetails userDetails
@@ -103,7 +103,7 @@ public class CommentControllerV1 {
             ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH,
             ErrorCode.COMMENT_LIKE_BAD_REQUEST, ErrorCode.COMMENT_LIKE_FORBIDDEN,
             ErrorCode.COMMENT_NOT_FOUND})
-    @PostMapping("/comments/{commentId}/like")
+    @PostMapping("/v1/comments/{commentId}/like")
     public RsData<CommentDto> likeComment(
             @PathVariable("commentId") Long commentId,
             @AuthenticationPrincipal CustomUserDetails userDetails
@@ -120,7 +120,7 @@ public class CommentControllerV1 {
     @ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
             ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH,
             ErrorCode.COMMENT_UNLIKE_BAD_REQUEST, ErrorCode.COMMENT_LIKE_FORBIDDEN, ErrorCode.COMMENT_NOT_FOUND})
-    @DeleteMapping("/comments/{commentId}/like")
+    @DeleteMapping("/v1/comments/{commentId}/like")
     public RsData<CommentDto> unlikeComment(
             @PathVariable("commentId") Long commentId,
             @AuthenticationPrincipal CustomUserDetails userDetails

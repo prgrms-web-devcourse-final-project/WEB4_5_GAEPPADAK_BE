@@ -13,8 +13,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.member.controller.dto.MemberLoginResponse;
+import site.kkokkio.domain.member.controller.dto.PasswordVerificationRequest;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.global.exception.ServiceException;
+import site.kkokkio.global.security.CustomUserDetails;
 import site.kkokkio.global.util.JwtUtils;
 
 @Service
@@ -101,5 +103,9 @@ public class AuthService {
 
 		// 쿠키 삭제
 		jwtUtils.clearAuthCookies(response);
+	}
+
+	public boolean checkPassword(PasswordVerificationRequest request, CustomUserDetails userDetails) {
+		return passwordEncoder.matches(request.getPassword(), userDetails.getPassword());
 	}
 }

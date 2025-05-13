@@ -89,6 +89,8 @@ public class SecurityConfig {
 					.requestMatchers(HttpMethod.DELETE, "/api/v1/comments/*").authenticated()			// 댓글 삭제
 					.requestMatchers(HttpMethod.POST, "/api/v1/comments/*/like").authenticated()		// 댓글 좋아요
 					.requestMatchers(HttpMethod.DELETE, "/api/v1/comments/*/like").authenticated()	// 댓글 좋아요 취소
+					.requestMatchers(HttpMethod.POST, "/api/v1/auth/check-password").authenticated()	// 비밀번호 검증
+					.requestMatchers(HttpMethod.PATCH, "/api/v1/member/me").authenticated()			// 회원 정보 수정
 
 					// 그 외 모든 요청 허용
 					.anyRequest().permitAll()

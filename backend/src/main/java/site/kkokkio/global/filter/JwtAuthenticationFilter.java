@@ -57,8 +57,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 				|| ("POST".equals(method) && path.matches("^/api/v1/comments/\\d+/like$"))      // 댓글 좋아요
 				|| ("DELETE".equals(method) && path.matches("^/api/v1/comments/\\d+/like$"));      // 댓글 좋아요 취소
 
+		boolean isMemberEditEndpoint =
+			("PATCH".equals(method) && path.matches("^/api/v1/member/me$"))
+			|| ("POST".equals(method) && path.matches("^/api/v1/auth/check-password$"));
+
 		// isCommentWriteEndpoint 이면 필터 동작(= false 리턴), 아니면 스킵(= true 리턴)
-		return !isCommentWriteEndpoint;
+		return !isCommentWriteEndpoint && !isMemberEditEndpoint;
 	}
 
 	@Override

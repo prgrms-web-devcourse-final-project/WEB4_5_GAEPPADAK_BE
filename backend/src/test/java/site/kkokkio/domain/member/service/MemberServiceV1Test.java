@@ -5,6 +5,7 @@ import static org.mockito.BDDMockito.*;
 
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,8 +23,10 @@ import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
 import site.kkokkio.domain.member.controller.dto.MemberUpdateRequest;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.repository.MemberRepository;
+import site.kkokkio.global.enums.MemberRole;
 import site.kkokkio.global.exception.CustomAuthException;
 import site.kkokkio.global.exception.ServiceException;
+import site.kkokkio.global.security.CustomUserDetails;
 import site.kkokkio.global.util.JwtUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -167,25 +170,21 @@ class MemberServiceV1Test {
 	@Test
 	@DisplayName("회원정보 수정 성공")
 	void modifyMemberInfo_success() {
-		HttpServletRequest req = mock(HttpServletRequest.class);
-		given(jwtUtils.getJwtFromCookies(req)).willReturn(Optional.of("valid.token"));
-		given(jwtUtils.isValidToken("valid.token")).willReturn(true);
-
-		Claims claims = mock(Claims.class);
-		given(jwtUtils.getPayload("valid.token")).willReturn(claims);
-		given(claims.getSubject()).willReturn("user@example.com");
-
-		// MemberServiceV1 내부 findByEmail 호출
 		Member member = Member.builder()
+			.id(UUID.randomUUID())
 			.email("user@example.com")
 			.nickname("tester")
+			.passwordHash("encodedPassword")
+			.birthDate(LocalDate.of(1990, 1, 1))
+			.role(MemberRole.USER)
+			.emailVerified(true)
 			.build();
-		given(memberRepository.findByEmail("user@example.com"))
-			.willReturn(Optional.of(member));
+
+		CustomUserDetails userDetails = new CustomUserDetails(member);
 
 		MemberUpdateRequest request = new MemberUpdateRequest("password0000!", "change");
 
-		MemberResponse response = memberService.modifyMemberInfo(req, request);
+		MemberResponse response = memberService.modifyMemberInfo(userDetails, request);
 
 		assertThat(response.getEmail()).isEqualTo("user@example.com");
 		assertThat(response.getNickname()).isEqualTo("change");
@@ -194,18 +193,13 @@ class MemberServiceV1Test {
 	@Test
 	@DisplayName("회원정보 수정 실패 - 토큰 누락")
 	void modifyMemberInfo_fail_tokenExpired() {
-		HttpServletRequest req = mock(HttpServletRequest.class);
-		given(jwtUtils.getJwtFromCookies(req)).willReturn(Optional.empty());
+		// given
+		MemberUpdateRequest request = new MemberUpdateRequest("change", "newPassword");
 
-		MemberUpdateRequest request = new MemberUpdateRequest("password0000!", "change");
-
-		assertThatThrownBy(() -> memberService.modifyMemberInfo(req, request))
-			.isInstanceOf(CustomAuthException.class)
-				.satisfies(ex -> {
-					CustomAuthException cae = (CustomAuthException)ex;
-					assertThat(cae.getAuthErrorType())
-						.isEqualTo(CustomAuthException.AuthErrorType.MISSING_TOKEN);
-				});
+		// when & then
+		assertThatThrownBy(() -> memberService.modifyMemberInfo(null, request))
+			.isInstanceOf(NullPointerException.class)
+			.hasMessageContaining("userDetails");
 
 	}
 

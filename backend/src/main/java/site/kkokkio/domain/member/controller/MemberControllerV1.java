@@ -1,5 +1,6 @@
 package site.kkokkio.domain.member.controller;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -22,6 +23,7 @@ import site.kkokkio.domain.member.service.MemberService;
 import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.exception.doc.ApiErrorCodeExamples;
 import site.kkokkio.global.exception.doc.ErrorCode;
+import site.kkokkio.global.security.CustomUserDetails;
 import site.kkokkio.global.util.JwtUtils;
 
 @Tag(name = "Member API", description = "회원 관련 기능을 제공")
@@ -64,8 +66,11 @@ public class MemberControllerV1 {
 	@ApiErrorCodeExamples({ErrorCode.MISSING_TOKEN, ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
 		ErrorCode.UNSUPPORTED_TOKEN, ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH})
 	@PatchMapping("/me")
-	public RsData<MemberResponse> modifyMember(HttpServletRequest request, @RequestBody @Valid MemberUpdateRequest requestBody) {
-		MemberResponse memberInfo = memberService.modifyMemberInfo(request, requestBody);
+	public RsData<MemberResponse> modifyMember(
+		@AuthenticationPrincipal CustomUserDetails userDetails,
+		@RequestBody @Valid MemberUpdateRequest requestBody
+	) {
+		MemberResponse memberInfo = memberService.modifyMemberInfo(userDetails, requestBody);
 		return new RsData<>(
 			"200",
 			"회원정보가 정상적으로 수정되었습니다.",

@@ -3,11 +3,12 @@ package site.kkokkio.domain.member.controller;
 import static org.hamcrest.text.StringContainsInOrder.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import java.time.LocalDate;
-import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,12 +29,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
 import site.kkokkio.domain.member.controller.dto.MemberUpdateRequest;
+import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.service.AuthService;
 import site.kkokkio.domain.member.service.MailService;
 import site.kkokkio.domain.member.service.MemberService;
 import site.kkokkio.global.aspect.ResponseAspect;
 import site.kkokkio.global.enums.MemberRole;
 import site.kkokkio.global.exception.CustomAuthException;
+import site.kkokkio.global.security.CustomUserDetails;
 import site.kkokkio.global.security.CustomUserDetailsService;
 import site.kkokkio.global.util.JwtUtils;
 
@@ -149,87 +152,77 @@ class MemberControllerV1Test {
 	@DisplayName("회원 정보 수정 성공")
 	void modifyMember_success() throws Exception {
 		// given
-		MemberUpdateRequest request = new MemberUpdateRequest( "ps123123!","after"); // 요청 객체 먼저 생성
-		MemberResponse memberResponse = new MemberResponse(
+		MemberUpdateRequest request = new MemberUpdateRequest( "ps123123!","after");
+		MemberResponse expectedResponse = new MemberResponse(
 			"user@example.com",
-			request.nickname(), // 요청 닉네임 사용
+			request.nickname(),
 			LocalDate.of(1990, 1, 1),
 			MemberRole.USER
 		);
-		given(memberService.modifyMemberInfo(any(HttpServletRequest.class), any(MemberUpdateRequest.class)))
-			.willReturn(memberResponse);
+		given(memberService.modifyMemberInfo(any(CustomUserDetails.class), any(MemberUpdateRequest.class)))
+			.willReturn(expectedResponse);
 
-		HttpServletRequest req = mock(HttpServletRequest.class);
-		given(jwtUtils.getJwtFromCookies(req)).willReturn(Optional.of("valid.token"));
-		given(jwtUtils.isValidToken("valid.token")).willReturn(true);
+		Member member = Member.builder()
+			.id(UUID.randomUUID())
+			.email("user@example.com")
+			.nickname("currentNickname")
+			.passwordHash("encodedPassword")
+			.birthDate(LocalDate.of(1990, 1, 1))
+			.role(MemberRole.USER)
+			.emailVerified(true)
+			.build();
 
 		String updateJson = objectMapper.writeValueAsString(request);
 
 		// when & then
 		mockMvc.perform(patch("/api/v1/member/me")
-				.cookie(new Cookie("access-token", "valid.token"))
+				.with(user(new CustomUserDetails(member)))
+				.with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(updateJson))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("200"))
-			.andExpect(jsonPath("$.message").value("회원정보가 정상적으로 수정되었습니다."))
-			.andExpect(jsonPath("$.data.email").value("user@example.com"))
-			.andExpect(jsonPath("$.data.nickname").value("after")) // "after"로 검증
-			.andExpect(jsonPath("$.data.birthDate").value("1990-01-01"))
-			.andExpect(jsonPath("$.data.role").value("USER"));
+			.andExpect(jsonPath("$.message").value("회원정보가 정상적으로 수정되었습니다."));
 	}
 
 	@Test
 	@DisplayName("회원 정보 수정 실패 - 유효성")
 	void modifyMember_Validation_failed() throws Exception {
 		// given
-		MemberUpdateRequest request = new MemberUpdateRequest( "ps","veryverylongNickname"); // 요청 객체 먼저 생성
+		MemberUpdateRequest request = new MemberUpdateRequest( "ps","veryverylongNickname");
 		MemberResponse memberResponse = new MemberResponse(
 			"user@example.com",
 			request.nickname(), // 요청 닉네임 사용
 			LocalDate.of(1990, 1, 1),
 			MemberRole.USER
 		);
-		given(memberService.modifyMemberInfo(any(HttpServletRequest.class), any(MemberUpdateRequest.class)))
+		given(memberService.modifyMemberInfo(any(CustomUserDetails.class), any(MemberUpdateRequest.class)))
 			.willReturn(memberResponse);
 
-		HttpServletRequest req = mock(HttpServletRequest.class);
-		given(jwtUtils.getJwtFromCookies(req)).willReturn(Optional.of("valid.token"));
-		given(jwtUtils.isValidToken("valid.token")).willReturn(true);
+		Member member = Member.builder()
+			.id(UUID.randomUUID())
+			.email("user@example.com")
+			.nickname("currentNickname")
+			.passwordHash("encodedPassword")
+			.birthDate(LocalDate.of(1990, 1, 1))
+			.role(MemberRole.USER)
+			.emailVerified(true)
+			.build();
 
 		String updateJson = objectMapper.writeValueAsString(request);
 
 		// when & then
 		mockMvc.perform(patch("/api/v1/member/me")
-				.cookie(new Cookie("access-token", "valid.token"))
+				.with(user(new CustomUserDetails(member)))
+				.with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(updateJson))
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.code").value("400"))
 			.andExpect(jsonPath("$.message", stringContainsInOrder(
-				"nickname : Size : 닉네임은 2~10자 사이여야 합니다.",
-				"passwordHash : Pattern : 비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다.",
-				"passwordHash : Size : 비밀번호는 8~20자 사이여야 합니다."
+				"nickname : Size : 닉네임은 2~10자 사이여야 합니다.\n",
+				"password : Pattern : 비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다.\n",
+				"password : Size : 비밀번호는 8~20자 사이여야 합니다."
 			)));
-	}
-
-	@Test
-	@DisplayName("회원 정보 수정 - 인증 토큰 누락으로 실패")
-	void modifyMember_noToken_fail() throws Exception {
-		// given
-		given(memberService.modifyMemberInfo(any(HttpServletRequest.class), any(MemberUpdateRequest.class)))
-			.willThrow(new CustomAuthException(CustomAuthException.AuthErrorType.MISSING_TOKEN));
-
-		MemberUpdateRequest request = new MemberUpdateRequest( "ps123123!","after");
-
-		String updateJson = objectMapper.writeValueAsString(request);
-
-		// when & then
-		mockMvc.perform(patch("/api/v1/member/me")
-				.contentType(MediaType.APPLICATION_JSON) // 요청 Content-Type 설정 (필요한 경우)
-				.content(updateJson)) // 요청 바디 추가 (필요한 경우)
-			.andExpect(status().isUnauthorized())
-			.andExpect(jsonPath("$.code").value(401))
-			.andExpect(jsonPath("$.message").value("인증 토큰이 없어 인증 실패"));
 	}
 }

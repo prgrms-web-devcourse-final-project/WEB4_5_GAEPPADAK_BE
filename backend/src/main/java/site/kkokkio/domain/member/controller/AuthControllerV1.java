@@ -1,5 +1,6 @@
 package site.kkokkio.domain.member.controller;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,16 +13,21 @@ import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import site.kkokkio.domain.member.controller.dto.EmailVerificationRequest;
 import site.kkokkio.domain.member.controller.dto.MemberLoginRequest;
 import site.kkokkio.domain.member.controller.dto.MemberLoginResponse;
+import site.kkokkio.domain.member.controller.dto.PasswordVerificationRequest;
 import site.kkokkio.domain.member.service.AuthService;
 import site.kkokkio.domain.member.service.MailService;
 import site.kkokkio.domain.member.service.MemberService;
 import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.exception.doc.ApiErrorCodeExamples;
 import site.kkokkio.global.exception.doc.ErrorCode;
+import site.kkokkio.global.security.CustomUserDetails;
 import site.kkokkio.global.util.JwtUtils;
 
 @Tag(name = "Auth API", description = "인증 관련 기능을 제공")
@@ -90,5 +96,17 @@ public class AuthControllerV1 {
 		return isSuccess
 			? new RsData<>("200", "이메일 인증에 성공하였습니다.")
 			: new RsData<>("400", "이메일 인증에 실패하였습니다.");
+	}
+
+	@Operation(summary = "비밀번호 인증")
+	@PostMapping("/check-password")
+	public RsData<Void> validatePassword(
+		@AuthenticationPrincipal CustomUserDetails userDetails,
+		@RequestBody @Valid PasswordVerificationRequest passwordCheckRequest
+	) {
+		boolean isSuccess = authService.checkPassword(passwordCheckRequest, userDetails);
+		return isSuccess
+			? new RsData<>("200", "비밀번호 인증에 성공하였습니다.")
+			: new RsData<>("400", "비밀번호 인증에 실패하였습니다.");
 	}
 }

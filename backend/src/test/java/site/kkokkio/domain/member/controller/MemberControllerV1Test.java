@@ -216,15 +216,19 @@ class MemberControllerV1Test {
 	@Test
 	@DisplayName("회원 정보 수정 - 인증 토큰 누락으로 실패")
 	void modifyMember_noToken_fail() throws Exception {
-		// given: 토큰 누락 시 CustomAuthException 발생
+		// given
 		given(memberService.modifyMemberInfo(any(HttpServletRequest.class), any(MemberUpdateRequest.class)))
-			.willThrow(new CustomAuthException(
-				CustomAuthException.AuthErrorType.MISSING_TOKEN));
+			.willThrow(new CustomAuthException(CustomAuthException.AuthErrorType.MISSING_TOKEN));
+
+		MemberUpdateRequest request = new MemberUpdateRequest( "ps123123!","after");
+
+		String updateJson = objectMapper.writeValueAsString(request);
 
 		// when & then
 		mockMvc.perform(patch("/api/v1/member/me")
-				.accept(MediaType.APPLICATION_JSON))
-			.andExpect(status().isBadRequest())
+				.contentType(MediaType.APPLICATION_JSON) // 요청 Content-Type 설정 (필요한 경우)
+				.content(updateJson)) // 요청 바디 추가 (필요한 경우)
+			.andExpect(status().isUnauthorized())
 			.andExpect(jsonPath("$.code").value(401))
 			.andExpect(jsonPath("$.message").value("인증 토큰이 없어 인증 실패"));
 	}

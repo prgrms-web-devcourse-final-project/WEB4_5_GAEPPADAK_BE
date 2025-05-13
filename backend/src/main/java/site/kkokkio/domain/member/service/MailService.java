@@ -123,7 +123,7 @@ public class MailService {
 
 	// 인증 코드 검증
 	@Transactional
-	public boolean validationAuthCode(EmailVerificationRequest emailVerificationRequest) {
+	public void validationAuthCode(EmailVerificationRequest emailVerificationRequest) {
 		String email = emailVerificationRequest.getEmail();
 		String authCode = emailVerificationRequest.getAuthCode();
 
@@ -132,25 +132,21 @@ public class MailService {
 		String key = EMAIL_AUTH_PREFIX + email;
 		String storedAuthCode = values.get(key);
 
-		// 인증 코드 검증
-		if (storedAuthCode != null && storedAuthCode.equals(authCode)) {
-			// 이메일 확인
-			Member member = memberRepository.findByEmail(email).orElseThrow(() ->
-				new ServiceException("404", "존재하지 않는 이메일입니다.")
-			);
-
-			// 인증 성공 시 Member 엔티티의 verified 필드 업데이트
-			if (member != null) {
-				member.setEmailVerified(true);
-				memberRepository.save(member);
-			}
-
-			// 인증 성공 후 Redis에서 인증 코드 삭제
-			redisTemplate.delete(key);
-
-			return true;
+		// 인증 코드 유효성 검사: 유효하지 않으면 예외 발생
+		if (storedAuthCode == null || !storedAuthCode.equals(authCode)) {
+			throw new ServiceException("404", "인증 코드가 유효하지 않습니다.");
 		}
-		return false;
+
+		// 인증 코드가 유효한 경우 진행
+		Member member = memberRepository.findByEmail(email)
+			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 이메일입니다."));
+
+		// 인증된 회원으로 변경 후 저장
+		member.setEmailVerified(true);
+		memberRepository.save(member);
+
+		// redise에서 인증 코드 삭제
+		redisTemplate.delete(key);
 	}
 
 }

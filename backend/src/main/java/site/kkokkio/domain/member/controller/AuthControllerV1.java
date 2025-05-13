@@ -86,11 +86,8 @@ public class AuthControllerV1 {
 	@Operation(summary = "이메일 인증")
 	@PostMapping("/check-email")
 	public RsData<Void> validateAuthCode(@RequestBody @Valid EmailVerificationRequest emailVerificationRequestDto) {
-
-		boolean isSuccess = mailService.validationAuthCode(emailVerificationRequestDto);
-		return isSuccess
-			? new RsData<>("200", "이메일 인증에 성공하였습니다.")
-			: new RsData<>("400", "이메일 인증에 실패하였습니다.");
+		mailService.validationAuthCode(emailVerificationRequestDto);
+		return new RsData<>("200", "이메일 인증에 성공하였습니다.");
 	}
 
 	@Operation(summary = "비밀번호 인증")

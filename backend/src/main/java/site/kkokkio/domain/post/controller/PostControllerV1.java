@@ -43,7 +43,7 @@ public class PostControllerV1 {
 	@Operation(summary = "포스트 조회")
 	@ApiErrorCodeExamples({ErrorCode.POST_NOT_FOUND_2})
 	@GetMapping("/{postId}")
-	public RsData<PostDetailResponse> getPostById(@PathVariable Long postId) {
+	public RsData<PostDetailResponse> getPostById(@PathVariable("postId") Long postId) {
 		PostDto postDto = postService.getPostWithKeywordById(postId);
 		PostDetailResponse data = PostDetailResponse.builder()
 			.postId(postDto.postId())
@@ -110,14 +110,14 @@ public class PostControllerV1 {
 			defaultPageable.getPageSize(),
 			sort
 		);
-	    	Page<PostDto> postDtoList = keywordService.getPostListByKeyword(keyword, customPaging);
-	    	List<SourceDto> searchSourceList = sourceService.getTop5SourcesByPosts(postDtoList.toList());
-	    	PostSearchSourceListResponse response = PostSearchSourceListResponse.from(searchSourceList, postDtoList);
-	    	return new RsData<>(
-	      		"200",
-	      		"성공적으로 조회되었습니다.",
-	      		response
-	    	);
+		Page<PostDto> postDtoList = keywordService.getPostListByKeyword(keyword, customPaging);
+		List<SourceDto> searchSourceList = sourceService.getTop5SourcesByPosts(postDtoList.toList());
+		PostSearchSourceListResponse response = PostSearchSourceListResponse.from(searchSourceList, postDtoList);
+		return new RsData<>(
+			"200",
+			"성공적으로 조회되었습니다.",
+			response
+		);
 	}
 
 	@Operation(summary = "실시간 키워드에 해당하는 포스트 리스트 조회")

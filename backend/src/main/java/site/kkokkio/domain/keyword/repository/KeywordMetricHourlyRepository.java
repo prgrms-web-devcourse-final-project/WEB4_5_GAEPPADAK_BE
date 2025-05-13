@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourly;
@@ -24,7 +25,5 @@ public interface KeywordMetricHourlyRepository extends JpaRepository<KeywordMetr
 		LIMIT 10
 		""",
 		nativeQuery = true)
-	List<KeywordMetricHourly> findTop10HourlyMetricsClosestToNowNative(LocalDateTime now);
-
-	List<KeywordMetricHourly> findTop10ById_BucketAtOrderByScoreDesc(LocalDateTime bucketAt);
+	List<KeywordMetricHourly> findTop10HourlyMetricsClosestToNowNative(@Param("now") LocalDateTime now);
 }

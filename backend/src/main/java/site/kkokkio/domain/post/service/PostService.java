@@ -74,15 +74,10 @@ public class PostService {
 
 	@Transactional(readOnly = true)
 	public List<PostDto> getTopPostsWithKeyword() throws IOException {
-		// 기존 로직 (DB 조회) 실행
-		LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"))
-			.withMinute(0)
-			.withSecond(0)
-			.withNano(0);
-
-		//최신 버킷 기준으로 점수 높은 순 키워드(10개)
-		List<KeywordMetricHourly> topKeywordMetrics = keywordMetricHourlyRepository.findTop10ById_BucketAtOrderByScoreDesc(
-			now);
+		LocalDateTime now = LocalDateTime.now(ZoneId.of("UTC"));
+		List<KeywordMetricHourly> topKeywordMetrics = keywordMetricHourlyRepository.findTop10HourlyMetricsClosestToNowNative(
+			now
+		);
 
 		return topKeywordMetrics.stream()
 			.peek(metric -> {

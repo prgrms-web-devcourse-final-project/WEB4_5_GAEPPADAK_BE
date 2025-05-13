@@ -108,7 +108,7 @@ public class BaseInitData implements CommandLineRunner {
 		JobInstanceAlreadyCompleteException,
 		JobParametersInvalidException {
 
-		LocalDateTime bucketAt = LocalDateTime.now(ZoneId.of("Asia/Seoul"))
+		LocalDateTime bucketAt = LocalDateTime.now(ZoneId.of("UTC"))
 			.withSecond(0).withNano(0);
 		JobParameters params = new JobParametersBuilder()
 			.addString("runTime", bucketAt.toString())

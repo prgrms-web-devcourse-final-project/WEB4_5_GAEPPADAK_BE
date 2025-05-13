@@ -20,18 +20,18 @@ import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.entity.PostKeyword;
 import site.kkokkio.domain.post.entity.PostMetricHourly;
+import site.kkokkio.domain.post.entity.PostReport;
 import site.kkokkio.domain.post.repository.PostKeywordRepository;
 import site.kkokkio.domain.post.repository.PostMetricHourlyRepository;
-import site.kkokkio.domain.post.repository.PostRepository;
-import site.kkokkio.domain.post.dto.PostReportRequestDto;
-import site.kkokkio.domain.post.entity.PostReport;
 import site.kkokkio.domain.post.repository.PostReportRepository;
+import site.kkokkio.domain.post.repository.PostRepository;
 import site.kkokkio.domain.source.entity.KeywordSource;
 import site.kkokkio.domain.source.entity.PostSource;
 import site.kkokkio.domain.source.entity.Source;
 import site.kkokkio.domain.source.repository.KeywordSourceRepository;
 import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.global.enums.Platform;
+import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
 
 import java.io.IOException;
@@ -215,10 +215,10 @@ public class PostService {
 	 * 포스트 신고 기능
 	 * @param postId 신고 대상 포스트 ID
 	 * @param reporter 신고하는 사용자
-	 * @param request 신고 요청 DTO
+	 * @param reason 신고 사유
 	 */
 	@Transactional
-	public void reportPost(Long postId, Member reporter, PostReportRequestDto request) {
+	public void reportPost(Long postId, Member reporter, ReportReason reason) {
 
 		// 1. 신고 대상 포스트 조회
 		Post post = postRepository.findById(postId)
@@ -235,7 +235,7 @@ public class PostService {
 		PostReport report = PostReport.builder()
 				.post(post)
 				.reporter(reporter)
-				.reason(request.reason())
+				.reason(reason)
 				.build();
 
 		// 4. 신고 정보 저장

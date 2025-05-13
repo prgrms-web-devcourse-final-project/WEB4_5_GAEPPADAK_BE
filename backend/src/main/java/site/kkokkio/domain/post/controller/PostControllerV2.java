@@ -16,7 +16,7 @@ import site.kkokkio.global.exception.doc.ErrorCode;
 import site.kkokkio.global.security.CustomUserDetails;
 
 @RestController
-@RequestMapping("/api/v2/posts")
+@RequestMapping("/api/v2")
 @RequiredArgsConstructor
 @Tag(name = "Post API V2", description = "포스트 관련 API 엔드포인트 V2")
 public class PostControllerV2 {
@@ -30,7 +30,7 @@ public class PostControllerV2 {
 			ErrorCode.REPORT_REASON_BAD_REQUEST,
 			ErrorCode.REPORT_POST_DUPLICATE
 	})
-	@PostMapping("/posts/{postId}")
+	@PostMapping("/reports/posts/{postId}")
 	@ResponseStatus(HttpStatus.OK)
 	public RsData<Void> reportPost(
 			@PathVariable("postId") Long postId,
@@ -41,7 +41,7 @@ public class PostControllerV2 {
 		Member reporter = userDetails.getMember();
 
 		// Service 메서드 호출
-		postService.reportPost(postId, reporter, request);
+		postService.reportPost(postId, reporter, request.reason());
 
 		return new RsData<>(
 				"200",

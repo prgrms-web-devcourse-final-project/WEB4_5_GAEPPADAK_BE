@@ -1,13 +1,15 @@
 package site.kkokkio.domain.member.controller;
 
+import static org.hamcrest.text.StringContainsInOrder.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
-import static org.springframework.http.MediaType.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
+import static org.springframework.http.MediaType.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
 import site.kkokkio.domain.member.entity.Member;
+import site.kkokkio.domain.member.controller.dto.MemberUpdateRequest;
 import site.kkokkio.domain.member.service.AuthService;
 import site.kkokkio.domain.member.service.MailService;
 import site.kkokkio.domain.member.service.MemberService;
@@ -42,14 +45,15 @@ class MemberControllerV1Test {
 	@Autowired
 	private MockMvc mockMvc;
 
+	@Autowired
+	private ObjectMapper objectMapper;
+
+
 	@MockitoBean
 	AuthChecker authChecker;
 
 	@MockitoBean
 	private MemberService memberService;
-
-	@Autowired
-	private ObjectMapper objectMapper;
 
 	@MockitoBean
 	private JwtUtils jwtUtils;
@@ -146,7 +150,7 @@ class MemberControllerV1Test {
 			.email("user@example.com")
 			.role(MemberRole.USER)
 			.build();
-		
+
 		// when & then
 		mockMvc.perform(get("/api/v1/member/me")
 				.with(user(new CustomUserDetails(member)))
@@ -155,5 +159,83 @@ class MemberControllerV1Test {
 			.andExpect(status().isUnauthorized())
 			.andExpect(jsonPath("$.code").value(401))
 			.andExpect(jsonPath("$.message").value("인증 토큰이 없어 인증 실패"));
+	}
+
+	@Test
+	@DisplayName("회원 정보 수정 성공")
+	void modifyMember_success() throws Exception {
+		// given
+		MemberUpdateRequest request = new MemberUpdateRequest( "ps123123!","after");
+		MemberResponse expectedResponse = new MemberResponse(
+			"user@example.com",
+			request.nickname(),
+			LocalDate.of(1990, 1, 1),
+			MemberRole.USER
+		);
+		given(memberService.modifyMemberInfo(any(CustomUserDetails.class), any(MemberUpdateRequest.class)))
+			.willReturn(expectedResponse);
+
+		Member member = Member.builder()
+			.id(UUID.randomUUID())
+			.email("user@example.com")
+			.nickname("currentNickname")
+			.passwordHash("encodedPassword")
+			.birthDate(LocalDate.of(1990, 1, 1))
+			.role(MemberRole.USER)
+			.emailVerified(true)
+			.build();
+
+		String updateJson = objectMapper.writeValueAsString(request);
+
+		// when & then
+		mockMvc.perform(patch("/api/v1/member/me")
+				.with(user(new CustomUserDetails(member)))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(updateJson))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").value("회원정보가 정상적으로 수정되었습니다."));
+	}
+
+	@Test
+	@DisplayName("회원 정보 수정 실패 - 유효성")
+	void modifyMember_Validation_failed() throws Exception {
+		// given
+		MemberUpdateRequest request = new MemberUpdateRequest( "ps","veryverylongNickname");
+		MemberResponse memberResponse = new MemberResponse(
+			"user@example.com",
+			request.nickname(), // 요청 닉네임 사용
+			LocalDate.of(1990, 1, 1),
+			MemberRole.USER
+		);
+		given(memberService.modifyMemberInfo(any(CustomUserDetails.class), any(MemberUpdateRequest.class)))
+			.willReturn(memberResponse);
+
+		Member member = Member.builder()
+			.id(UUID.randomUUID())
+			.email("user@example.com")
+			.nickname("currentNickname")
+			.passwordHash("encodedPassword")
+			.birthDate(LocalDate.of(1990, 1, 1))
+			.role(MemberRole.USER)
+			.emailVerified(true)
+			.build();
+
+		String updateJson = objectMapper.writeValueAsString(request);
+
+		// when & then
+		mockMvc.perform(patch("/api/v1/member/me")
+				.with(user(new CustomUserDetails(member)))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(updateJson))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("400"))
+			.andExpect(jsonPath("$.message", stringContainsInOrder(
+				"nickname : Size : 닉네임은 2~10자 사이여야 합니다.\n",
+				"password : Pattern : 비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다.\n",
+				"password : Size : 비밀번호는 8~20자 사이여야 합니다."
+			)));
 	}
 }

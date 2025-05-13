@@ -1,13 +1,22 @@
 package site.kkokkio.domain.post.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.entity.Keyword;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourly;
@@ -33,13 +42,6 @@ import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
-
-import java.io.IOException;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -222,26 +224,31 @@ public class PostService {
 
 		// 1. 신고 대상 포스트 조회
 		Post post = postRepository.findById(postId)
-				.orElseThrow(() -> new ServiceException("404", "존재하지 않는 포스트입니다."));
+			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 포스트입니다."));
 
-		// 2. 중복 신고 방지
+		// 2. 삭제된 포스트인지 확인
+		if (post.isDeleted()) {
+			throw new ServiceException("400", "삭제된 포스트는 신고할 수 없습니다.");
+		}
+
+		// 3. 중복 신고 방지
 		boolean alreadyReported = postReportRepository.existsByPostAndReporter(post, reporter);
 
 		if (alreadyReported) {
 			throw new ServiceException("400", "이미 신고한 포스트입니다.");
 		}
 
-		// 3. 신고 정보 생성
+		// 4. 신고 정보 생성
 		PostReport report = PostReport.builder()
-				.post(post)
-				.reporter(reporter)
-				.reason(reason)
-				.build();
+			.post(post)
+			.reporter(reporter)
+			.reason(reason)
+			.build();
 
-		// 4. 신고 정보 저장
+		// 5. 신고 정보 저장
 		postReportRepository.save(report);
 
-		// 5. 포스트의 신고 카운트 증가 및 저장
+		// 6. 포스트의 신고 카운트 증가 및 저장
 		post.incrementReportCount();
 		postRepository.save(post);
 	}

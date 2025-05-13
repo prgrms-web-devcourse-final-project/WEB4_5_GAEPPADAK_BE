@@ -24,11 +24,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.post.dto.PostReportRequestDto;
 import site.kkokkio.domain.post.service.PostService;
+import site.kkokkio.global.auth.CustomUserDetails;
+import site.kkokkio.global.auth.CustomUserDetailsService;
 import site.kkokkio.global.enums.MemberRole;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
-import site.kkokkio.global.security.CustomUserDetails;
-import site.kkokkio.global.security.CustomUserDetailsService;
 import site.kkokkio.global.util.JwtUtils;
 
 @WebMvcTest(PostControllerV2.class)

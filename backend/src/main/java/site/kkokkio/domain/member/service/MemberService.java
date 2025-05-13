@@ -13,12 +13,14 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
+import site.kkokkio.domain.member.controller.dto.PasswordResetRequest;
 import site.kkokkio.domain.member.controller.dto.MemberUpdateRequest;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.repository.MemberRepository;
 import site.kkokkio.global.auth.CustomUserDetails;
 import site.kkokkio.global.enums.MemberRole;
 import site.kkokkio.global.exception.ServiceException;
+import site.kkokkio.global.auth.CustomUserDetails;
 import site.kkokkio.global.util.JwtUtils;
 
 @Service
@@ -121,6 +123,16 @@ public class MemberService {
 		memberRepository.save(modifiedMember);
 
 		return new MemberResponse(modifiedMember);
+	}
+
+	// 비밀번호 초기화
+	public void resetPassword(PasswordResetRequest request) {
+
+		// 비밀번호 일치 확인
+		if (!request.newPassword().equals(request.checkPassword())) {
+			throw new ServiceException("400", "비밀번호가 일치하지 않습니다.");
+
+		}
 	}
 
 	/**

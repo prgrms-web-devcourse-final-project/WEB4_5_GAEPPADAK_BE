@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
 import site.kkokkio.domain.member.controller.dto.MemberUpdateRequest;
+import site.kkokkio.domain.member.controller.dto.PasswordResetRequest;
 import site.kkokkio.domain.member.service.AuthService;
 import site.kkokkio.domain.member.service.MemberService;
 import site.kkokkio.global.auth.CustomUserDetails;
@@ -94,5 +95,11 @@ public class MemberControllerV1 {
 			"200",
 			"회원이 삭제 되었습니다."
 		);
+	}
+
+	@Operation(summary = "비밀번호 초기화")
+	@PatchMapping("/password")
+	public void resetPassword(PasswordResetRequest request) {
+		memberService.resetPassword(request);
 	}
 }

@@ -134,7 +134,7 @@ public class PostServiceTest {
 			.post(post)
 			.build();
 
-		given(keywordMetricHourlyRepository.findTop10ById_BucketAtOrderByScoreDesc(any())).willReturn(List.of(metric));
+		given(keywordMetricHourlyRepository.findTop10HourlyMetricsClosestToNowNative(any())).willReturn(List.of(metric));
 
 		// when
 		List<PostDto> result = postService.getTopPostsWithKeyword();
@@ -148,7 +148,7 @@ public class PostServiceTest {
 	@DisplayName("top10 키워드 포스트 조회 - 포스트 없음")
 	void test4() throws IOException {
 		// given
-		given(keywordMetricHourlyRepository.findTop10ById_BucketAtOrderByScoreDesc(any()))
+		given(keywordMetricHourlyRepository.findTop10HourlyMetricsClosestToNowNative(any()))
 			.willReturn(Collections.emptyList());
 
 		// when

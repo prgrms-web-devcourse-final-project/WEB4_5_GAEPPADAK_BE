@@ -1,15 +1,13 @@
 package site.kkokkio.domain.comment.service;
 
-import java.util.UUID;
-
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.comment.controller.dto.CommentCreateRequest;
 import site.kkokkio.domain.comment.dto.CommentDto;
+import site.kkokkio.domain.comment.dto.CommentReportRequestDto;
 import site.kkokkio.domain.comment.entity.Comment;
 import site.kkokkio.domain.comment.entity.CommentLike;
 import site.kkokkio.domain.comment.repository.CommentLikeRepository;
@@ -17,7 +15,11 @@ import site.kkokkio.domain.comment.repository.CommentRepository;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.repository.PostRepository;
+import site.kkokkio.domain.report.entity.CommentReport;
+import site.kkokkio.domain.report.repository.CommentReportRepository;
 import site.kkokkio.global.exception.ServiceException;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +28,7 @@ public class CommentService {
 	private final CommentRepository commentRepository;
 	private final PostRepository postRepository;
 	private final CommentLikeRepository commentLikeRepository;
+	private final CommentReportRepository commentReportRepository;
 
 	public Page<CommentDto> getCommentListByPostId(Long postId, Pageable pageable) {
 		Post post = postRepository.findById(postId)
@@ -119,5 +122,50 @@ public class CommentService {
 			throw new ServiceException("400", "이미 좋아요가 취소된 상태입니다.");
 		}
 		return CommentDto.from(comment);
+	}
+
+	/**
+	 * 댓글 신고 기능
+	 * @param commentId 신고 대상 댓글 ID
+	 * @param reporter 신고하는 사용자 (인증된 사용자)
+	 * @param request 신고 요청 DTO (신고 사유 포함)
+	 */
+	@Transactional
+	public void reportComment(Long commentId, Member reporter, CommentReportRequestDto request) {
+
+		// 1. 신고 대상 댓글 조회
+		Comment comment = commentRepository.findById(commentId)
+				.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
+
+		// 2. 삭제된 댓글인지 확인
+		if (comment.isDeleted()) {
+			throw new ServiceException("400", "삭제된 댓글은 신고할 수 없습니다.");
+		}
+
+		// 3. 본인 댓글 신고 방지
+		if (comment.getMember().getId().equals(reporter.getId())) {
+			throw new ServiceException("403", "본인의 댓글은 신고할 수 없습니다.");
+		}
+
+		// 4. 중복 신고 방지
+		boolean alreadyReported = commentReportRepository.existsByCommentAndReporter(comment, reporter);
+
+		if (alreadyReported) {
+			throw new ServiceException("400", "이미 신고한 댓글입니다.");
+		}
+
+		// 5. 신고 정보 생성
+		CommentReport commentReport = CommentReport.builder()
+				.comment(comment)
+				.reporter(reporter)
+				.reason(request.reason())
+				.build();
+
+		// 6. 신고 정보 저장
+		commentReportRepository.save(commentReport);
+
+		// 7. 댓글의 신고 카운트 증가 및 저장
+		comment.increaseReportCount();
+		commentRepository.save(comment);
 	}
 }

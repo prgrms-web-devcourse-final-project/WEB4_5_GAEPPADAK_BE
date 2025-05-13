@@ -1,24 +1,12 @@
 package site.kkokkio.domain.comment.entity;
 
-import java.time.LocalDateTime;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.global.util.BaseTimeEntity;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Entity
@@ -55,6 +43,11 @@ public class Comment extends BaseTimeEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    // report_count 추가
+    @Builder.Default
+    @Column(name = "report_count", nullable = false)
+    private int reportCount = 0;
+
     public void softDelete() {
         this.deletedAt = LocalDateTime.now();
     }
@@ -74,4 +67,7 @@ public class Comment extends BaseTimeEntity {
 	public void decreaseLikeCount() {
 		this.likeCount--;
 	}
+
+    // 신고 카운트를 증가시키는 메서드
+    public void increaseReportCount() { this.reportCount++; }
 }

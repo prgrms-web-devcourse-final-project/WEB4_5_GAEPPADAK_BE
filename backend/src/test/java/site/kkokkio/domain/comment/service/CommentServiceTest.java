@@ -1,33 +1,38 @@
 package site.kkokkio.domain.comment.service;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.*;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
-
 import site.kkokkio.domain.comment.controller.dto.CommentCreateRequest;
 import site.kkokkio.domain.comment.dto.CommentDto;
+import site.kkokkio.domain.comment.dto.CommentReportRequestDto;
 import site.kkokkio.domain.comment.entity.Comment;
 import site.kkokkio.domain.comment.repository.CommentLikeRepository;
 import site.kkokkio.domain.comment.repository.CommentRepository;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.repository.PostRepository;
+import site.kkokkio.domain.report.entity.CommentReport;
+import site.kkokkio.domain.report.repository.CommentReportRepository;
+import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CommentServiceTest {
@@ -42,6 +47,9 @@ class CommentServiceTest {
 
 	@Mock
 	private CommentLikeRepository commentLikeRepository;
+
+	@Mock
+	private CommentReportRepository commentReportRepository;
 
 	@Test
 	@DisplayName("댓글 목록 조회 성공")
@@ -285,5 +293,178 @@ class CommentServiceTest {
 		CommentDto result = commentService.unlikeComment(1L, member1);
 
 		assertEquals(0, result.likeCount());
+	}
+
+	@Test
+	@DisplayName("댓글 신고 성공")
+	void test7() {
+		Long commentId = 1L;
+		UUID reporterId = UUID.randomUUID();
+		ReportReason reportReason = ReportReason.BAD_CONTENT;
+		CommentReportRequestDto request = new CommentReportRequestDto(reportReason);
+
+		// 댓글 작성자 Member 모킹
+		Member commentWriter = mock(Member.class);
+		when(commentWriter.getId()).thenReturn(UUID.randomUUID());
+
+		// 신고 대상 댓글 Comment 모킹
+		Comment comment = Comment.builder().member(commentWriter).body("댓글 내용").build();
+		ReflectionTestUtils.setField(comment, "id", commentId);
+		ReflectionTestUtils.setField(comment, "deletedAt", null);
+		ReflectionTestUtils.setField(comment, "reportCount", 0);
+
+		// commentRepository.findById 호출 시 모킹된 comment 객체 반환
+		when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+
+		// 신고하는 사용자 Member 모킹
+		Member reporter = Member.builder().build();
+		ReflectionTestUtils.setField(reporter, "id", reporterId);
+
+		// commentReportRepository.existsByCommentAndReporter 호출 시 false 반환 모킹
+		when(commentReportRepository.existsByCommentAndReporter(comment, reporter)).thenReturn(false);
+
+		// CommentReport 저장 모킹
+		when(commentReportRepository.save(any(CommentReport.class))).thenReturn(mock(CommentReport.class));
+
+		// commentRepository.save 호출 시 comment 객체 인자로 받아서 comment 객체 반환 모킹
+		when(commentRepository.save(comment)).thenReturn(comment);
+
+		// Service 메서드 호출
+		commentService.reportComment(commentId, reporter, request);
+
+		/// 검증
+		verify(commentRepository).findById(commentId);
+		verify(commentReportRepository).existsByCommentAndReporter(comment, reporter);
+		verify(commentReportRepository).save(any(CommentReport.class));
+		verify(commentRepository).save(comment);
+
+		assertEquals(1, comment.getReportCount());
+	}
+
+	@Test
+	@DisplayName("댓글 신고 실패 - 댓글 찾을 수 없음")
+	void test7_1() {
+		Long commentId = 999L;
+		ReportReason reportReason = ReportReason.BAD_CONTENT;
+		CommentReportRequestDto request = new CommentReportRequestDto(reportReason);
+		Member reporter = Member.builder().build();
+		ReflectionTestUtils.setField(reporter, "id", UUID.randomUUID());
+
+		// commentRepository.findById 호출 시 Optional.empty() 반환 모킹
+		when(commentRepository.findById(commentId)).thenReturn(Optional.empty());
+
+		// ServiceException 발생 예상 및 검증
+		ServiceException exception = assertThrows(ServiceException.class, () ->
+				commentService.reportComment(commentId, reporter, request));
+
+		// 예외 메시지 및 코드 검증
+		assertEquals("404", exception.getCode());
+		assertEquals("존재하지 않는 댓글입니다.", exception.getMessage());
+
+		/// 검증
+		verify(commentRepository).findById(commentId);
+		verify(commentReportRepository, Mockito.never()).existsByCommentAndReporter(any(), any());
+		verify(commentReportRepository, Mockito.never()).save(any());
+	}
+
+	@Test
+	@DisplayName("댓글 신고 실패 - 삭제된 댓글")
+	void test7_2() {
+		Long commentId = 2L;
+		ReportReason reportReason = ReportReason.BAD_CONTENT;
+		CommentReportRequestDto request = new CommentReportRequestDto(reportReason);
+		Member reporter = Member.builder().build();
+		ReflectionTestUtils.setField(reporter, "id", UUID.randomUUID());
+
+		// commentRepository.findById 호출 시 Optional.empty() 반환 모킹
+		when(commentRepository.findById(commentId)).thenReturn(Optional.empty());
+
+		// ServiceException 발생 예상 및 검증
+		ServiceException exception = assertThrows(ServiceException.class, () ->
+				commentService.reportComment(commentId, reporter, request));
+		
+		// 예외 메시지 및 코드 검증
+		assertEquals("404", exception.getCode());
+		assertEquals("존재하지 않는 댓글입니다.", exception.getMessage());
+
+		/// 검증
+		verify(commentRepository).findById(commentId);
+		verify(commentReportRepository, Mockito.never()).existsByCommentAndReporter(any(), any());
+		verify(commentReportRepository, Mockito.never()).save(any());
+	}
+
+	@Test
+	@DisplayName("댓글 신고 실패 - 본인 댓글 신고")
+	void test7_3() {
+		Long commentId = 3L;
+		UUID reporterId = UUID.randomUUID();
+		ReportReason reportReason = ReportReason.BAD_CONTENT;
+		CommentReportRequestDto request = new CommentReportRequestDto(reportReason);
+
+		// 신고하는 사용자 Member 실제 객체 생성 및 필드 설정
+		Member reporter = Member.builder().build();
+		ReflectionTestUtils.setField(reporter, "id", reporterId);
+
+		// 신고 대상 댓글 Comment 실제 객체 생성
+		Comment comment = Comment.builder().member(reporter).body("댓글 내용").build();
+		ReflectionTestUtils.setField(comment, "id", commentId);
+		ReflectionTestUtils.setField(comment, "deletedAt", null);
+		ReflectionTestUtils.setField(comment, "reportCount", 0);
+
+		when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+
+		// ServiceException 발생 예상 및 검증
+		ServiceException exception = assertThrows(ServiceException.class, () ->
+				commentService.reportComment(commentId, reporter, request));
+
+		// 예외 메시지 및 코드 검증
+		assertEquals("403", exception.getCode());
+		assertEquals("본인의 댓글은 신고할 수 없습니다.", exception.getMessage());
+
+		/// 검증
+		verify(commentRepository).findById(commentId);
+		verify(commentReportRepository, Mockito.never()).existsByCommentAndReporter(any(), any());
+		verify(commentReportRepository, Mockito.never()).save(any());
+	}
+
+	@Test
+	@DisplayName("댓글 신고 실패 - 중복 신고")
+	void test7_4() {
+		Long commentId = 4L;
+		UUID reporterId = UUID.randomUUID();
+		ReportReason reportReason = ReportReason.BAD_CONTENT;
+		CommentReportRequestDto request = new CommentReportRequestDto(reportReason);
+
+		// 댓글 작성자 Member 실제 객체 생성 및 필드 설정
+		Member commentWriter = Member.builder().build();
+		ReflectionTestUtils.setField(commentWriter, "id", UUID.randomUUID());
+
+		// 신고 대상 댓글 Comment 실제 객체 생성 및 필드 설정
+		Comment comment = Comment.builder().member(commentWriter).body("댓글 내용").build();
+		ReflectionTestUtils.setField(comment, "id", commentId);
+		ReflectionTestUtils.setField(comment, "deletedAt", null);
+		ReflectionTestUtils.setField(comment, "reportCount", 0);
+
+		when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+
+		// 신고하는 사용자 Member 실제 객체 생성
+		Member reporter = Member.builder().build();
+		ReflectionTestUtils.setField(reporter, "id", reporterId);
+
+		// 중복 신고 발생 모킹
+		when(commentReportRepository.existsByCommentAndReporter(comment, reporter)).thenReturn(true);
+
+		// ServiceException 발생 예상 및 검증
+		ServiceException exception = assertThrows(ServiceException.class, () ->
+				commentService.reportComment(commentId, reporter, request));
+
+		// 예외 메시지 및 코드 검증
+		assertEquals("400", exception.getCode());
+		assertEquals("이미 신고한 댓글입니다.", exception.getMessage());
+
+		/// 검증
+		verify(commentRepository).findById(commentId);
+		verify(commentReportRepository).existsByCommentAndReporter(comment, reporter);
+		verify(commentReportRepository, Mockito.never()).save(any());
 	}
 }

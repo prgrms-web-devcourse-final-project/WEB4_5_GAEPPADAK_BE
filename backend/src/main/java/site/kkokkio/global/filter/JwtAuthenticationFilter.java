@@ -21,7 +21,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import site.kkokkio.global.security.CustomUserDetailsService;
+import site.kkokkio.global.auth.CustomUserDetailsService;
 import site.kkokkio.global.util.JwtUtils;
 
 @Component
@@ -31,35 +31,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	private final JwtUtils jwtUtils;
 	private final CustomUserDetailsService userDetailsService;
 	private final RedisTemplate<String, String> redisTemplate;
-
-	// 필터 체인 통과
-	@Override
-	protected boolean shouldNotFilter(HttpServletRequest request) {
-		String path = request.getServletPath();
-		String method = request.getMethod();
-
-		// Auth 관련 엔드포인트 ⇒ 무조건 스킵
-		if (List.of(
-			"/api/v1/auth/login",
-			"/api/v1/auth/signup",
-			"/api/v1/auth/verify-email",
-			"/api/v1/auth/check-email",
-			"/api/v1/auth/refresh"
-		).contains(path)) {
-			return true;
-		}
-
-		// “댓글 쓰기·수정·삭제·좋아요” 만 필터 적용
-		boolean isCommentWriteEndpoint =
-			("POST".equals(method) && path.matches("^/api/v1/posts/\\d+/comments$"))            // 댓글 작성
-				|| ("PATCH".equals(method) && path.matches("^/api/v1/comments/\\d+$"))          // 댓글 수정
-				|| ("DELETE".equals(method) && path.matches("^/api/v1/comments/\\d+$"))         // 댓글 삭제
-				|| ("POST".equals(method) && path.matches("^/api/v1/comments/\\d+/like$"))      // 댓글 좋아요
-				|| ("DELETE".equals(method) && path.matches("^/api/v1/comments/\\d+/like$"));      // 댓글 좋아요 취소
-
-		// isCommentWriteEndpoint 이면 필터 동작(= false 리턴), 아니면 스킵(= true 리턴)
-		return !isCommentWriteEndpoint;
-	}
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)

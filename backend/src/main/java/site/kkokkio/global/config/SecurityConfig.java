@@ -30,9 +30,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import site.kkokkio.global.auth.AuthChecker;
+import site.kkokkio.global.auth.CustomUserDetailsService;
 import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.filter.JwtAuthenticationFilter;
-import site.kkokkio.global.security.CustomUserDetailsService;
 import site.kkokkio.global.util.JwtUtils;
 
 @Configuration
@@ -45,6 +46,7 @@ public class SecurityConfig {
 	private final RedisTemplate<String, String> redisTemplate;
 	private final JwtUtils jwtUtils;
 	private final ObjectMapper objectMapper;
+	private final AuthChecker authChecker;
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -84,11 +86,11 @@ public class SecurityConfig {
 			.authorizeHttpRequests(authorize ->
 				authorize
 					// — USER 로그인 필요
-					.requestMatchers(HttpMethod.POST, "/api/v1/posts/*/comments").authenticated()		// 댓글 작성
-					.requestMatchers(HttpMethod.PATCH, "/api/v1/comments/*").authenticated()			// 댓글 수정
-					.requestMatchers(HttpMethod.DELETE, "/api/v1/comments/*").authenticated()			// 댓글 삭제
-					.requestMatchers(HttpMethod.POST, "/api/v1/comments/*/like").authenticated()		// 댓글 좋아요
-					.requestMatchers(HttpMethod.DELETE, "/api/v1/comments/*/like").authenticated()	// 댓글 좋아요 취소
+					.requestMatchers(HttpMethod.POST, "/api/v1/posts/*/comments").authenticated()        // 댓글 작성
+					.requestMatchers(HttpMethod.PATCH, "/api/v1/comments/*").authenticated()            // 댓글 수정
+					.requestMatchers(HttpMethod.DELETE, "/api/v1/comments/*").authenticated()            // 댓글 삭제
+					.requestMatchers(HttpMethod.POST, "/api/v1/comments/*/like").authenticated()        // 댓글 좋아요
+					.requestMatchers(HttpMethod.DELETE, "/api/v1/comments/*/like").authenticated()    // 댓글 좋아요 취소
 
 					// 그 외 모든 요청 허용
 					.anyRequest().permitAll()
@@ -110,7 +112,8 @@ public class SecurityConfig {
 			"https://api.deploy.kkokkio.site", // 백엔드 dev API URL
 			"https://api.prd.kkokkio.site"// 백엔드 prod API URL
 		)); // 프론트 사이트 추가
-		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS")); // 허용 HTTP 메소드
+		configuration.setAllowedMethods(
+			Arrays.asList("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS")); // 허용 HTTP 메소드
 		// configuration.setAllowedHeaders(Arrays.asList("*")); // HTTP 헤더(모두 허용)
 		configuration.setAllowCredentials(true); // 쿠키 등 자격 증명
 		// 클라이언트 노출 헤더
@@ -180,4 +183,5 @@ public class SecurityConfig {
 	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
 	}
+
 }

@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.keyword.entity.Keyword;
 import site.kkokkio.domain.keyword.service.GoogleTrendsRssService;
+import site.kkokkio.global.auth.annotations.IsAdmin;
 
 @RestController
 @RequestMapping("/api/v1/keywords")
@@ -19,6 +20,7 @@ public class GoogleTrendsController {
 
 	private final GoogleTrendsRssService googleTrendsRssService;
 
+	@IsAdmin
 	@GetMapping("trending-keywords")
 	public List<Keyword> getTrendingKeywordsApi() {
 		return googleTrendsRssService.getTrendingKeywordsFromRss();

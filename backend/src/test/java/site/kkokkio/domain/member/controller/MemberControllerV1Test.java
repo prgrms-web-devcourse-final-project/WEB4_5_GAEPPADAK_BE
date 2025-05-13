@@ -2,6 +2,8 @@ package site.kkokkio.domain.member.controller;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
+import static org.springframework.http.MediaType.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -10,38 +12,44 @@ import java.time.LocalDate;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import jakarta.servlet.http.HttpServletRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
+import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.service.AuthService;
 import site.kkokkio.domain.member.service.MailService;
 import site.kkokkio.domain.member.service.MemberService;
-import site.kkokkio.global.aspect.ResponseAspect;
+import site.kkokkio.global.auth.AuthChecker;
+import site.kkokkio.global.auth.CustomUserDetails;
+import site.kkokkio.global.auth.CustomUserDetailsService;
+import site.kkokkio.global.config.SecurityConfig;
 import site.kkokkio.global.enums.MemberRole;
 import site.kkokkio.global.exception.CustomAuthException;
-import site.kkokkio.global.security.CustomUserDetailsService;
 import site.kkokkio.global.util.JwtUtils;
 
 @WebMvcTest(MemberControllerV1.class)
-@AutoConfigureMockMvc(addFilters = false)
-@Import(ResponseAspect.class)               // ① AOP 빈 등록
-@EnableAspectJAutoProxy(proxyTargetClass = true)
+@Import(SecurityConfig.class)
 class MemberControllerV1Test {
 
 	@Autowired
 	private MockMvc mockMvc;
 
 	@MockitoBean
+	AuthChecker authChecker;
+
+	@MockitoBean
 	private MemberService memberService;
+
+	@Autowired
+	private ObjectMapper objectMapper;
 
 	@MockitoBean
 	private JwtUtils jwtUtils;
@@ -104,12 +112,19 @@ class MemberControllerV1Test {
 			LocalDate.of(1990, 1, 1),
 			MemberRole.USER
 		);
-		given(memberService.getMemberInfo(any(HttpServletRequest.class)))
+		given(memberService.getMemberInfo(eq("user@example.com")))
 			.willReturn(respDto);
+
+		Member member = Member.builder()
+			.email("user@example.com")
+			.role(MemberRole.USER)
+			.build();
 
 		// when & then
 		mockMvc.perform(get("/api/v1/member/me")
-				.accept(MediaType.APPLICATION_JSON))
+				.with(user(new CustomUserDetails(member)))
+				.with(csrf())
+				.contentType(APPLICATION_JSON))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("200"))
 			.andExpect(jsonPath("$.message").value("마이페이지 조회 성공"))
@@ -123,12 +138,19 @@ class MemberControllerV1Test {
 	@DisplayName("회원 정보 조회 - 인증 토큰 누락으로 실패")
 	void getMember_noToken_fail() throws Exception {
 		// given: 토큰 누락 시 CustomAuthException 발생
-		given(memberService.getMemberInfo(any(HttpServletRequest.class)))
+		given(memberService.getMemberInfo(any(String.class)))
 			.willThrow(new CustomAuthException(
 				CustomAuthException.AuthErrorType.MISSING_TOKEN));
 
+		Member member = Member.builder()
+			.email("user@example.com")
+			.role(MemberRole.USER)
+			.build();
+		
 		// when & then
 		mockMvc.perform(get("/api/v1/member/me")
+				.with(user(new CustomUserDetails(member)))
+				.with(csrf())
 				.accept(MediaType.APPLICATION_JSON))
 			.andExpect(status().isUnauthorized())
 			.andExpect(jsonPath("$.code").value(401))

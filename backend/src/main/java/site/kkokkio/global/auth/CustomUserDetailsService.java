@@ -1,4 +1,4 @@
-package site.kkokkio.global.security;
+package site.kkokkio.global.auth;
 
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

@@ -7,15 +7,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import io.jsonwebtoken.Claims;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.repository.MemberRepository;
 import site.kkokkio.global.enums.MemberRole;
-import site.kkokkio.global.exception.CustomAuthException;
 import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.global.util.JwtUtils;
 
@@ -94,23 +91,7 @@ public class MemberService {
 	// }
 
 	// 회원 정보 조회
-	public MemberResponse getMemberInfo(HttpServletRequest request) {
-		// 쿠키에서 access-token 추출
-		String token = jwtUtils.getJwtFromCookies(request)
-			.orElseThrow(() -> new CustomAuthException(
-				CustomAuthException.AuthErrorType.MISSING_TOKEN));
-
-		// 토큰 검증
-		jwtUtils.isValidToken(token);
-		// 페이로드에서 사용자 이메일 추출
-		Claims claims = jwtUtils.getPayload(token);
-
-		// claims.subject 유효성 검사
-		String email = claims.getSubject();
-		if (email == null || email.isBlank()) {
-			throw new CustomAuthException(CustomAuthException.AuthErrorType.MALFORMED_TOKEN);
-		}
-
+	public MemberResponse getMemberInfo(String email) {
 		// 멤버 조회 및 응답 DTO 변환
 		Member memberInfo = findByEmail(email);
 		return new MemberResponse(memberInfo);

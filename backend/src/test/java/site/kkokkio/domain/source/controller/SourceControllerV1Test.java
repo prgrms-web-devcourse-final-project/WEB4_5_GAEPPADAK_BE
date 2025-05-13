@@ -27,9 +27,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import site.kkokkio.domain.source.dto.SourceDto;
 import site.kkokkio.domain.source.dto.TopSourceItemDto;
 import site.kkokkio.domain.source.service.SourceService;
+import site.kkokkio.global.auth.CustomUserDetailsService;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
-import site.kkokkio.global.security.CustomUserDetailsService;
 import site.kkokkio.global.util.JwtUtils;
 
 @WebMvcTest(controllers = SourceControllerV1.class)

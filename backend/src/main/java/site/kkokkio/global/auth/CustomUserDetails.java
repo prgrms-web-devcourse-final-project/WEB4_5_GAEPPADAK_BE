@@ -1,5 +1,5 @@
 // 파일: src/main/java/site/kkokkio/global/security/CustomUserDetails.java
-package site.kkokkio.global.security;
+package site.kkokkio.global.auth;
 
 import java.util.Collection;
 
@@ -24,7 +24,7 @@ public class CustomUserDetails implements UserDetails {
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
-		return AuthorityUtils.createAuthorityList(member.getRole().name());
+		return AuthorityUtils.createAuthorityList("ROLE_" + member.getRole().name());
 	}
 
 	@Override

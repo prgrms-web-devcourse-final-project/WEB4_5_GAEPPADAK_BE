@@ -25,9 +25,9 @@ import site.kkokkio.domain.member.service.AuthService;
 import site.kkokkio.domain.member.service.MailService;
 import site.kkokkio.domain.member.service.MemberService;
 import site.kkokkio.global.aspect.ResponseAspect;
+import site.kkokkio.global.auth.CustomUserDetailsService;
 import site.kkokkio.global.enums.MemberRole;
 import site.kkokkio.global.exception.ServiceException;
-import site.kkokkio.global.security.CustomUserDetailsService;
 import site.kkokkio.global.util.JwtUtils;
 
 @WebMvcTest(AuthControllerV1.class)

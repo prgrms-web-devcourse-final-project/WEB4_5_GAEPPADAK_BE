@@ -18,7 +18,6 @@ import site.kkokkio.domain.member.controller.dto.MemberLoginRequest;
 import site.kkokkio.domain.member.controller.dto.MemberLoginResponse;
 import site.kkokkio.domain.member.service.AuthService;
 import site.kkokkio.domain.member.service.MailService;
-import site.kkokkio.domain.member.service.MemberService;
 import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.exception.doc.ApiErrorCodeExamples;
 import site.kkokkio.global.exception.doc.ErrorCode;
@@ -30,7 +29,6 @@ import site.kkokkio.global.util.JwtUtils;
 @RequestMapping("/api/v1/auth")
 public class AuthControllerV1 {
 
-	private final MemberService memberService;
 	private final AuthService authService;
 	private final JwtUtils jwtUtils;
 	private final MailService mailService;

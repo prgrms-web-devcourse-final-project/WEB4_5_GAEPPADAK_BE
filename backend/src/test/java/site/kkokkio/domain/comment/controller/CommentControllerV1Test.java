@@ -17,7 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import site.kkokkio.domain.comment.controller.dto.CommentCreateRequest;
 import site.kkokkio.domain.comment.dto.CommentDto;
-import site.kkokkio.domain.comment.dto.CommentReportRequestDto;
+import site.kkokkio.domain.report.dto.CommentReportRequestDto;
 import site.kkokkio.domain.comment.service.CommentService;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.global.enums.MemberRole;

@@ -13,7 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 import site.kkokkio.domain.comment.controller.dto.CommentCreateRequest;
 import site.kkokkio.domain.comment.dto.CommentDto;
-import site.kkokkio.domain.comment.dto.CommentReportRequestDto;
+import site.kkokkio.domain.report.dto.CommentReportRequestDto;
 import site.kkokkio.domain.comment.entity.Comment;
 import site.kkokkio.domain.comment.repository.CommentLikeRepository;
 import site.kkokkio.domain.comment.repository.CommentRepository;

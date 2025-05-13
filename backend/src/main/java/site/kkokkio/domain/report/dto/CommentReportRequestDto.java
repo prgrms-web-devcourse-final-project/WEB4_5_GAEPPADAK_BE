@@ -1,4 +1,4 @@
-package site.kkokkio.domain.comment.dto;
+package site.kkokkio.domain.report.dto;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;

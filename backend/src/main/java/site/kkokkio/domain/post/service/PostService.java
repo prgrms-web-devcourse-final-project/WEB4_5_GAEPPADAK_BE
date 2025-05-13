@@ -1,22 +1,13 @@
 package site.kkokkio.domain.post.service;
 
-import java.io.IOException;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.List;
-import java.util.Map;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.entity.Keyword;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourly;
@@ -24,6 +15,7 @@ import site.kkokkio.domain.keyword.entity.KeywordMetricHourlyId;
 import site.kkokkio.domain.keyword.repository.KeywordMetricHourlyRepository;
 import site.kkokkio.domain.keyword.repository.KeywordRepository;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
+import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.entity.PostKeyword;
@@ -31,6 +23,9 @@ import site.kkokkio.domain.post.entity.PostMetricHourly;
 import site.kkokkio.domain.post.repository.PostKeywordRepository;
 import site.kkokkio.domain.post.repository.PostMetricHourlyRepository;
 import site.kkokkio.domain.post.repository.PostRepository;
+import site.kkokkio.domain.report.dto.PostReportRequestDto;
+import site.kkokkio.domain.report.entity.PostReport;
+import site.kkokkio.domain.report.repository.PostReportRepository;
 import site.kkokkio.domain.source.entity.KeywordSource;
 import site.kkokkio.domain.source.entity.PostSource;
 import site.kkokkio.domain.source.entity.Source;
@@ -38,6 +33,13 @@ import site.kkokkio.domain.source.repository.KeywordSourceRepository;
 import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -49,6 +51,7 @@ public class PostService {
 	private final PostKeywordRepository postKeywordRepository;
 	private final PostMetricHourlyRepository postMetricHourlyRepository;
 	private final KeywordSourceRepository keywordSourceRepository;
+	private final PostReportRepository postReportRepository;
 	private final KeywordMetricHourlyService keywordMetricHourlyService;
 	private final PostSourceRepository postSourceRepository;
 	private final StringRedisTemplate redisTemplate;
@@ -206,5 +209,40 @@ public class PostService {
 		} catch (JsonProcessingException e) {
 			log.error("Redis 캐싱 직렬화 실패. postId={}", post.getId(), e);
 		}
+	}
+
+	/**
+	 * 포스트 신고 기능
+	 * @param postId 신고 대상 포스트 ID
+	 * @param reporter 신고하는 사용자
+	 * @param request 신고 요청 DTO
+	 */
+	@Transactional
+	public void reportPost(Long postId, Member reporter, PostReportRequestDto request) {
+
+		// 1. 신고 대상 포스트 조회
+		Post post = postRepository.findById(postId)
+				.orElseThrow(() -> new ServiceException("404", "존재하지 않는 포스트입니다."));
+
+		// 2. 중복 신고 방지
+		boolean alreadyReported = postReportRepository.existsByPostAndReporter(post, reporter);
+
+		if (alreadyReported) {
+			throw new ServiceException("400", "이미 신고한 포스트입니다.");
+		}
+
+		// 3. 신고 정보 생성
+		PostReport report = PostReport.builder()
+				.post(post)
+				.reporter(reporter)
+				.reason(request.reason())
+				.build();
+
+		// 4. 신고 정보 저장
+		postReportRepository.save(report);
+
+		// 5. 포스트의 신고 카운트 증가 및 저장
+		post.incrementReportCount();
+		postRepository.save(post);
 	}
 }

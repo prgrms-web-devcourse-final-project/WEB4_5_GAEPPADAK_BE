@@ -35,9 +35,12 @@ public enum ErrorCode {
     CREDENTIALS_MISMATCH("401", "토큰 서명 불일치 등으로 인증 실패"),
     SOURCE_NOT_FOUND_1("404", "유튜브 비디오를 불러오지 못했습니다."),
     SOURCE_NOT_FOUND_2("404", "뉴스를 불러오지 못했습니다."),
-    REPORT_COMMENT_BAD_REQUEST("400", "신고 이유를 선택해주세요."),
+    REPORT_REASON_BAD_REQUEST("400", "신고 이유를 선택해주세요."),
+    REPORT_COMMENT_BAD_REQUEST("400", "댓글 신고에 실패했습니다."),
     REPORT_COMMENT_DUPLICATE("400", "이미 신고한 댓글입니다."),
-    REPORT_COMMENT_FORBIDDEN("403", "본인의 댓글은 신고할 수 없습니다.");
+    REPORT_COMMENT_FORBIDDEN("403", "본인의 댓글은 신고할 수 없습니다."),
+    REPORT_POST_BAD_REQUEST("400", "포스트 신고에 실패했습니다."),
+    REPORT_POST_DUPLICATE("400", "이미 신고한 포스트입니다.");
 
     private final String code;
     private final String message;

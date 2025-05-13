@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import site.kkokkio.domain.comment.controller.dto.CommentCreateRequest;
 import site.kkokkio.domain.comment.dto.CommentDto;
-import site.kkokkio.domain.comment.dto.CommentReportRequestDto;
+import site.kkokkio.domain.report.dto.CommentReportRequestDto;
 import site.kkokkio.domain.comment.entity.Comment;
 import site.kkokkio.domain.comment.entity.CommentLike;
 import site.kkokkio.domain.comment.repository.CommentLikeRepository;

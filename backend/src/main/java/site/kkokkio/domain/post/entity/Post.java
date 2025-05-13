@@ -1,19 +1,10 @@
 package site.kkokkio.domain.post.entity;
 
-import java.time.LocalDateTime;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
 import site.kkokkio.global.util.BaseTimeEntity;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Entity
@@ -23,10 +14,10 @@ import site.kkokkio.global.util.BaseTimeEntity;
 @Table(name = "post")
 public class Post extends BaseTimeEntity {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "post_id")
-	public Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "post_id")
+    public Long id;
 
     @Column(nullable = false)
     private String title;
@@ -40,7 +31,11 @@ public class Post extends BaseTimeEntity {
     @Column(name = "bucket_at", nullable = false)
     private LocalDateTime bucketAt;
 
-	@Builder.Default
+    @Builder.Default
     @Column(name = "report_count", nullable = false)
     private int reportCount = 0;
+
+    public void incrementReportCount() {
+        this.reportCount++;
+    }
 }

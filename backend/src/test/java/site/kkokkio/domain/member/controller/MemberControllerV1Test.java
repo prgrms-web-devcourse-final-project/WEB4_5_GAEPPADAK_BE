@@ -1,11 +1,13 @@
 package site.kkokkio.domain.member.controller;
 
+import static org.hamcrest.text.StringContainsInOrder.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,9 +21,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
+import site.kkokkio.domain.member.controller.dto.MemberUpdateRequest;
 import site.kkokkio.domain.member.service.AuthService;
 import site.kkokkio.domain.member.service.MailService;
 import site.kkokkio.domain.member.service.MemberService;
@@ -39,6 +45,10 @@ class MemberControllerV1Test {
 
 	@Autowired
 	private MockMvc mockMvc;
+
+	@Autowired
+	private ObjectMapper objectMapper;
+
 
 	@MockitoBean
 	private MemberService memberService;
@@ -131,6 +141,90 @@ class MemberControllerV1Test {
 		mockMvc.perform(get("/api/v1/member/me")
 				.accept(MediaType.APPLICATION_JSON))
 			.andExpect(status().isUnauthorized())
+			.andExpect(jsonPath("$.code").value(401))
+			.andExpect(jsonPath("$.message").value("인증 토큰이 없어 인증 실패"));
+	}
+
+	@Test
+	@DisplayName("회원 정보 수정 성공")
+	void modifyMember_success() throws Exception {
+		// given
+		MemberUpdateRequest request = new MemberUpdateRequest( "ps123123!","after"); // 요청 객체 먼저 생성
+		MemberResponse memberResponse = new MemberResponse(
+			"user@example.com",
+			request.nickname(), // 요청 닉네임 사용
+			LocalDate.of(1990, 1, 1),
+			MemberRole.USER
+		);
+		given(memberService.modifyMemberInfo(any(HttpServletRequest.class), any(MemberUpdateRequest.class)))
+			.willReturn(memberResponse);
+
+		HttpServletRequest req = mock(HttpServletRequest.class);
+		given(jwtUtils.getJwtFromCookies(req)).willReturn(Optional.of("valid.token"));
+		given(jwtUtils.isValidToken("valid.token")).willReturn(true);
+
+		String updateJson = objectMapper.writeValueAsString(request);
+
+		// when & then
+		mockMvc.perform(patch("/api/v1/member/me")
+				.cookie(new Cookie("access-token", "valid.token"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(updateJson))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").value("회원정보가 정상적으로 수정되었습니다."))
+			.andExpect(jsonPath("$.data.email").value("user@example.com"))
+			.andExpect(jsonPath("$.data.nickname").value("after")) // "after"로 검증
+			.andExpect(jsonPath("$.data.birthDate").value("1990-01-01"))
+			.andExpect(jsonPath("$.data.role").value("USER"));
+	}
+
+	@Test
+	@DisplayName("회원 정보 수정 실패 - 유효성")
+	void modifyMember_Validation_failed() throws Exception {
+		// given
+		MemberUpdateRequest request = new MemberUpdateRequest( "ps","veryverylongNickname"); // 요청 객체 먼저 생성
+		MemberResponse memberResponse = new MemberResponse(
+			"user@example.com",
+			request.nickname(), // 요청 닉네임 사용
+			LocalDate.of(1990, 1, 1),
+			MemberRole.USER
+		);
+		given(memberService.modifyMemberInfo(any(HttpServletRequest.class), any(MemberUpdateRequest.class)))
+			.willReturn(memberResponse);
+
+		HttpServletRequest req = mock(HttpServletRequest.class);
+		given(jwtUtils.getJwtFromCookies(req)).willReturn(Optional.of("valid.token"));
+		given(jwtUtils.isValidToken("valid.token")).willReturn(true);
+
+		String updateJson = objectMapper.writeValueAsString(request);
+
+		// when & then
+		mockMvc.perform(patch("/api/v1/member/me")
+				.cookie(new Cookie("access-token", "valid.token"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(updateJson))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("400"))
+			.andExpect(jsonPath("$.message", stringContainsInOrder(
+				"nickname : Size : 닉네임은 2~10자 사이여야 합니다.",
+				"passwordHash : Pattern : 비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다.",
+				"passwordHash : Size : 비밀번호는 8~20자 사이여야 합니다."
+			)));
+	}
+
+	@Test
+	@DisplayName("회원 정보 수정 - 인증 토큰 누락으로 실패")
+	void modifyMember_noToken_fail() throws Exception {
+		// given: 토큰 누락 시 CustomAuthException 발생
+		given(memberService.modifyMemberInfo(any(HttpServletRequest.class), any(MemberUpdateRequest.class)))
+			.willThrow(new CustomAuthException(
+				CustomAuthException.AuthErrorType.MISSING_TOKEN));
+
+		// when & then
+		mockMvc.perform(patch("/api/v1/member/me")
+				.accept(MediaType.APPLICATION_JSON))
+			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.code").value(401))
 			.andExpect(jsonPath("$.message").value("인증 토큰이 없어 인증 실패"));
 	}

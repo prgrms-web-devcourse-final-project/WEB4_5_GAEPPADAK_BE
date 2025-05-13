@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
+import site.kkokkio.domain.member.controller.dto.MemberUpdateRequest;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.repository.MemberRepository;
 import site.kkokkio.global.enums.MemberRole;
@@ -114,5 +115,41 @@ public class MemberService {
 		// 멤버 조회 및 응답 DTO 변환
 		Member memberInfo = findByEmail(email);
 		return new MemberResponse(memberInfo);
+	}
+
+	// 회원 정보 수정
+	public MemberResponse modifyMemberInfo(HttpServletRequest request, MemberUpdateRequest requestBody) {
+		// 쿠키에서 access-token 추출
+		String token = jwtUtils.getJwtFromCookies(request)
+			.orElseThrow(() -> new CustomAuthException(
+				CustomAuthException.AuthErrorType.MISSING_TOKEN));
+
+		// 토큰 검증
+		jwtUtils.isValidToken(token);
+		// 페이로드에서 사용자 이메일 추출
+		Claims claims = jwtUtils.getPayload(token);
+
+		// claims.subject 유효성 검사
+		String email = claims.getSubject();
+		if (email == null || email.isBlank()) {
+			throw new CustomAuthException(CustomAuthException.AuthErrorType.MALFORMED_TOKEN);
+		}
+
+		Member member = findByEmail(email);
+
+		// 회원 정보 수정
+		Member modifiedMember = Member.builder()
+			.id(member.getId())
+			.email(member.getEmail())
+			.nickname(requestBody.nickname() != null ? requestBody.nickname() : member.getNickname())
+			.birthDate(member.getBirthDate()) // 기존 생년월일 유지
+			.passwordHash(requestBody.passwordHash() != null ? passwordEncoder.encode(requestBody.passwordHash()) : member.getPasswordHash())
+			.role(member.getRole())
+			.emailVerified(member.isEmailVerified())
+			.build(); // 기존 역할 유지
+
+		memberRepository.save(modifiedMember);
+
+		return new MemberResponse(modifiedMember);
 	}
 }

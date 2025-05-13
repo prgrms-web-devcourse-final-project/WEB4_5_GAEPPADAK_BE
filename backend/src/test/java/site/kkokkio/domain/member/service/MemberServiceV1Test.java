@@ -19,6 +19,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
+import site.kkokkio.domain.member.controller.dto.MemberUpdateRequest;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.repository.MemberRepository;
 import site.kkokkio.global.exception.CustomAuthException;
@@ -162,4 +163,50 @@ class MemberServiceV1Test {
 					.isEqualTo(CustomAuthException.AuthErrorType.MISSING_TOKEN);
 			});
 	}
+
+	@Test
+	@DisplayName("회원정보 수정 성공")
+	void modifyMemberInfo_success() {
+		HttpServletRequest req = mock(HttpServletRequest.class);
+		given(jwtUtils.getJwtFromCookies(req)).willReturn(Optional.of("valid.token"));
+		given(jwtUtils.isValidToken("valid.token")).willReturn(true);
+
+		Claims claims = mock(Claims.class);
+		given(jwtUtils.getPayload("valid.token")).willReturn(claims);
+		given(claims.getSubject()).willReturn("user@example.com");
+
+		// MemberServiceV1 내부 findByEmail 호출
+		Member member = Member.builder()
+			.email("user@example.com")
+			.nickname("tester")
+			.build();
+		given(memberRepository.findByEmail("user@example.com"))
+			.willReturn(Optional.of(member));
+
+		MemberUpdateRequest request = new MemberUpdateRequest("password0000!", "change");
+
+		MemberResponse response = memberService.modifyMemberInfo(req, request);
+
+		assertThat(response.getEmail()).isEqualTo("user@example.com");
+		assertThat(response.getNickname()).isEqualTo("change");
+	}
+
+	@Test
+	@DisplayName("회원정보 수정 실패 - 토큰 누락")
+	void modifyMemberInfo_fail_tokenExpired() {
+		HttpServletRequest req = mock(HttpServletRequest.class);
+		given(jwtUtils.getJwtFromCookies(req)).willReturn(Optional.empty());
+
+		MemberUpdateRequest request = new MemberUpdateRequest("password0000!", "change");
+
+		assertThatThrownBy(() -> memberService.modifyMemberInfo(req, request))
+			.isInstanceOf(CustomAuthException.class)
+				.satisfies(ex -> {
+					CustomAuthException cae = (CustomAuthException)ex;
+					assertThat(cae.getAuthErrorType())
+						.isEqualTo(CustomAuthException.AuthErrorType.MISSING_TOKEN);
+				});
+
+	}
+
 }

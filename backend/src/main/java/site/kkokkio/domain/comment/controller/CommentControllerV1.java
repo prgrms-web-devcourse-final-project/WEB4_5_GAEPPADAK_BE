@@ -23,6 +23,9 @@ import site.kkokkio.domain.comment.controller.dto.CommentListResponse;
 import site.kkokkio.domain.comment.dto.CommentDto;
 import site.kkokkio.domain.comment.service.CommentService;
 import site.kkokkio.global.auth.CustomUserDetails;
+import site.kkokkio.global.auth.annotations.IsActiveMember;
+import site.kkokkio.global.auth.annotations.IsCommentActiveOwner;
+import site.kkokkio.global.auth.annotations.IsCommentOwner;
 import site.kkokkio.global.dto.Empty;
 import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.exception.doc.ApiErrorCodeExamples;
@@ -57,6 +60,7 @@ public class CommentControllerV1 {
 	@ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
 		ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH, ErrorCode.POST_NOT_FOUND_3})
 	@PostMapping("/posts/{postId}/comments")
+	@IsActiveMember
 	public RsData<CommentDto> createComment(
 		@PathVariable("postId") Long postId,
 		@AuthenticationPrincipal CustomUserDetails userDetails,
@@ -74,6 +78,7 @@ public class CommentControllerV1 {
 		ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH,
 		ErrorCode.COMMENT_UPDATE_FORBIDDEN, ErrorCode.COMMENT_NOT_FOUND})
 	@PatchMapping("/comments/{commentId}")
+	@IsCommentActiveOwner
 	public RsData<CommentDto> updateComment(
 		@PathVariable("commentId") Long commentId,
 		@AuthenticationPrincipal CustomUserDetails userDetails,
@@ -92,6 +97,7 @@ public class CommentControllerV1 {
 		ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH,
 		ErrorCode.COMMENT_DELETE_FORBIDDEN, ErrorCode.COMMENT_NOT_FOUND})
 	@DeleteMapping("/comments/{commentId}")
+	@IsCommentOwner
 	public RsData<Empty> deleteComment(
 		@PathVariable("commentId") Long commentId,
 		@AuthenticationPrincipal CustomUserDetails userDetails
@@ -109,6 +115,7 @@ public class CommentControllerV1 {
 		ErrorCode.COMMENT_LIKE_BAD_REQUEST, ErrorCode.COMMENT_LIKE_FORBIDDEN,
 		ErrorCode.COMMENT_NOT_FOUND})
 	@PostMapping("/comments/{commentId}/like")
+	@IsActiveMember
 	public RsData<CommentDto> likeComment(
 		@PathVariable("commentId") Long commentId,
 		@AuthenticationPrincipal CustomUserDetails userDetails
@@ -126,6 +133,7 @@ public class CommentControllerV1 {
 		ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH,
 		ErrorCode.COMMENT_UNLIKE_BAD_REQUEST, ErrorCode.COMMENT_LIKE_FORBIDDEN, ErrorCode.COMMENT_NOT_FOUND})
 	@DeleteMapping("/comments/{commentId}/like")
+	@IsActiveMember
 	public RsData<CommentDto> unlikeComment(
 		@PathVariable("commentId") Long commentId,
 		@AuthenticationPrincipal CustomUserDetails userDetails

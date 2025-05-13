@@ -17,6 +17,7 @@ import site.kkokkio.domain.comment.dto.CommentReportRequestDto;
 import site.kkokkio.domain.comment.service.CommentService;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.global.auth.CustomUserDetails;
+import site.kkokkio.global.auth.annotations.IsActiveMember;
 import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.exception.doc.ApiErrorCodeExamples;
 import site.kkokkio.global.exception.doc.ErrorCode;
@@ -39,6 +40,7 @@ public class CommentControllerV2 {
 	})
 	@PostMapping("/reports/comments/{commentId}")
 	@ResponseStatus(HttpStatus.OK)
+	@IsActiveMember
 	public RsData<Void> reportComment(
 		@PathVariable("commentId") Long commentId,
 		@AuthenticationPrincipal CustomUserDetails userDetails,

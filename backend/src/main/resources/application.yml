@@ -56,7 +56,7 @@ spring:
   jackson:
     serialization:
       FAIL_ON_EMPTY_BEANS: false # 빈 객체도 직렬화가 가능하도록 설정 (Empty)
-    time-zone: Asia/Seoul
+    time-zone: UTC
 
   mail:
     host: smtp.gmail.com # SMTP 서버 호스트 (Gmail)

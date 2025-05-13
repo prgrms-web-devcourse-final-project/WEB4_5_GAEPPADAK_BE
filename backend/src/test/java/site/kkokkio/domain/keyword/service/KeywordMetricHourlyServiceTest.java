@@ -44,7 +44,7 @@ public class KeywordMetricHourlyServiceTest {
 			Keyword keyword = Keyword.builder().id((long) i).text("키워드 " + i).build();
 			KeywordMetricHourlyId id = KeywordMetricHourlyId.builder()
 				.keywordId((long) i)
-				.bucketAt(LocalDateTime.now(ZoneId.of("Asia/Seoul")).minusHours(i))
+				.bucketAt(LocalDateTime.now(ZoneId.of("UTC")).minusHours(i))
 				.platform(Platform.GOOGLE_TREND)
 				.build();
 			KeywordMetricHourly metric = KeywordMetricHourly.builder()

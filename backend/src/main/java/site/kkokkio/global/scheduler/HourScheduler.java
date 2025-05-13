@@ -28,7 +28,7 @@ public class HourScheduler {
 	public void runTrendingKeywordsJob() throws
 		JobExecutionAlreadyRunningException,
 		JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException {
-		LocalDateTime bucketAt = LocalDateTime.now(ZoneId.of("Asia/Seoul"))
+		LocalDateTime bucketAt = LocalDateTime.now(ZoneId.of("UTC"))
 			.withSecond(0).withNano(0); // bucketAt 매시 정각 설정
 		JobParameters jobParameters = new JobParametersBuilder()
 			.addString("runTime", bucketAt.toString())

@@ -33,7 +33,7 @@ public class BatchJobControllerV1 {
 	public ResponseEntity<String> runTrendToPostJob() {
 		try {
 			// 요청 시점 (현재 시각)
-			LocalDateTime bucketAt = LocalDateTime.now(ZoneId.of("Asia/Seoul")).withSecond(0).withNano(0);
+			LocalDateTime bucketAt = LocalDateTime.now(ZoneId.of("UTC")).withSecond(0).withNano(0);
 
 			// JobParameters는 항상 고유해야 실행됨
 			JobParameters params = new JobParametersBuilder()

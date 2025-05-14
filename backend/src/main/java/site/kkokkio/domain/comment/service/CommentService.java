@@ -10,13 +10,13 @@ import site.kkokkio.domain.comment.controller.dto.CommentCreateRequest;
 import site.kkokkio.domain.comment.dto.CommentDto;
 import site.kkokkio.domain.comment.entity.Comment;
 import site.kkokkio.domain.comment.entity.CommentLike;
+import site.kkokkio.domain.comment.entity.CommentReport;
 import site.kkokkio.domain.comment.repository.CommentLikeRepository;
+import site.kkokkio.domain.comment.repository.CommentReportRepository;
 import site.kkokkio.domain.comment.repository.CommentRepository;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.repository.PostRepository;
-import site.kkokkio.domain.comment.entity.CommentReport;
-import site.kkokkio.domain.comment.repository.CommentReportRepository;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
 
@@ -147,10 +147,10 @@ public class CommentService {
 
 		// 5. 신고 정보 생성
 		CommentReport commentReport = CommentReport.builder()
-				.comment(comment)
-				.reporter(reporter)
-				.reason(reason)
-				.build();
+			.comment(comment)
+			.reporter(reporter)
+			.reason(reason)
+			.build();
 
 		// 6. 신고 정보 저장
 		commentReportRepository.save(commentReport);

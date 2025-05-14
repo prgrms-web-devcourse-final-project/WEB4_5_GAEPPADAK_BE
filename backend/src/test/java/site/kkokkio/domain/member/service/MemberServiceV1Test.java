@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -189,4 +190,22 @@ class MemberServiceV1Test {
 
 	}
 
+	@Test
+	@DisplayName("회원 탈퇴 성공")
+	void deleteMember_success() {
+		// given
+		Member member = Mockito.spy(Member.builder()
+			.id(UUID.randomUUID())
+			.email("test@example.com")
+			.nickname("사용자")
+			.build());
+
+		// when
+		memberService.deleteMember(member);
+
+		// then
+		verify(member).maskPersonalInfo();
+		verify(member).softDelete();
+		verify(memberRepository).save(member);
+	}
 }

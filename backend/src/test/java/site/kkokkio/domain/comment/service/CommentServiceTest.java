@@ -35,6 +35,7 @@ import site.kkokkio.domain.comment.repository.CommentRepository;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.repository.PostRepository;
+import site.kkokkio.global.enums.ReportProcessingStatus;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
 
@@ -652,6 +653,9 @@ class CommentServiceTest {
 		when(commentRepository.save(any(Comment.class)))
 			.thenAnswer(invocation -> invocation.getArguments()[0]);
 
+		doNothing().when(commentReportRepository)
+			.updateStatusByCommentIdIn(eq(commentIdsToHide), eq(ReportProcessingStatus.ACCEPTED));
+
 		/// when
 		commentService.hideReportedComment(commentIdsToHide);
 
@@ -669,7 +673,8 @@ class CommentServiceTest {
 		verify(commentRepository, Mockito.never()).findAllById(anyList());
 		verify(commentReportRepository, Mockito.never())
 			.findReportedCommentSummary(any(), any(), any(), any(), any());
-		verify(commentReportRepository, Mockito.never()).deleteAllByCommentIdIn(anyList());
+		verify(commentReportRepository)
+			.updateStatusByCommentIdIn(eq(commentIdsToHide), eq(ReportProcessingStatus.ACCEPTED));
 	}
 
 	@Test
@@ -678,13 +683,16 @@ class CommentServiceTest {
 		/// given
 		List<Long> commentIdsToHide = Arrays.asList(1L, 999L, 3L);
 
-		// Comment Mock 객체들을 명시적으로 생성 및 필요한 메서드 Stubbing
+		// Comment Mock 객체들을 명시적으로 생성
 		Comment mockComment1 = mock(Comment.class);
-		Comment mockComment2 = mock(Comment.class);
 
-		// commentRepository.findAllById 호출 시, 요청된 ID 개수보다 적게 반환하도록 설정
-		Mockito.lenient().when(commentRepository.findAllById(eq(commentIdsToHide)))
-			.thenReturn(Arrays.asList(mockComment1, mockComment2));
+		doNothing().when(mockComment1).softDelete();
+
+		// Service는 commentIdsToHide 목록을 순회하며 findById를 호출
+		when(commentRepository.findById(eq(1L))).thenReturn(Optional.of(mockComment1));
+		when(commentRepository.findById(eq(999L))).thenReturn(Optional.empty());
+
+		when(commentRepository.save(eq(mockComment1))).thenReturn(mockComment1);
 
 		/// when & then
 		ServiceException e = assertThrows(ServiceException.class, () ->
@@ -693,13 +701,16 @@ class CommentServiceTest {
 		assertEquals("404", e.getCode());
 		assertEquals("존재하지 않는 댓글이 포함되어 있습니다.", e.getMessage());
 
-		verify(mockComment1, Mockito.never()).softDelete();
-		verify(mockComment2, Mockito.never()).softDelete();
-		verify(commentRepository, Mockito.never()).save(any(Comment.class));
+		verify(commentRepository).findById(eq(1L));
+		verify(commentRepository).findById(eq(999L));
+		verify(commentRepository, Mockito.never()).findById(eq(3L));
+		verify(mockComment1).softDelete();
+		verify(commentRepository).save(eq(mockComment1));
 
 		verify(commentReportRepository, Mockito.never())
 			.findReportedCommentSummary(any(), any(), any(), any(), any());
-		verify(commentReportRepository, Mockito.never()).deleteAllByCommentIdIn(anyList());
+		verify(commentReportRepository, Mockito.never())
+			.updateStatusByCommentIdIn(anyList(), any(ReportProcessingStatus.class));
 	}
 
 	@Test
@@ -708,14 +719,9 @@ class CommentServiceTest {
 		/// given
 		List<Long> commentIdsToReject = Arrays.asList(1L, 5L, 10L);
 
-		// Comment Mock 엔티티들을 명시적으로 생성. 필요한 메서드 Stubbing.
-		Member mockWriter1 = mock(Member.class);
+		// Comment Mock 엔티티들을 명시적으로 생성
 		Comment mockComment1 = mock(Comment.class);
-
-		Member mockWriter2 = mock(Member.class);
 		Comment mockComment2 = mock(Comment.class);
-
-		Member mockWriter3 = mock(Member.class);
 		Comment mockComment3 = mock(Comment.class);
 
 		// commentRepository.findAllById 호출 시 모킹된 댓글 목록 반환 설정
@@ -724,14 +730,15 @@ class CommentServiceTest {
 
 		// commentReportRepository.deleteAllByCommentIdIn 메서드 Mocking
 		doNothing().when(commentReportRepository)
-			.deleteAllByCommentIdIn(eq(commentIdsToReject));
+			.updateStatusByCommentIdIn(eq(commentIdsToReject), eq(ReportProcessingStatus.REJECTED));
 
 		/// when
 		commentService.rejectReportedComment(commentIdsToReject);
 
 		/// then
 		verify(commentRepository).findAllById(eq(commentIdsToReject));
-		verify(commentReportRepository).deleteAllByCommentIdIn(eq(commentIdsToReject));
+		verify(commentReportRepository)
+			.updateStatusByCommentIdIn(eq(commentIdsToReject), eq(ReportProcessingStatus.REJECTED));
 		verify(mockComment1, Mockito.never()).softDelete();
 		verify(mockComment2, Mockito.never()).softDelete();
 		verify(mockComment3, Mockito.never()).softDelete();
@@ -747,11 +754,8 @@ class CommentServiceTest {
 		/// given
 		List<Long> commentIdsToReject = Arrays.asList(1L, 999L, 3L);
 
-		// Comment Mock 엔티티들을 명시적으로 생성. 필요한 메서드 Stubbing.
-		Member mockWriter1 = mock(Member.class);
+		// Comment Mock 엔티티들을 명시적으로 생성
 		Comment mockComment1 = mock(Comment.class);
-
-		Member mockWriter2 = mock(Member.class);
 		Comment mockComment2 = mock(Comment.class);
 
 		// commentRepository.findAllById 호출 시, 요청된 ID 개수보다 적게
@@ -766,8 +770,9 @@ class CommentServiceTest {
 		assertEquals("404", e.getCode());
 		assertEquals("존재하지 않는 댓글이 포함되어 있습니다.", e.getMessage());
 
+		verify(commentRepository).findAllById(eq(commentIdsToReject));
 		verify(commentReportRepository, Mockito.never())
-			.deleteAllByCommentIdIn(anyList());
+			.updateStatusByCommentIdIn(anyList(), any(ReportProcessingStatus.class));
 		verify(commentRepository, Mockito.never()).save(any(Comment.class));
 	}
 }

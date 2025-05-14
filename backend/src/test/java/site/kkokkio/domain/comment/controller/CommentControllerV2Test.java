@@ -42,6 +42,7 @@ import site.kkokkio.global.auth.CustomUserDetails;
 import site.kkokkio.global.auth.CustomUserDetailsService;
 import site.kkokkio.global.config.SecurityConfig;
 import site.kkokkio.global.enums.MemberRole;
+import site.kkokkio.global.enums.ReportProcessingStatus;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.global.exception.doc.ErrorCode;
@@ -244,12 +245,12 @@ class CommentControllerV2Test {
 
 		ReportedCommentSummary summary1 = new ReportedCommentSummary(
 			1L, UUID.randomUUID(), "신고자", false, 10L, "포스트 제목 1",
-			"댓글 내용 1", "BAD_CONTENT,SPAM", now.minusHours(1), 5
+			"댓글 내용 1", "BAD_CONTENT,SPAM", now.minusHours(1), 5, ReportProcessingStatus.PENDING
 		);
 
 		ReportedCommentSummary summary2 = new ReportedCommentSummary(
 			2L, UUID.randomUUID(), "탈퇴 예정자", true, 11L, "포스트 제목 2",
-			"댓글 내용 2", "RUDE_LANGUAGE", now.minusHours(2), 3
+			"댓글 내용 2", "RUDE_LANGUAGE", now.minusHours(2), 3, ReportProcessingStatus.ACCEPTED
 		);
 
 		List<ReportedCommentSummary> summaryList = Arrays.asList(summary1, summary2);
@@ -285,6 +286,7 @@ class CommentControllerV2Test {
 			.andExpect(jsonPath("$.data.list[0].reportReason[0]").value("BAD_CONTENT"))
 			.andExpect(jsonPath("$.data.list[0].reportReason[1]").value("SPAM"))
 			.andExpect(jsonPath("$.data.list[0].reportedAt").value(summary1.latestReportedAt().format(formatter)))
+			.andExpect(jsonPath("$.data.list[0].status").value(summary1.status().name()))
 
 			// summary2 데이터 검증
 			.andExpect(jsonPath("$.data.list[1].commentId").value(summary2.commentId()))
@@ -296,6 +298,7 @@ class CommentControllerV2Test {
 			.andExpect(jsonPath("$.data.list[1].reportReason.length()").value(1))
 			.andExpect(jsonPath("$.data.list[1].reportReason[0]").value("RUDE_LANGUAGE"))
 			.andExpect(jsonPath("$.data.list[1].reportedAt").value(summary2.latestReportedAt().format(formatter)))
+			.andExpect(jsonPath("$.data.list[1].status").value(summary2.status().name()))
 
 			// data.meta 검증
 			.andExpect(jsonPath("$.data.meta.page").value(expectedPageable.getPageNumber()))

@@ -42,7 +42,7 @@ public enum ErrorCode {
 	REPORT_COMMENT_FORBIDDEN("403", "본인의 댓글은 신고할 수 없습니다."),
 	REPORT_POST_BAD_REQUEST("400", "포스트 신고에 실패했습니다."),
 	REPORT_POST_DUPLICATE("400", "이미 신고한 포스트입니다."),
-	FORBIDDEN("403", "권한이 없습니다.");;
+	FORBIDDEN("403", "권한이 없습니다.");
 
 	private final String code;
 	private final String message;

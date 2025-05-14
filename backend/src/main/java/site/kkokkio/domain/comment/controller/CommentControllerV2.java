@@ -22,6 +22,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.comment.dto.CommentReportRequestDto;
+import site.kkokkio.domain.comment.dto.ReportedCommentHideRequest;
 import site.kkokkio.domain.comment.dto.ReportedCommentListResponse;
 import site.kkokkio.domain.comment.dto.ReportedCommentSummary;
 import site.kkokkio.domain.comment.service.CommentService;
@@ -108,6 +109,31 @@ public class CommentControllerV2 {
 			"200",
 			"신고된 댓글 목록이 조회되었습니다.",
 			response
+		);
+	}
+
+	@Operation(
+		summary = "신고된 댓글 숨김 처리",
+		description = "관리자 권한으로 선택된 신고 댓글들을 소프트 삭제(숨김) 처리합니다."
+	)
+	@IsAdmin
+	@ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
+		ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH,
+		ErrorCode.MISSING_TOKEN, ErrorCode.COMMENT_IDS_NOT_PROVIDED,
+		ErrorCode.COMMENT_NOT_INCLUDE
+	})
+	@PostMapping("/admin/reports/comments")
+	@ResponseStatus(HttpStatus.OK)
+	public RsData<Void> hideReportComments(
+		@Parameter(description = "숨길 댓글 ID 목록을 포함하는 요청 본문", required = true)
+		@Valid @RequestBody ReportedCommentHideRequest request
+	) {
+		// 서비스 레이어의 숨김 처리 메서드 호출
+		commentService.hideReportedComment(request.commentIds());
+
+		return new RsData<>(
+			"200",
+			"선택하신 댓글이 숨김 처리되었습니다."
 		);
 	}
 }

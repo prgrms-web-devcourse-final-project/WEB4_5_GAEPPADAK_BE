@@ -42,7 +42,9 @@ public enum ErrorCode {
 	REPORT_POST_BAD_REQUEST("400", "포스트 신고에 실패했습니다."),
 	REPORT_POST_DUPLICATE("400", "이미 신고한 포스트입니다."),
 	BAD_SEARCH_OPTION("400", "부적절한 검색 옵션입니다."),
-	BAD_SORT_OPTION("400", "부적절한 정렬 옵션입니다.");
+	BAD_SORT_OPTION("400", "부적절한 정렬 옵션입니다."),
+	COMMENT_IDS_NOT_PROVIDED("400", "댓글이 선택되지 않았습니다."),
+	COMMENT_NOT_INCLUDE("404", "존재하지 않는 댓글이 포함되어 있습니다.");
 
 	private final String code;
 	private final String message;

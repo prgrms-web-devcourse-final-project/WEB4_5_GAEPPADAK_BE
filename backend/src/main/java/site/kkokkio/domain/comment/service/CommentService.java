@@ -251,4 +251,25 @@ public class CommentService {
 		// 4. 결과 반환
 		return reportedCommentPage;
 	}
+
+	/**
+	 * 관리자용 신고된 댓글들을 소프트 삭제(숨김) 처리합니다.
+	 * @param commentIds 숨길 댓글 ID 목록
+	 */
+	@Transactional
+	public void hideReportedComment(List<Long> commentIds) {
+
+		for (Long commentId : commentIds) {
+
+			// 댓글 조회 (소프트 삭제 여부와 상관없이 일단 존재하면 가져옴)
+			Comment comment = commentRepository.findById(commentId)
+				.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글이 포함되어 있습니다."));
+
+			// 댓글을 숨김 처리
+			comment.softDelete();
+
+			// 변경사항 저장
+			commentRepository.save(comment);
+		}
+	}
 }

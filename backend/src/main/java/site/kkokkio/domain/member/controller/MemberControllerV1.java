@@ -68,6 +68,7 @@ public class MemberControllerV1 {
 	@ApiErrorCodeExamples({ErrorCode.MISSING_TOKEN, ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
 		ErrorCode.UNSUPPORTED_TOKEN, ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH})
 	@PatchMapping("/me")
+	@IsSelf
 	public RsData<MemberResponse> modifyMember(
 		@AuthenticationPrincipal CustomUserDetails userDetails,
 		@RequestBody @Valid MemberUpdateRequest requestBody

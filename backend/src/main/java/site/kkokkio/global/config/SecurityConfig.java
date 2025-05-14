@@ -14,6 +14,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -30,7 +31,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import site.kkokkio.global.auth.AuthChecker;
 import site.kkokkio.global.auth.CustomUserDetailsService;
 import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.filter.JwtAuthenticationFilter;
@@ -39,14 +39,13 @@ import site.kkokkio.global.util.JwtUtils;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
-@EnableMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity
 public class SecurityConfig {
 
 	private final CustomUserDetailsService customUserDetailsService;
 	private final RedisTemplate<String, String> redisTemplate;
 	private final JwtUtils jwtUtils;
 	private final ObjectMapper objectMapper;
-	private final AuthChecker authChecker;
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -57,7 +56,7 @@ public class SecurityConfig {
 				httpSecurityCorsConfigurer -> httpSecurityCorsConfigurer.configurationSource(corsConfigurationSource()))
 
 			// CSRF 보호 비활성화 (REST API + JWT 조합)
-			.csrf(csrf -> csrf.disable())
+			.csrf(AbstractHttpConfigurer::disable)
 
 			// HTTP 응답 헤더 설정
 			.headers(headers -> headers
@@ -87,13 +86,12 @@ public class SecurityConfig {
 				authorize
 					// — USER 로그인 필요
 					.requestMatchers(HttpMethod.POST, "/api/v1/posts/*/comments").authenticated()        // 댓글 작성
-					.requestMatchers(HttpMethod.PATCH, "/api/v1/comments/*").authenticated()            // 댓글 수정
-					.requestMatchers(HttpMethod.DELETE, "/api/v1/comments/*").authenticated()            // 댓글 삭제
-					.requestMatchers(HttpMethod.POST, "/api/v1/comments/*/like").authenticated()        // 댓글 좋아요
-					.requestMatchers(HttpMethod.DELETE, "/api/v1/comments/*/like").authenticated()    // 댓글 좋아요 취소
 					.requestMatchers(HttpMethod.POST, "/api/v1/auth/check-password").authenticated()    // 비밀번호 검증
 					.requestMatchers(HttpMethod.PATCH, "/api/v1/member/me").authenticated()            // 회원 정보 수정
-					.requestMatchers(HttpMethod.POST, "/api/v2/reports/**").authenticated()            // 신고 관련 api
+
+					.requestMatchers("/api/*/comments/**").authenticated()
+					.requestMatchers("/api/*/reports/**").authenticated()
+					.requestMatchers("/api/*/admin/**").authenticated()
 
 					// 그 외 모든 요청 허용
 					.anyRequest().permitAll()

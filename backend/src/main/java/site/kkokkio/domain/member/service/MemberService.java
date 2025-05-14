@@ -13,14 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
-import site.kkokkio.domain.member.controller.dto.PasswordResetRequest;
 import site.kkokkio.domain.member.controller.dto.MemberUpdateRequest;
+import site.kkokkio.domain.member.controller.dto.PasswordResetRequest;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.repository.MemberRepository;
 import site.kkokkio.global.auth.CustomUserDetails;
 import site.kkokkio.global.enums.MemberRole;
 import site.kkokkio.global.exception.ServiceException;
-import site.kkokkio.global.auth.CustomUserDetails;
 import site.kkokkio.global.util.JwtUtils;
 
 @Service
@@ -112,7 +111,7 @@ public class MemberService {
 		// 인증 여부 확인
 		String verified = redisTemplate.opsForValue().get(key);
 		if (!"true".equals(verified)) {
-			throw new ServiceException("401", "이메일 인증이 되지 않았습니다.");
+			throw new ServiceException("401", "인증코드가 유효하지 않습니다.");
 		}
 
 		// 비밀번호 일치 확인

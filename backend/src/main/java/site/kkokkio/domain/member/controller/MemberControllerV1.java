@@ -97,6 +97,7 @@ public class MemberControllerV1 {
 		);
 	}
 
+	// 비빌번호 초기화
 	@Operation(summary = "비밀번호 초기화")
 	@PatchMapping("/password")
 	public RsData<Void> resetPassword(@RequestBody @Validated PasswordResetRequest request) {

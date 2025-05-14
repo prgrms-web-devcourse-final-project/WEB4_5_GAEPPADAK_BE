@@ -179,11 +179,12 @@ public class MailServiceTest {
 		when(memberRepository.findByEmail(testEmail)).thenReturn(Optional.of(testMember));
 
 		// when & then
-		assertDoesNotThrow(() -> mailService.validationAuthCode(request));
+		assertDoesNotThrow(() -> mailService.confirmSignup(request.getEmail(), request.getAuthCode()));
 		verify(valueOperations, times(1)).get("EMAIL_AUTH:" + testEmail);
 		verify(memberRepository, times(1)).findByEmail(testEmail);
 		verify(memberRepository, times(1)).save(testMember);
 		verify(redisTemplate, times(1)).delete("EMAIL_AUTH:" + testEmail);
+		verify(redisTemplate, times(1)).delete("EMAIL_VERIFIED:" + testEmail);
 		assertThat(testMember.isEmailVerified()).isTrue();
 	}
 
@@ -195,7 +196,7 @@ public class MailServiceTest {
 		when(valueOperations.get("EMAIL_AUTH:" + testEmail)).thenReturn("WRONG123");
 
 		// when & then
-		assertThatThrownBy(() -> mailService.validationAuthCode(request))
+		assertThatThrownBy(() -> mailService.confirmSignup(request.getEmail(), request.getAuthCode()))
 			.isInstanceOf(ServiceException.class)
 			.hasMessage("인증 코드가 유효하지 않습니다.");
 		verify(valueOperations, times(1)).get("EMAIL_AUTH:" + testEmail);
@@ -212,7 +213,7 @@ public class MailServiceTest {
 		when(valueOperations.get("EMAIL_AUTH:" + testEmail)).thenReturn(null);
 
 		// when & then
-		assertThatThrownBy(() -> mailService.validationAuthCode(request))
+		assertThatThrownBy(() -> mailService.confirmSignup(request.getEmail(), request.getAuthCode()))
 			.isInstanceOf(ServiceException.class)
 			.hasMessage("인증 코드가 유효하지 않습니다.");
 		verify(valueOperations, times(1)).get("EMAIL_AUTH:" + testEmail);

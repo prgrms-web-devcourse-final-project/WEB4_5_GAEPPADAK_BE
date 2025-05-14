@@ -127,6 +127,7 @@ public class MailService {
 		ValueOperations<String, String> values = redisTemplate.opsForValue();
 		String storedCode = values.get(key);
 
+		// 코드 검증
 		if (storedCode == null || !storedCode.equals(authCode)) {
 			return false;
 		}

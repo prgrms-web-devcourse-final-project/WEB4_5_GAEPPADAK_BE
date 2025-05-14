@@ -179,7 +179,7 @@ ai:
     model: ${GEMINI_MODEL:gemini-2.0-flash}
     base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta/openai}
     prompts:
-      summary: ${GEMINI_PROMPTS_SUMMARY}
+      summary: ${GEMINI_PROMPTS_SUMMARY:You are a Korean-language trend summarization expert with 20 years of experience at a Korean news agency.}
 
 mock:
   enabled: true

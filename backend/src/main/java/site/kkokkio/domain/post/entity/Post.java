@@ -28,19 +28,34 @@ public class Post extends BaseTimeEntity {
 	@Column(name = "post_id")
 	public Long id;
 
-    @Column(nullable = false)
-    private String title;
+	@Column(nullable = false)
+	private String title;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
-    private String summary;
+	@Column(columnDefinition = "TEXT", nullable = false)
+	private String summary;
 
-    @Column(name = "thumbnail_url", columnDefinition = "TEXT")
-    private String thumbnailUrl;
+	@Column(name = "thumbnail_url", columnDefinition = "TEXT")
+	private String thumbnailUrl;
 
-    @Column(name = "bucket_at", nullable = false)
-    private LocalDateTime bucketAt;
+	@Column(name = "bucket_at", nullable = false)
+	private LocalDateTime bucketAt;
+
+	@Column(name = "deleted_at")
+	private LocalDateTime deletedAt;
 
 	@Builder.Default
-    @Column(name = "report_count", nullable = false)
-    private int reportCount = 0;
+	@Column(name = "report_count", nullable = false)
+	private int reportCount = 0;
+
+	public void softDelete() {
+		this.deletedAt = LocalDateTime.now();
+	}
+
+	public boolean isDeleted() {
+		return this.deletedAt != null;
+	}
+
+	public void incrementReportCount() {
+		this.reportCount++;
+	}
 }

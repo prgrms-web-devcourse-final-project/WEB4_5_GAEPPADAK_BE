@@ -1,9 +1,9 @@
-package site.kkokkio.domain.report.repository;
+package site.kkokkio.domain.comment.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import site.kkokkio.domain.comment.entity.Comment;
 import site.kkokkio.domain.member.entity.Member;
-import site.kkokkio.domain.report.entity.CommentReport;
+import site.kkokkio.domain.comment.entity.CommentReport;
 
 public interface CommentReportRepository extends JpaRepository<CommentReport, Long> {
 

@@ -24,12 +24,15 @@ import site.kkokkio.domain.keyword.entity.KeywordMetricHourlyId;
 import site.kkokkio.domain.keyword.repository.KeywordMetricHourlyRepository;
 import site.kkokkio.domain.keyword.repository.KeywordRepository;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
+import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.entity.PostKeyword;
 import site.kkokkio.domain.post.entity.PostMetricHourly;
+import site.kkokkio.domain.post.entity.PostReport;
 import site.kkokkio.domain.post.repository.PostKeywordRepository;
 import site.kkokkio.domain.post.repository.PostMetricHourlyRepository;
+import site.kkokkio.domain.post.repository.PostReportRepository;
 import site.kkokkio.domain.post.repository.PostRepository;
 import site.kkokkio.domain.source.entity.KeywordSource;
 import site.kkokkio.domain.source.entity.PostSource;
@@ -37,6 +40,7 @@ import site.kkokkio.domain.source.entity.Source;
 import site.kkokkio.domain.source.repository.KeywordSourceRepository;
 import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.global.enums.Platform;
+import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
 
 @Slf4j
@@ -49,6 +53,7 @@ public class PostService {
 	private final PostKeywordRepository postKeywordRepository;
 	private final PostMetricHourlyRepository postMetricHourlyRepository;
 	private final KeywordSourceRepository keywordSourceRepository;
+	private final PostReportRepository postReportRepository;
 	private final KeywordMetricHourlyService keywordMetricHourlyService;
 	private final PostSourceRepository postSourceRepository;
 	private final StringRedisTemplate redisTemplate;
@@ -206,5 +211,45 @@ public class PostService {
 		} catch (JsonProcessingException e) {
 			log.error("Redis 캐싱 직렬화 실패. postId={}", post.getId(), e);
 		}
+	}
+
+	/**
+	 * 포스트 신고 기능
+	 * @param postId 신고 대상 포스트 ID
+	 * @param reporter 신고하는 사용자
+	 * @param reason 신고 사유
+	 */
+	@Transactional
+	public void reportPost(Long postId, Member reporter, ReportReason reason) {
+
+		// 1. 신고 대상 포스트 조회
+		Post post = postRepository.findById(postId)
+			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 포스트입니다."));
+
+		// 2. 삭제된 포스트인지 확인
+		if (post.isDeleted()) {
+			throw new ServiceException("400", "삭제된 포스트는 신고할 수 없습니다.");
+		}
+
+		// 3. 중복 신고 방지
+		boolean alreadyReported = postReportRepository.existsByPostAndReporter(post, reporter);
+
+		if (alreadyReported) {
+			throw new ServiceException("400", "이미 신고한 포스트입니다.");
+		}
+
+		// 4. 신고 정보 생성
+		PostReport report = PostReport.builder()
+			.post(post)
+			.reporter(reporter)
+			.reason(reason)
+			.build();
+
+		// 5. 신고 정보 저장
+		postReportRepository.save(report);
+
+		// 6. 포스트의 신고 카운트 증가 및 저장
+		post.incrementReportCount();
+		postRepository.save(post);
 	}
 }

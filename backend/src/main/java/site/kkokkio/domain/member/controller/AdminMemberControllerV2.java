@@ -19,8 +19,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import site.kkokkio.domain.member.controller.dto.AdminMemberDto;
 import site.kkokkio.domain.member.controller.dto.AdminMemberListResponse;
+import site.kkokkio.domain.member.controller.dto.AdminMemberResponse;
 import site.kkokkio.domain.member.controller.dto.AdminMemberRoleUpdateRequest;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.service.AuthService;
@@ -79,7 +79,7 @@ public class AdminMemberControllerV2 {
 	}
 
 	@Operation(
-		summary = "회원 역할 변경",
+		summary = "악성 유저 차단",
 		description = "관리자가 특정 회원의 역할을 USER 또는 BLACK으로 변경합니다."
 	)
 	@IsAdmin
@@ -92,7 +92,7 @@ public class AdminMemberControllerV2 {
 		ErrorCode.EMAIL_NOT_FOUND
 	})
 	@PatchMapping("/{memberId}")
-	public RsData<AdminMemberDto> changeMemberRole(
+	public RsData<AdminMemberResponse> changeMemberRole(
 		@Parameter(description = "역할을 변경할 회원 ID", example = "123e4567")
 		@PathVariable UUID memberId,
 		@RequestBody AdminMemberRoleUpdateRequest requestDto
@@ -101,7 +101,7 @@ public class AdminMemberControllerV2 {
 		Member updatedMember = memberService.updateMemberRole(memberId, requestDto.role());
 
 		// 성공 응답의 data 부분으로 사용할 DTO 생성
-		AdminMemberDto responseDto = AdminMemberDto.from(updatedMember);
+		AdminMemberResponse responseDto = AdminMemberResponse.from(updatedMember);
 
 		return new RsData<>(
 			"200",

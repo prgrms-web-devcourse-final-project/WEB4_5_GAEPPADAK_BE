@@ -141,20 +141,22 @@ public class MemberService {
 			if (!trimmedSearchTarget.isEmpty()) {
 
 				// 검색 대상에 따라 적절한 Repository 메서드 호출
-				switch (trimmedSearchValue.toLowerCase()) {
+				switch (trimmedSearchTarget.toLowerCase()) {
 					// 닉네임으로 검색
 					case "nickname":
-						return memberRepository.findByNicknameContainingIgnoreCase(searchValue.trim(), pageable);
+						return memberRepository
+							.findByNicknameContainingIgnoreCase(trimmedSearchValue, pageable);
 
 					// 이메일로 검색
 					case "email":
-						return memberRepository.findByEmailContainingIgnoreCase(searchValue.trim(), pageable);
+						return memberRepository
+							.findByEmailContainingIgnoreCase(trimmedSearchValue, pageable);
 
 					// 역할로 검색
 					case "role":
 						try {
 							// 대소문자 구분 없이 입력된 문자열을 MemberRole Enum으로 변환 시도
-							MemberRole role = MemberRole.valueOf(searchValue.trim().toUpperCase());
+							MemberRole role = MemberRole.valueOf(trimmedSearchValue.toUpperCase());
 
 							return memberRepository.findByRole(role, pageable);
 						} catch (IllegalArgumentException e) {

@@ -75,4 +75,9 @@ public class Member extends BaseTimeEntity {
 	public void setRole(MemberRole role) {
 		this.role = role;
 	}
+
+	public void maskPersonalInfo() {
+		this.email = "deleted_" + this.id + "@deleted.com";
+		this.nickname = "탈퇴한사용자_" + this.id;
+	}
 }

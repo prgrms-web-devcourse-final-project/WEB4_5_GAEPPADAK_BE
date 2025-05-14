@@ -149,7 +149,7 @@ class CommentControllerV1Test {
 		when(authChecker.isOwner(eq("comment"), eq(1L), any(Authentication.class)))
 			.thenReturn(true);
 
-		when(commentService.updateComment(eq(1L), eq(memberId), any(CommentCreateRequest.class)))
+		when(commentService.updateComment(eq(1L), any(CommentCreateRequest.class)))
 			.thenReturn(commentDto);
 
 		mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/comments/1")
@@ -189,7 +189,7 @@ class CommentControllerV1Test {
 		when(member.getEmail()).thenReturn("other@example.com");
 		when(member.getRole()).thenReturn(MemberRole.USER);
 
-		Mockito.when(commentService.updateComment(eq(1L), eq(memberId), any(CommentCreateRequest.class)))
+		Mockito.when(commentService.updateComment(eq(1L), any(CommentCreateRequest.class)))
 			.thenReturn(commentDto);
 
 		mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/comments/1")

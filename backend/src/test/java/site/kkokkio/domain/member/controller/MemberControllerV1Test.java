@@ -3,8 +3,8 @@ package site.kkokkio.domain.member.controller;
 import static org.hamcrest.text.StringContainsInOrder.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 import static org.springframework.http.MediaType.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -25,8 +25,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
-import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.controller.dto.MemberUpdateRequest;
+import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.service.AuthService;
 import site.kkokkio.domain.member.service.MailService;
 import site.kkokkio.domain.member.service.MemberService;
@@ -47,7 +47,6 @@ class MemberControllerV1Test {
 
 	@Autowired
 	private ObjectMapper objectMapper;
-
 
 	@MockitoBean
 	AuthChecker authChecker;
@@ -165,7 +164,7 @@ class MemberControllerV1Test {
 	@DisplayName("회원 정보 수정 성공")
 	void modifyMember_success() throws Exception {
 		// given
-		MemberUpdateRequest request = new MemberUpdateRequest( "ps123123!","after");
+		MemberUpdateRequest request = new MemberUpdateRequest("ps123123!", "after");
 		MemberResponse expectedResponse = new MemberResponse(
 			"user@example.com",
 			request.nickname(),
@@ -202,7 +201,7 @@ class MemberControllerV1Test {
 	@DisplayName("회원 정보 수정 실패 - 유효성")
 	void modifyMember_Validation_failed() throws Exception {
 		// given
-		MemberUpdateRequest request = new MemberUpdateRequest( "ps","veryverylongNickname");
+		MemberUpdateRequest request = new MemberUpdateRequest("ps", "veryverylongNickname");
 		MemberResponse memberResponse = new MemberResponse(
 			"user@example.com",
 			request.nickname(), // 요청 닉네임 사용
@@ -238,4 +237,26 @@ class MemberControllerV1Test {
 				"password : Size : 비밀번호는 8~20자 사이여야 합니다."
 			)));
 	}
+
+	@Test
+	@DisplayName("회원 탈퇴 - 성공")
+	void deleteMember_success() throws Exception {
+		// given
+		Member member = Member.builder()
+			.id(UUID.randomUUID())
+			.email("user@example.com")
+			.nickname("currentNickname")
+			.role(MemberRole.USER)
+			.build();
+
+		// when & then
+		mockMvc.perform(delete("/api/v1/member/me")
+				.with(user(new CustomUserDetails(member)))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").value("회원이 삭제 되었습니다."));
+	}
+
 }

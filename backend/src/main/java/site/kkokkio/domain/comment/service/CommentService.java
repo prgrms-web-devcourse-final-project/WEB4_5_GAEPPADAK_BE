@@ -1,25 +1,24 @@
 package site.kkokkio.domain.comment.service;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.comment.controller.dto.CommentCreateRequest;
 import site.kkokkio.domain.comment.dto.CommentDto;
 import site.kkokkio.domain.comment.entity.Comment;
 import site.kkokkio.domain.comment.entity.CommentLike;
+import site.kkokkio.domain.comment.entity.CommentReport;
 import site.kkokkio.domain.comment.repository.CommentLikeRepository;
+import site.kkokkio.domain.comment.repository.CommentReportRepository;
 import site.kkokkio.domain.comment.repository.CommentRepository;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.repository.PostRepository;
-import site.kkokkio.domain.comment.entity.CommentReport;
-import site.kkokkio.domain.comment.repository.CommentReportRepository;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
-
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -53,13 +52,9 @@ public class CommentService {
 	}
 
 	@Transactional
-	public CommentDto updateComment(Long commentId, UUID memberId, CommentCreateRequest request) {
+	public CommentDto updateComment(Long commentId, CommentCreateRequest request) {
 		Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
-
-		if (!comment.getMember().getId().equals(memberId)) {
-			throw new ServiceException("403", "본인 댓글만 수정할 수 있습니다.");
-		}
 
 		comment.updateBody(request.body());
 		commentRepository.save(comment);
@@ -68,13 +63,9 @@ public class CommentService {
 	}
 
 	@Transactional
-	public void deleteCommentById(Long commentId, UUID memberId) {
+	public void deleteCommentById(Long commentId) {
 		Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
-
-		if (!comment.getMember().getId().equals(memberId)) {
-			throw new ServiceException("403", "본인 댓글만 삭제할 수 있습니다.");
-		}
 
 		comment.softDelete();
 		commentRepository.save(comment);
@@ -85,7 +76,7 @@ public class CommentService {
 		Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
 
-		if (comment.getMember().getId().equals(member.getId())) {
+		if (comment.getMember().getEmail().equals(member.getEmail())) {
 			throw new ServiceException("403", "본인 댓글은 좋아요 할 수 없습니다.");
 		}
 
@@ -110,7 +101,7 @@ public class CommentService {
 		Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
 
-		if (comment.getMember().getId().equals(member.getId())) {
+		if (comment.getMember().getEmail().equals(member.getEmail())) {
 			throw new ServiceException("403", "본인 댓글은 좋아요 할 수 없습니다.");
 		}
 
@@ -135,7 +126,7 @@ public class CommentService {
 
 		// 1. 신고 대상 댓글 조회
 		Comment comment = commentRepository.findById(commentId)
-				.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
+			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
 
 		// 2. 삭제된 댓글인지 확인
 		if (comment.isDeleted()) {
@@ -143,7 +134,7 @@ public class CommentService {
 		}
 
 		// 3. 본인 댓글 신고 방지
-		if (comment.getMember().getId().equals(reporter.getId())) {
+		if (comment.getMember().getEmail().equals(reporter.getEmail())) {
 			throw new ServiceException("403", "본인의 댓글은 신고할 수 없습니다.");
 		}
 
@@ -156,10 +147,10 @@ public class CommentService {
 
 		// 5. 신고 정보 생성
 		CommentReport commentReport = CommentReport.builder()
-				.comment(comment)
-				.reporter(reporter)
-				.reason(reason)
-				.build();
+			.comment(comment)
+			.reporter(reporter)
+			.reason(reason)
+			.build();
 
 		// 6. 신고 정보 저장
 		commentReportRepository.save(commentReport);

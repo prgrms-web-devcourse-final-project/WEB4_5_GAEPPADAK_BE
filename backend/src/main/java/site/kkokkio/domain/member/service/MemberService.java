@@ -203,4 +203,11 @@ public class MemberService {
 
 		return member;
 	}
+
+	@Transactional
+	public void deleteMember(Member member) {
+		member.maskPersonalInfo();
+		member.softDelete();
+		memberRepository.save(member);
+	}
 }

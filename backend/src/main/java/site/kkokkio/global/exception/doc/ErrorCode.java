@@ -19,6 +19,7 @@ public enum ErrorCode {
 	EMAIL_ALREADY_EXIST("409", "이미 사용중인 이메일입니다."),
 	EMAIL_NOT_FOUND("404", "존재하지 않는 이메일입니다."),
 	EMAIL_UNAUTHORIZED("401", "메일이 인증되지 않은 회원입니다."),
+	AUTH_CODE_UNAUTHORIZED("401", "인증코드가 유효하지 않습니다."),
 	NICKNAME_ALREADY_EXIST("409", "이미 사용중인 닉네임입니다."),
 	PASSWORD_UNAUTHORIZED("401", "비밀번호가 올바르지 않습니다."),
 	POST_NOT_FOUND_1("404", "해당 포스트를 찾을 수 없습니다."),

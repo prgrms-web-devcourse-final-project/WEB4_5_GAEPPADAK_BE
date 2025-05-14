@@ -71,6 +71,10 @@ public class Member extends BaseTimeEntity {
 		this.emailVerified = emailVerified;
 	}
 
+	public void setPasswordHash(String passwordHash) {
+		this.passwordHash = passwordHash;
+	}
+
 	// 역할 변경을 위한 Setter
 	public void setRole(MemberRole role) {
 		this.role = role;

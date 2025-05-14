@@ -108,7 +108,7 @@ public class AuthControllerV1 {
 
 	@Operation(summary = "비밀번호 재설정을 위한 이메일 인증 코드 검증")
 	@PostMapping("/check-email-reset")
-	@ApiErrorCodeExamples({ErrorCode.EMAIL_NOT_FOUND, ErrorCode.AUTH_CODE_UNAUTHORIZED})
+	@ApiErrorCodeExamples({ErrorCode.AUTH_CODE_UNAUTHORIZED})
 	public RsData<Void> checkEmailForReset(@RequestBody @Valid EmailVerificationRequest request) {
 		boolean verified = mailService.verifyAuthCode(request.getEmail(), request.getAuthCode());
 		if (!verified) {

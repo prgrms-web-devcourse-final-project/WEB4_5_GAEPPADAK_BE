@@ -33,6 +33,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import site.kkokkio.domain.comment.dto.CommentReportRequestDto;
+import site.kkokkio.domain.comment.dto.ReportedCommentHideRequest;
 import site.kkokkio.domain.comment.dto.ReportedCommentSummary;
 import site.kkokkio.domain.comment.service.CommentService;
 import site.kkokkio.domain.member.entity.Member;
@@ -404,5 +405,87 @@ class CommentControllerV2Test {
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.code").value(ErrorCode.BAD_SORT_OPTION.getCode()))
 			.andExpect(jsonPath("$.message").value(ErrorCode.BAD_SORT_OPTION.getMessage()));
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 숨김 처리 - 성공")
+	@WithMockUser(roles = "ADMIN")
+	void test10() throws Exception {
+		/// given
+		List<Long> commentIdsToHide = Arrays.asList(1L, 5L, 11L);
+		ReportedCommentHideRequest requestBody = new ReportedCommentHideRequest(commentIdsToHide);
+
+		// commentService.hideReportedComment 메서드는 void를 반환하므로 doNothing() 모킹
+		doNothing().when(commentService).hideReportedComment(eq(commentIdsToHide));
+
+		/// when & then
+		mockMvc.perform(post("/api/v2/admin/reports/comments")
+				.with(csrf())
+				.contentType(APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(requestBody)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").value("선택하신 댓글이 숨김 처리되었습니다."))
+			.andExpect(jsonPath("$.data").doesNotExist());
+
+		// 서비스 메서드가 예상된 인자로 한 번 호출되었는지 검증
+		verify(commentService).hideReportedComment(eq(commentIdsToHide));
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 숨김 처리 - 실패 (USER 권한)")
+	@WithMockUser(roles = "USER")
+	void test10_1() throws Exception {
+		/// given
+		List<Long> commentIdsToHide = Arrays.asList(1L, 2L);
+		ReportedCommentHideRequest requestBody = new ReportedCommentHideRequest(commentIdsToHide);
+
+		/// when & then
+		mockMvc.perform(post("/api/v2/admin/reports/comments")
+				.with(csrf())
+				.contentType(APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(requestBody)))
+			.andExpect(status().isForbidden());
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 숨김 처리 - 실패 (요청 본문 유효성 검증 실패 - 빈 목록)")
+	@WithMockUser(roles = "ADMIN")
+	void test10_2() throws Exception {
+		/// given
+		List<Long> commentIdsToHide = Arrays.asList();
+		ReportedCommentHideRequest requestBody = new ReportedCommentHideRequest(commentIdsToHide);
+
+		/// when & then
+		mockMvc.perform(post("/api/v2/admin/reports/comments")
+				.with(csrf())
+				.contentType(APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(requestBody)))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value(ErrorCode.COMMENT_IDS_NOT_PROVIDED.getCode()))
+			.andExpect(jsonPath("$.message").value("commentIds : NotEmpty : 댓글이 선택되지 않았습니다."));
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 숨김 처리 - 실패 (댓글 없음)")
+	@WithMockUser(roles = "ADMIN")
+	void test10_3() throws Exception {
+		/// given
+		List<Long> commentIdsToHide = Arrays.asList(999L, 10000000L);
+		ReportedCommentHideRequest requestBody = new ReportedCommentHideRequest(commentIdsToHide);
+
+		// 서비스 메서드가 ServiceException (404 댓글 없음)을 던지도록 Mocking
+		doThrow(
+			new ServiceException(ErrorCode.COMMENT_NOT_INCLUDE.getCode(), ErrorCode.COMMENT_NOT_INCLUDE.getMessage()))
+			.when(commentService).hideReportedComment(anyList());
+
+		/// when & then
+		mockMvc.perform(post("/api/v2/admin/reports/comments")
+				.with(csrf())
+				.contentType(APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(requestBody)))
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.code").value(ErrorCode.COMMENT_NOT_INCLUDE.getCode()))
+			.andExpect(jsonPath("$.message").value(ErrorCode.COMMENT_NOT_INCLUDE.getMessage()));
 	}
 }

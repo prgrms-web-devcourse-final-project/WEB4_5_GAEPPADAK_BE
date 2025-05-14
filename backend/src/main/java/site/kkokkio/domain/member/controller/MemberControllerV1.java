@@ -99,7 +99,8 @@ public class MemberControllerV1 {
 
 	@Operation(summary = "비밀번호 초기화")
 	@PatchMapping("/password")
-	public void resetPassword(PasswordResetRequest request) {
+	public RsData<Void> resetPassword(@RequestBody @Validated PasswordResetRequest request) {
 		memberService.resetPassword(request);
+		return new RsData<>("200", "비밀번호가 변경되었습니다.");
 	}
 }

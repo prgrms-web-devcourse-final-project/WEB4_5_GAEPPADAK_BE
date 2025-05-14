@@ -31,6 +31,7 @@ public class MemberService {
 	private final PasswordEncoder passwordEncoder;
 	private final JwtUtils jwtUtils;
 	private final RedisTemplate<String, String> redisTemplate;
+	private final MailService mailService;
 
 	// 회원 가입
 	@Transactional
@@ -73,29 +74,6 @@ public class MemberService {
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 이메일입니다."));
 	}
 
-	// // 로그인
-	// public MemberLoginResponse loginMember(String email, String password) {
-	//
-	// 	// 회원 이메일 확인
-	// 	Member member = memberRepository.findByEmail(email).orElseThrow(() ->
-	// 		new ServiceException("404", "존재하지 않는 이메일입니다."));
-	//
-	// 	// 비밀번호 확인
-	// 	if (!passwordEncoder.matches(password, member.getPasswordHash())) {
-	// 		throw new ServiceException("401", "비밀번호가 올바르지 않습니다.");
-	// 	}
-	//
-	// 	// JWT 토큰 발생 시 포함할 사용자 정보 설정
-	// 	Map<String, Object> claims = new HashMap<>();
-	// 	claims.put("commentId", member.getId());
-	// 	claims.put("email", member.getEmail());
-	// 	claims.put("nickname", member.getNickname());
-	// 	claims.put("role", member.getRole());
-	// 	String token = jwtUtils.createToken(claims); // 토큰 생성
-	//
-	// 	return MemberLoginResponse.of(member, token,);
-	// }
-
 	// 회원 정보 조회
 	public MemberResponse getMemberInfo(String email) {
 		// 멤버 조회 및 응답 DTO 변환
@@ -126,13 +104,33 @@ public class MemberService {
 	}
 
 	// 비밀번호 초기화
+	@Transactional
 	public void resetPassword(PasswordResetRequest request) {
+
+		String key = "EMAIL_VERIFIED:" + request.email();
+
+		// 인증 여부 확인
+		String verified = redisTemplate.opsForValue().get(key);
+		if (!"true".equals(verified)) {
+			throw new ServiceException("401", "이메일 인증이 되지 않았습니다.");
+		}
 
 		// 비밀번호 일치 확인
 		if (!request.newPassword().equals(request.checkPassword())) {
 			throw new ServiceException("400", "비밀번호가 일치하지 않습니다.");
-
 		}
+
+		// 회원 조회
+		Member member = memberRepository.findByEmail(request.email())
+			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 이메일입니다."));
+
+		// 비밀번호 암호화 및 저장
+		String encryptedPassword = passwordEncoder.encode(request.newPassword());
+		member.setPasswordHash(encryptedPassword);
+		memberRepository.save(member);
+
+		// Redis 인증 플래그 삭제
+		redisTemplate.delete(key);
 	}
 
 	/**

@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -35,8 +36,10 @@ import site.kkokkio.domain.comment.dto.CommentReportRequestDto;
 import site.kkokkio.domain.comment.dto.ReportedCommentSummary;
 import site.kkokkio.domain.comment.service.CommentService;
 import site.kkokkio.domain.member.entity.Member;
+import site.kkokkio.global.auth.AuthChecker;
 import site.kkokkio.global.auth.CustomUserDetails;
 import site.kkokkio.global.auth.CustomUserDetailsService;
+import site.kkokkio.global.config.SecurityConfig;
 import site.kkokkio.global.enums.MemberRole;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
@@ -44,11 +47,14 @@ import site.kkokkio.global.exception.doc.ErrorCode;
 import site.kkokkio.global.util.JwtUtils;
 
 @WebMvcTest(CommentControllerV2.class)
-@WithMockUser(roles = "USER")
+@Import(SecurityConfig.class)
 class CommentControllerV2Test {
 
 	@Autowired
 	private MockMvc mockMvc;
+
+	@MockitoBean(name = "authChecker")
+	AuthChecker authChecker;
 
 	@MockitoBean
 	private CommentService commentService;
@@ -301,5 +307,102 @@ class CommentControllerV2Test {
 		// 서비스 메서드가 예상된 인자로 한 번 호출되었는지 검증
 		Mockito.verify(commentService)
 			.getReportedCommentsList(eq(expectedPageable), eq(null), eq(null));
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 목록 조회 - 성공 (신고된 댓글 없음)")
+	@WithMockUser(roles = "ADMIN")
+	void test9() throws Exception {
+		/// given
+		Pageable expectedPageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "reportedAt"));
+
+		// 서비스가 빈 Page 객체를 반환하도록 Mocking
+		Page<ReportedCommentSummary> mockPage = Page.empty(expectedPageable);
+
+		given(commentService.getReportedCommentsList(
+			eq(expectedPageable), eq(null), eq(null)
+		)).willReturn(mockPage);
+
+		/// when & then
+		mockMvc.perform(get("/api/v2/admin/reports/comments"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").value("신고된 댓글 목록이 조회되었습니다."))
+			.andExpect(jsonPath("$.data").isMap())
+			.andExpect(jsonPath("$.data.list").isArray())
+			.andExpect(jsonPath("$.data.list.length()").value(0))
+
+			// data.meta (페이지네이션 메타데이터) 검증
+			.andExpect(jsonPath("$.data.meta.page").value(expectedPageable.getPageNumber()))
+			.andExpect(jsonPath("$.data.meta.size").value(expectedPageable.getPageSize()))
+			.andExpect(jsonPath("$.data.meta.totalElements").value(0))
+			.andExpect(jsonPath("$.data.meta.totalPages").value(0))
+			.andExpect(jsonPath("$.data.meta.hasNext").value(false))
+			.andExpect(jsonPath("$.data.meta.hasPrevious").value(false));
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 목록 조회 - 실패 (USER 권한)")
+	@WithMockUser(roles = "USER")
+	void test9_1() throws Exception {
+		/// when & then
+		mockMvc.perform(get("/api/v2/admin/reports/comments"))
+			.andExpect(status().isForbidden());
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 목록 조회 - 실패 (ADMIN 권한 없음)")
+	void test9_2() throws Exception {
+		/// when & then
+		mockMvc.perform(get("/api/v2/admin/reports/comments"))
+			.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 목록 조회 - 실패 (부적절한 검색 옵션)")
+	@WithMockUser(roles = "ADMIN")
+	void test9_3() throws Exception {
+		/// given
+		String invalidSearchTarget = "invalidSearchTarget";
+		String searchValue = "searchValue";
+
+		// 서비스 메서드가 ServiceException을 던지도록 Mocking
+		given(commentService.getReportedCommentsList(
+			any(Pageable.class),
+			eq(invalidSearchTarget),
+			eq(searchValue)
+		)).willThrow(new ServiceException(ErrorCode.BAD_SEARCH_OPTION.getCode(),
+			ErrorCode.BAD_SEARCH_OPTION.getMessage()));
+
+		/// when & then
+		mockMvc.perform(get("/api/v2/admin/reports/comments")
+				.param("searchTarget", invalidSearchTarget)
+				.param("searchValue", searchValue))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value(ErrorCode.BAD_SEARCH_OPTION.getCode()))
+			.andExpect(jsonPath("$.message").value(ErrorCode.BAD_SEARCH_OPTION.getMessage()));
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 목록 조회 - 실패 (부적절한 정렬 옵션)")
+	@WithMockUser(roles = "ADMIN")
+	void test9_4() throws Exception {
+		/// given
+		String invalidSortParam = "invalidSortParam,asc";
+
+		// 서비스 메서드가 ServiceException을 던지도록 Mocking
+		given(commentService.getReportedCommentsList(
+			any(Pageable.class),
+			eq(null),
+			eq(null)
+		)).willThrow(new ServiceException(ErrorCode.BAD_SORT_OPTION.getCode(),
+			ErrorCode.BAD_SORT_OPTION.getMessage()));
+
+		/// when & then
+		mockMvc.perform(get("/api/v2/admin/reports/comments")
+				.param("sort", invalidSortParam))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value(ErrorCode.BAD_SORT_OPTION.getCode()))
+			.andExpect(jsonPath("$.message").value(ErrorCode.BAD_SORT_OPTION.getMessage()));
 	}
 }

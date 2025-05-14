@@ -217,6 +217,7 @@ class MemberServiceV1Test {
 		verify(member).softDelete();
 		verify(memberRepository).save(member);
 	}
+
 	@Test
 	@DisplayName("비밀번호 초기화 - 성공")
 	void resetPassword_success() {
@@ -228,7 +229,7 @@ class MemberServiceV1Test {
 
 		String newPassword = "newPass123!";
 		String encryptedPassword = "encrypted-hash";
-		PasswordResetRequest req = new PasswordResetRequest(email, newPassword, newPassword);
+		PasswordResetRequest req = new PasswordResetRequest(email, newPassword);
 
 		given(memberRepository.findByEmail(email)).willReturn(Optional.of(
 			Member.builder().email(email).nickname("nick").build()
@@ -254,7 +255,7 @@ class MemberServiceV1Test {
 		given(valueOperations.get(key)).willReturn(null);// 미인증 상태
 
 		// when
-		PasswordResetRequest req = new PasswordResetRequest(email, "a", "a");
+		PasswordResetRequest req = new PasswordResetRequest(email, "password1!");
 
 		// then : 인증 미완료 예외 발생 여부 확인
 		assertThatThrownBy(() -> memberService.resetPassword(req))
@@ -272,7 +273,7 @@ class MemberServiceV1Test {
 		given(valueOperations.get(key)).willReturn("true"); // 인증 상태
 
 		// when : 일치하지 않은 비밀번호 입력
-		PasswordResetRequest req = new PasswordResetRequest(email, "pass1", "pass2");
+		PasswordResetRequest req = new PasswordResetRequest(email, "password1");
 
 		// then : 비밀번호 미 일치 예외 발생 여부 확인
 		assertThatThrownBy(() -> memberService.resetPassword(req))
@@ -290,7 +291,7 @@ class MemberServiceV1Test {
 		given(valueOperations.get(key)).willReturn("true");
 
 		// when
-		PasswordResetRequest req = new PasswordResetRequest(email, "newPass", "newPass");
+		PasswordResetRequest req = new PasswordResetRequest(email, "newPass1");
 
 		given(memberRepository.findByEmail(email)).willReturn(Optional.empty()); // 존재하지 않는 이메일 입력
 

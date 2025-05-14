@@ -114,11 +114,6 @@ public class MemberService {
 			throw new ServiceException("401", "인증코드가 유효하지 않습니다.");
 		}
 
-		// 비밀번호 일치 확인
-		if (!request.newPassword().equals(request.checkPassword())) {
-			throw new ServiceException("400", "비밀번호가 일치하지 않습니다.");
-		}
-
 		// 회원 조회
 		Member member = memberRepository.findByEmail(request.email())
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 이메일입니다."));

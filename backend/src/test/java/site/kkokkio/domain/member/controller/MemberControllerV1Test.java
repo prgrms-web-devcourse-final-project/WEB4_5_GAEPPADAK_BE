@@ -26,8 +26,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
 import site.kkokkio.domain.member.controller.dto.MemberUpdateRequest;
-import site.kkokkio.domain.member.entity.Member;
-import site.kkokkio.domain.member.controller.dto.MemberUpdateRequest;
 import site.kkokkio.domain.member.controller.dto.PasswordResetRequest;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.service.AuthService;
@@ -263,14 +261,12 @@ class MemberControllerV1Test {
 			.andExpect(jsonPath("$.message").value("회원이 삭제 되었습니다."));
 	}
 
-
 	@Test
 	@DisplayName("비밀번호 초기화 - 성공")
 	void resetPassword_success() throws Exception {
 		// given
 		PasswordResetRequest req = new PasswordResetRequest(
 			"user@example.com",
-			"newPass123!",
 			"newPass123!"
 		);
 		doNothing().when(memberService).resetPassword(any(PasswordResetRequest.class));
@@ -286,34 +282,11 @@ class MemberControllerV1Test {
 	}
 
 	@Test
-	@DisplayName("비밀번호 초기화 - 비밀번호 불일치")
-	void resetPassword_mismatchPassword_fail() throws Exception {
-		// given
-		PasswordResetRequest req = new PasswordResetRequest(
-			"user@example.com",
-			"newpass1!",
-			"newpasspass2!"
-		);
-		doThrow(new ServiceException("400", "비밀번호가 일치하지 않습니다."))
-			.when(memberService).resetPassword(any(PasswordResetRequest.class));
-		String json = objectMapper.writeValueAsString(req);
-
-		// when & then
-		mockMvc.perform(patch("/api/v1/member/password")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(json))
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.code").value(400))
-			.andExpect(jsonPath("$.message").value("비밀번호가 일치하지 않습니다."));
-	}
-
-	@Test
 	@DisplayName("비밀번호 초기화 - 인증 미완료")
 	void resetPassword_notVerified_fail() throws Exception {
 		// given
 		PasswordResetRequest req = new PasswordResetRequest(
 			"user@example.com",
-			"newPass123!",
 			"newPass123!"
 		);
 		doThrow(new ServiceException("401", "인증코드가 유효하지 않습니다."))
@@ -335,7 +308,6 @@ class MemberControllerV1Test {
 		// given
 		PasswordResetRequest req = new PasswordResetRequest(
 			"unknown@example.com",
-			"newPass123!",
 			"newPass123!"
 		);
 		doThrow(new ServiceException("404", "존재하지 않는 이메일입니다."))

@@ -22,7 +22,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import site.kkokkio.domain.comment.dto.CommentReportRequestDto;
+import site.kkokkio.domain.comment.dto.CommentReportRequest;
 import site.kkokkio.domain.comment.dto.ReportedCommentHideRequest;
 import site.kkokkio.domain.comment.dto.ReportedCommentListResponse;
 import site.kkokkio.domain.comment.dto.ReportedCommentSummary;
@@ -60,7 +60,7 @@ public class CommentControllerV2 {
 	public RsData<Void> reportComment(
 		@PathVariable("commentId") Long commentId,
 		@AuthenticationPrincipal CustomUserDetails userDetails,
-		@Valid @RequestBody CommentReportRequestDto request
+		@Valid @RequestBody CommentReportRequest request
 	) {
 		// CustomUserDetails에서 Member 엔티티를 가져오는 로직
 		Member reporter = userDetails.getMember();

@@ -13,6 +13,7 @@ import site.kkokkio.domain.comment.dto.ReportedCommentSummary;
 import site.kkokkio.domain.comment.entity.Comment;
 import site.kkokkio.domain.comment.entity.CommentReport;
 import site.kkokkio.domain.member.entity.Member;
+import site.kkokkio.global.enums.ReportProcessingStatus;
 
 public interface CommentReportRepository extends JpaRepository<CommentReport, Long> {
 
@@ -29,6 +30,7 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
 				p.post_id AS postId,
 				p.title AS postTitle,
 				c.body AS commentBody,
+				cr.status AS status,
 				GROUP_CONCAT(cr.reason SEPARATOR ',') AS reportReasons,
 				MAX(cr.created_at) AS latestReportedAt,
 				COUNT(cr.comment_report_id) AS reportCount
@@ -43,7 +45,7 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
 				AND (c.deleted_at IS NULL)
 				AND (c.is_hidden = FALSE)
 			GROUP BY
-					c.comment_id, m.member_id, m.nickname, m.deleted_at, p.post_id, p.title, c.body
+					c.comment_id, m.member_id, m.nickname, m.deleted_at, p.post_id, p.title, c.body, cr.status
 		""",
 		countQuery = """
 			
@@ -68,9 +70,11 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
 		@Param("searchReportReason") String searchReportReason,
 		Pageable pageable
 	);
-
-	// 주어진 댓글 ID 목록에 해당하는 모든 신고 엔티티를 삭제
+	
+	// 주어진 댓글 ID 목록에 해당하는 모든 신고 엔티티의 상태를 일괄 업데이트
 	@Modifying
-	@Query("DELETE FROM CommentReport cr WHERE cr.comment.id IN :commentIds")
-	void deleteAllByCommentIdIn(@Param("commentIds") Collection<Long> commentIds);
+	@Query("UPDATE CommentReport cr SET cr.status = :status WHERE cr.comment.id IN :commentIds")
+	void updateStatusByCommentIdIn(
+		@Param("commentIds") Collection<Long> commentIds,
+		@Param("status") ReportProcessingStatus status);
 }

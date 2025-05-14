@@ -24,6 +24,7 @@ import site.kkokkio.domain.comment.repository.CommentRepository;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.repository.PostRepository;
+import site.kkokkio.global.enums.ReportProcessingStatus;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
 
@@ -271,6 +272,9 @@ public class CommentService {
 			// 3. 변경사항 저장
 			commentRepository.save(comment);
 		}
+
+		// 4. 요청된 댓글 ID들에 해당하는 모든 신고 엔티티의 상태를 ACCEPTED로 업데이트
+		commentReportRepository.updateStatusByCommentIdIn(commentIds, ReportProcessingStatus.ACCEPTED);
 	}
 
 	/**
@@ -289,6 +293,6 @@ public class CommentService {
 		}
 
 		// 3. 요청된 댓글 ID들에 해당하는 모든 신고 엔티티 삭제
-		commentReportRepository.deleteAllByCommentIdIn(commentIds);
+		commentReportRepository.updateStatusByCommentIdIn(commentIds, ReportProcessingStatus.REJECTED);
 	}
 }

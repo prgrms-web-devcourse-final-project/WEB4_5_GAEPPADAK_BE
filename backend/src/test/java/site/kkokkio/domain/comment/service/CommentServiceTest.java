@@ -25,7 +25,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import site.kkokkio.domain.comment.controller.dto.CommentCreateRequest;
 import site.kkokkio.domain.comment.dto.CommentDto;
-import site.kkokkio.domain.comment.dto.CommentReportRequestDto;
+import site.kkokkio.domain.comment.dto.CommentReportRequest;
 import site.kkokkio.domain.comment.dto.ReportedCommentSummary;
 import site.kkokkio.domain.comment.entity.Comment;
 import site.kkokkio.domain.comment.entity.CommentReport;
@@ -305,7 +305,7 @@ class CommentServiceTest {
 		Long commentId = 1L;
 		UUID reporterId = UUID.randomUUID();
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		CommentReportRequestDto request = new CommentReportRequestDto(reportReason);
+		CommentReportRequest request = new CommentReportRequest(reportReason);
 
 		// 댓글 작성자 Member 모킹
 		Member commentWriter = mock(Member.class);
@@ -334,7 +334,7 @@ class CommentServiceTest {
 		when(commentRepository.save(comment)).thenReturn(comment);
 
 		// Service 메서드 호출
-		commentService.reportComment(commentId, reporter, request.reason());
+		commentService.reportComment(commentId, reporter, reportReason);
 
 		/// 검증
 		verify(commentRepository).findById(commentId);
@@ -350,7 +350,7 @@ class CommentServiceTest {
 	void test7_1() {
 		Long commentId = 999L;
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		CommentReportRequestDto request = new CommentReportRequestDto(reportReason);
+		CommentReportRequest request = new CommentReportRequest(reportReason);
 		Member reporter = Member.builder().build();
 		ReflectionTestUtils.setField(reporter, "id", UUID.randomUUID());
 
@@ -376,7 +376,7 @@ class CommentServiceTest {
 	void test7_2() {
 		Long commentId = 2L;
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		CommentReportRequestDto request = new CommentReportRequestDto(reportReason);
+		CommentReportRequest request = new CommentReportRequest(reportReason);
 		Member reporter = Member.builder().build();
 		ReflectionTestUtils.setField(reporter, "id", UUID.randomUUID());
 
@@ -403,7 +403,7 @@ class CommentServiceTest {
 		Long commentId = 3L;
 		UUID reporterId = UUID.randomUUID();
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		CommentReportRequestDto request = new CommentReportRequestDto(reportReason);
+		CommentReportRequest request = new CommentReportRequest(reportReason);
 
 		// 신고하는 사용자 Member 실제 객체 생성 및 필드 설정
 		Member reporter = Member.builder().build();
@@ -437,7 +437,7 @@ class CommentServiceTest {
 		Long commentId = 4L;
 		UUID reporterId = UUID.randomUUID();
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		CommentReportRequestDto request = new CommentReportRequestDto(reportReason);
+		CommentReportRequest request = new CommentReportRequest(reportReason);
 
 		// 댓글 작성자 Member 실제 객체 생성 및 필드 설정
 		Member commentWriter = Member.builder().build();

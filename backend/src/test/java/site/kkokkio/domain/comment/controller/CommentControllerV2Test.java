@@ -32,7 +32,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import site.kkokkio.domain.comment.dto.CommentReportRequestDto;
+import site.kkokkio.domain.comment.dto.CommentReportRequest;
 import site.kkokkio.domain.comment.dto.ReportedCommentHideRequest;
 import site.kkokkio.domain.comment.dto.ReportedCommentSummary;
 import site.kkokkio.domain.comment.service.CommentService;
@@ -78,7 +78,7 @@ class CommentControllerV2Test {
 	void test7() throws Exception {
 		Long commentId = 1L;
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		CommentReportRequestDto request = new CommentReportRequestDto(reportReason);
+		CommentReportRequest request = new CommentReportRequest(reportReason);
 
 		// commentService.reportComment 메소드는 void 이므로 doNothing() 모킹
 		Mockito.doNothing()
@@ -106,7 +106,7 @@ class CommentControllerV2Test {
 	void test7_1() throws Exception {
 		Long commentId = 999L;
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		CommentReportRequestDto request = new CommentReportRequestDto(reportReason);
+		CommentReportRequest request = new CommentReportRequest(reportReason);
 
 		// ServiceException 발생 모킹 (ErrorCode.COMMENT_NOT_FOUND 사용)
 		Mockito.doThrow(
@@ -134,7 +134,7 @@ class CommentControllerV2Test {
 	void test7_2() throws Exception {
 		Long commentId = 2L;
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		CommentReportRequestDto request = new CommentReportRequestDto(reportReason);
+		CommentReportRequest request = new CommentReportRequest(reportReason);
 
 		// ServiceException 발생 모킹
 		Mockito.doThrow(new ServiceException("400", "삭제된 댓글은 신고할 수 없습니다."))
@@ -161,7 +161,7 @@ class CommentControllerV2Test {
 	void test7_3() throws Exception {
 		Long commentId = 3L;
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		CommentReportRequestDto request = new CommentReportRequestDto(reportReason);
+		CommentReportRequest request = new CommentReportRequest(reportReason);
 
 		// ServiceException 발생 모킹
 		Mockito.doThrow(new ServiceException("403", "본인의 댓글은 신고할 수 없습니다.")) // Service에서 던지는 예외와 일치시켜야 함
@@ -188,7 +188,7 @@ class CommentControllerV2Test {
 	void test7_4() throws Exception {
 		Long commentId = 4L;
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		CommentReportRequestDto request = new CommentReportRequestDto(reportReason);
+		CommentReportRequest request = new CommentReportRequest(reportReason);
 
 		// ServiceException 발생 모킹
 		Mockito.doThrow(new ServiceException("400", "이미 신고한 댓글입니다."))

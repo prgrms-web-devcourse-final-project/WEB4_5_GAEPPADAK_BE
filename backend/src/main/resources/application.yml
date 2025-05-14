@@ -145,8 +145,6 @@ management:
   health:
     circuitbreakers:
       enabled: true
-  server:
-    port: 8081
 
 google:
   trends:

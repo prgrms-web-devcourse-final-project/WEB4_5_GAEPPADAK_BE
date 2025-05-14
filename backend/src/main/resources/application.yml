@@ -100,6 +100,8 @@ resilience4j:
         base-config: default
       YOUTUBE_VIDEO_RETRY: # 유튜브 재시도 인스턴스
         base-config: default
+      GEMINI_AI_RETRY: # 유튜브 재시도 인스턴스
+        base-config: default
   circuitbreaker:
     configs:
       default:
@@ -118,6 +120,8 @@ resilience4j:
         base-config: default
       YOUTUBE_VIDEO_CIRCUIT_BREAKER: # 유튜브 서킷 브레이커 인스턴스
         base-config: default
+      GEMINI_AI_CIRCUIT_BREAKER:
+        base-config: default
   ratelimiter:
     configs:
       default:
@@ -129,6 +133,8 @@ resilience4j:
       NAVER_NEWS_RATE_LIMITER:
         base-config: default
       YOUTUBE_VIDEO_RATE_LIMITER: # 유튜브 레이트 리미터 인스턴스
+        base-config: default
+      GEMINI_AI_RATE_LIMITER: # 유튜브 레이트 리미터 인스턴스
         base-config: default
 
 management:
@@ -181,6 +187,7 @@ mock:
   youtube-file: youtube-videos-search.json
   post-file: post-search.json
   keyword-file: keywords.txt
+  gemini-file: gemini-summary.json
 
 swagger:
   url: http://localhost:8080

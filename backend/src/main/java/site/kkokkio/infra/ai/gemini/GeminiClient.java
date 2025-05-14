@@ -1,18 +1,39 @@
 package site.kkokkio.infra.ai.gemini;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.io.IOException;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.github.resilience4j.retry.annotation.Retry;
+import reactor.core.publisher.Mono;
 import site.kkokkio.infra.ai.adapter.AiSummaryClient;
+import site.kkokkio.infra.ai.gemini.dto.GeminiError;
+import site.kkokkio.infra.ai.gemini.dto.GeminiErrorDetail;
+import site.kkokkio.infra.ai.gemini.dto.GeminiErrorResponse;
 import site.kkokkio.infra.ai.gemini.dto.GeminiResponse;
+import site.kkokkio.infra.common.exception.ExternalApiErrorUtil;
 
 @Component
 public class GeminiClient implements AiSummaryClient {
 
+	@Value("${mock.enabled:false}")
+	private boolean mockEnabled;
+
+	@Value("${mock.gemini-file:gemini-summary.json}")
+	private String mockFile;
 	private final WebClient webClient;
 	private final GeminiProperties props;
 
@@ -25,8 +46,16 @@ public class GeminiClient implements AiSummaryClient {
 		this.props = props;
 	}
 
+	@CircuitBreaker(name = "GEMINI_AI_CIRCUIT_BREAKER")
+	@Retry(name = "GEMINI_AI_RETRY")
+	@RateLimiter(name = "GEMINI_AI_RATE_LIMITER")
 	@Override
-	public String requestSummary(String systemPrompt, String content) {
+	public CompletableFuture<String> requestSummaryAsync(String systemPrompt, String content) {
+
+		if (mockEnabled) {
+			return loadMockSummaryResponse(); // 아래에서 정의할 메서드
+		}
+
 		Map<String, Object> body = Map.of(
 			"model", props.getModel(),
 			"messages", List.of(
@@ -34,16 +63,60 @@ public class GeminiClient implements AiSummaryClient {
 				Map.of("role", "user", "content", content)
 			)
 		);
-		GeminiResponse response = webClient.post()
+
+		return webClient.post()
 			.uri("/chat/completions")
 			.bodyValue(body)
 			.retrieve()
+			.onStatus(HttpStatusCode::isError, this::mapGeminiError)
 			.bodyToMono(GeminiResponse.class)
-			.block();
+			.map(response -> {
+				if (response == null || response.getChoices().isEmpty()) {
+					throw new IllegalStateException("Gemini 요약 응답이 없습니다.");
+				}
+				return response.getChoices().get(0).getMessage().getContent();
+			})
+			.toFuture();
+	}
 
-		if (response == null || response.getChoices().isEmpty()) {
-			throw new IllegalStateException("Gemini 요약 응답이 없습니다.");
+	private Mono<? extends Throwable> mapGeminiError(ClientResponse response) {
+		return response.bodyToMono(GeminiErrorResponse.class)
+			.defaultIfEmpty(new GeminiErrorResponse())
+			.flatMap(err -> {
+				GeminiError error = err.getError();
+				String vendorCode = null;
+				String vendorMsg = null;
+
+				if (error != null) {
+					vendorMsg = error.getMessage();
+					if (error.getErrors() != null && !error.getErrors().isEmpty()) {
+						GeminiErrorDetail detail = error.getErrors().getFirst();
+						if (detail != null) {
+							vendorCode = detail.getReason();
+							if (detail.getMessage() != null && !detail.getMessage().isBlank()) {
+								vendorMsg = detail.getMessage();
+							}
+						}
+					}
+				}
+
+				return Mono.error(
+					ExternalApiErrorUtil.of(response.statusCode(), vendorCode, vendorMsg)
+				);
+			});
+	}
+
+	private CompletableFuture<String> loadMockSummaryResponse() {
+		try (InputStream is = getClass().getResourceAsStream("/mock/" + mockFile)) {
+			if (is == null) {
+				throw new IOException("Mock 파일을 찾을 수 없습니다: " + mockFile);
+			}
+			ObjectMapper mapper = new ObjectMapper();
+			GeminiResponse response = mapper.readValue(is, GeminiResponse.class); // <-- 중요!
+			String content = response.getChoices().get(0).getMessage().getContent(); // <-- 여기
+			return CompletableFuture.completedFuture(content);
+		} catch (IOException e) {
+			throw new RuntimeException("Gemini mock 파일 로딩 실패", e);
 		}
-		return response.getChoices().get(0).getMessage().getContent();
 	}
 }

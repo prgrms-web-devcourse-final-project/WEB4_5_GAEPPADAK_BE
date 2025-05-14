@@ -1,0 +1,9 @@
+{
+    "choices": [
+        {
+            "message": {
+                "content": "{\"title\":\"테스트 제목\",\"summary\":\"테스트 요약입니다.\"}"
+            }
+        }
+    ]
+}

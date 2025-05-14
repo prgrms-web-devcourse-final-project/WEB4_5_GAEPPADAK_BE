@@ -104,6 +104,66 @@ public class PostService {
 	}
 
 	/**
+	 * 비동기로 요약을 요청한다.
+	 */
+	@Async
+	public CompletableFuture<String> summarizeAsync(String prompt, String content) {
+		return aiClient.requestSummaryAsync(prompt, content);
+	}
+
+	/**
+	 * 중복 제거를 위해 분리
+	 */
+	private Post createAndSavePost(String title, String summary, List<Source> sources, LocalDateTime bucketAt) {
+		// sources 리스트를 순회하면서 첫 번째 non-null 썸네일 URL을 찾는다.
+		String thumbnailUrl = sources.stream()
+			.map(Source::getThumbnailUrl)
+			.filter(Objects::nonNull)
+			.findFirst()
+			.orElse(null);
+
+		Post post = Post.builder()
+			.title(title)
+			.summary(summary)
+			.thumbnailUrl(thumbnailUrl)
+			.bucketAt(bucketAt)
+			.reportCount(0)
+			.build();
+
+		return postRepository.save(post);
+	}
+
+	/**
+	 * 요약에서 오류 발생 시 Fallback 처리
+	 */
+	private void savePostWithFallback(String title, String summary, List<Source> sources, LocalDateTime bucketAt, Long keywordId, String keywordText) {
+		Post post = createAndSavePost(title, summary, sources, bucketAt);
+
+		linkSourcesToPost(post, sources);
+
+		KeywordMetricHourlyId id = new KeywordMetricHourlyId(bucketAt, Platform.GOOGLE_TREND, keywordId);
+		KeywordMetricHourly keywordMetricHourly = keywordMetricHourlyRepository.findById(id)
+			.orElseThrow(() -> new ServiceException("404", "KeywordMetricHourly를 찾을 수 없습니다."));
+		keywordMetricHourly.setPost(post);
+
+		Keyword keyword = keywordRepository.findById(keywordId)
+			.orElseThrow(() -> new ServiceException("404", "Keyword를 찾을 수 없습니다."));
+		PostKeyword postKeyword = PostKeyword.builder().post(post).keyword(keyword).build();
+		postKeywordRepository.insertIgnoreAll(List.of(postKeyword));
+
+		PostMetricHourly postMetricHourly = PostMetricHourly.builder()
+			.post(post)
+			.bucketAt(bucketAt)
+			.clickCount(0)
+			.likeCount(0)
+			.build();
+		postMetricHourlyRepository.save(postMetricHourly);
+
+		cachePostCardView(post, keywordText, Duration.ofHours(24));
+		log.info("신규 포스트 (fallback) 생성 완료 - postId={}, keyword={}", post.getId(), keywordText);
+	}
+
+	/**
 	 * 신규 키워드에 대해서 포스트를 생성한다.
 	 */
 	@Transactional
@@ -170,8 +230,20 @@ public class PostService {
 			byte[] raw = systemPrompt.getBytes(StandardCharsets.ISO_8859_1);
 			systemPrompt = new String(raw, StandardCharsets.UTF_8);
 
-			String aiResponse = aiClient.requestSummary(systemPrompt, userContent);
-			log.info("[AI 응답(raw)] {}", aiResponse);
+			String aiResponse = null;
+			String postTitle;
+			String postSummary;
+
+			try {
+				aiResponse = summarizeAsync(systemPrompt, userContent).get();
+				log.info("[AI 응답(raw)] {}", aiResponse);
+			} catch (Exception e) {
+				log.error("AI 요약 실패, keyword={} → fallback 사용", keywordText, e);
+				postTitle = sources.get(0).getTitle();
+				postSummary = sources.get(0).getDescription();
+				savePostWithFallback(postTitle, postSummary, sources, bucketAt, keywordId, keywordText); // ★
+				continue;
+			}
 
 			// 2.2) 마크다운 펜스 제거
 			String jsonResponse = aiResponse
@@ -180,8 +252,7 @@ public class PostService {
 				.trim();
 
 			// 3) JSON 파싱 (jsonResponse 사용)
-			String postTitle;
-			String postSummary;
+
 			try {
 				JsonNode root = objectMapper.readTree(jsonResponse);
 
@@ -205,21 +276,8 @@ public class PostService {
 			}
 
 			// 5) Post 엔티티 생성
-			// sources 리스트를 순회하면서 첫 번째 non-null 썸네일 URL을 찾는다.
-			String thumbnailUrl = sources.stream()
-				.map(Source::getThumbnailUrl)
-				.filter(Objects::nonNull)
-				.findFirst()
-				.orElse(null);
+			Post post = createAndSavePost(postTitle, postSummary, sources, bucketAt);
 
-			Post post = Post.builder()
-				.title(postTitle)
-				.summary(postSummary)
-				.thumbnailUrl(thumbnailUrl)
-				.bucketAt(bucketAt)
-				.reportCount(0)
-				.build();
-			post = postRepository.save(post);
 
 			// Step 4. 신규 Post 연결
 			// Source ↔ Post 매핑

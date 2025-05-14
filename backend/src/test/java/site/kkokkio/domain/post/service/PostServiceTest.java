@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
@@ -207,8 +208,8 @@ public class PostServiceTest {
       {"title":"테스트제목","summary":"이것은 테스트 요약입니다."}
       """;
 
-		given(aiSummaryClient.requestSummary(anyString(), anyString()))
-			.willReturn(fakeJson);
+		given(aiSummaryClient.requestSummaryAsync(anyString(), anyString()))
+			.willReturn(CompletableFuture.completedFuture(fakeJson));
 
 		ObjectNode fakeNode = new ObjectNode(new ObjectMapper().getNodeFactory())
 			.put("title", "테스트제목")

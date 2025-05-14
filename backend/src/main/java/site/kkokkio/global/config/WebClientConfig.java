@@ -1,5 +1,6 @@
 package site.kkokkio.global.config;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -7,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.http.codec.json.Jackson2JsonDecoder;
 import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -15,6 +17,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import reactor.netty.http.client.HttpClient;
 import site.kkokkio.infra.ai.gemini.GeminiProperties;
 
 @Configuration
@@ -75,6 +78,10 @@ public class WebClientConfig {
 					new Jackson2JsonEncoder(geminiMapper, jsonUtf8)
 				);
 			})
+			.clientConnector(new ReactorClientHttpConnector(
+				HttpClient.create()
+					.responseTimeout(Duration.ofSeconds(5))
+			))
 			.build();
 	}
 }

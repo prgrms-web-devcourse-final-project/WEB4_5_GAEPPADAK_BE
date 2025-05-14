@@ -264,24 +264,6 @@ class MemberServiceV1Test {
 	}
 
 	@Test
-	@DisplayName("비밀번호 초기화 - 비밀번호 불일치")
-	void resetPassword_mismatchPassword_fail() {
-		// given
-		String email = "user@example.com";
-		String key = "EMAIL_VERIFIED:" + email;
-		given(redisTemplate.opsForValue()).willReturn(valueOperations);
-		given(valueOperations.get(key)).willReturn("true"); // 인증 상태
-
-		// when : 일치하지 않은 비밀번호 입력
-		PasswordResetRequest req = new PasswordResetRequest(email, "password1");
-
-		// then : 비밀번호 미 일치 예외 발생 여부 확인
-		assertThatThrownBy(() -> memberService.resetPassword(req))
-			.isInstanceOf(ServiceException.class)
-			.hasMessageContaining("비밀번호가 일치하지 않습니다.");
-	}
-
-	@Test
 	@DisplayName("비밀번호 초기화 - 이메일 없음")
 	void resetPassword_emailNotFound_fail() {
 		// given

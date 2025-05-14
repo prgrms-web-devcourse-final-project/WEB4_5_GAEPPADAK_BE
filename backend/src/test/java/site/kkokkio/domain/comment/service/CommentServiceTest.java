@@ -136,7 +136,7 @@ class CommentServiceTest {
 
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
 
-		CommentDto result = commentService.updateComment(1L, member.getId(), request);
+		CommentDto result = commentService.updateComment(1L, request);
 
 		assertEquals("수정된 댓글", result.body());
 	}
@@ -151,25 +151,7 @@ class CommentServiceTest {
 
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.empty());
 
-		assertThrows(ServiceException.class, () -> commentService.updateComment(1L, member.getId(), request));
-	}
-
-	@Test
-	@DisplayName("댓글 수정 실패 - 본인 아님")
-	void test3_2() {
-		Member member = Member.builder().build();
-		ReflectionTestUtils.setField(member, "id", UUID.randomUUID());
-		ReflectionTestUtils.setField(member, "nickname", "testUser1");
-
-		Member writer = Member.builder().build();
-		ReflectionTestUtils.setField(writer, "id", UUID.randomUUID());
-		ReflectionTestUtils.setField(writer, "nickname", "testUser2");
-		Comment comment = Comment.builder().member(writer).body("댓글").build();
-		CommentCreateRequest request = new CommentCreateRequest("수정된 댓글");
-
-		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
-
-		assertThrows(ServiceException.class, () -> commentService.updateComment(1L, member.getId(), request));
+		assertThrows(ServiceException.class, () -> commentService.updateComment(1L, request));
 	}
 
 	@Test
@@ -182,7 +164,7 @@ class CommentServiceTest {
 
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
 
-		commentService.deleteCommentById(1L, member.getId());
+		commentService.deleteCommentById(1L);
 
 		verify(commentRepository).save(any(Comment.class)); // softDelete 후 저장
 	}
@@ -195,34 +177,18 @@ class CommentServiceTest {
 
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.empty());
 
-		assertThrows(ServiceException.class, () -> commentService.deleteCommentById(1L, member.getId()));
-	}
-
-	@Test
-	@DisplayName("댓글 삭제 실패 - 본인 아님")
-	void test4_2() {
-		Member member = Member.builder().build();
-		ReflectionTestUtils.setField(member, "id", UUID.randomUUID());
-		ReflectionTestUtils.setField(member, "nickname", "testUser1");
-
-		Member writer = Member.builder().build();
-		ReflectionTestUtils.setField(writer, "id", UUID.randomUUID());
-		ReflectionTestUtils.setField(writer, "nickname", "testUser2");
-		Comment comment = Comment.builder().member(writer).body("댓글").build();
-
-		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
-
-		assertThrows(ServiceException.class, () -> commentService.deleteCommentById(1L, member.getId()));
+		assertThrows(ServiceException.class, () -> commentService.deleteCommentById(1L));
 	}
 
 	@Test
 	@DisplayName("댓글 좋아요 성공")
 	void test5() {
 		Member member1 = Member.builder().build();
-		ReflectionTestUtils.setField(member1, "id", UUID.randomUUID());
+		ReflectionTestUtils.setField(member1, "email", "test1@email.com");
 		ReflectionTestUtils.setField(member1, "nickname", "testUser1");
 		Member member2 = Member.builder().build();
 		ReflectionTestUtils.setField(member2, "id", UUID.randomUUID());
+		ReflectionTestUtils.setField(member2, "email", "test2@email.com");
 		ReflectionTestUtils.setField(member2, "nickname", "testUser2");
 
 		Comment comment = Comment.builder().member(member2).body("댓글").likeCount(0).build();
@@ -249,26 +215,13 @@ class CommentServiceTest {
 	}
 
 	@Test
-	@DisplayName("댓글 좋아요 실패 - 본인 댓글")
-	void test5_2() {
-		Member member = Member.builder().build();
-		ReflectionTestUtils.setField(member, "id", UUID.randomUUID());
-
-		Comment comment = Comment.builder().member(member).body("댓글").build();
-
-		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
-
-		assertThrows(ServiceException.class, () -> commentService.likeComment(1L, member));
-	}
-
-	@Test
 	@DisplayName("댓글 좋아요 실패 - 이미 좋아요 누름")
 	void test5_3() {
 		Member member = Member.builder().build();
-		ReflectionTestUtils.setField(member, "id", UUID.randomUUID());
+		ReflectionTestUtils.setField(member, "email", "test@email.com");
 
 		Member writer = Member.builder().build();
-		ReflectionTestUtils.setField(writer, "id", UUID.randomUUID());
+		ReflectionTestUtils.setField(writer, "email", "writer@email.com"); // 랜덤 스트링
 
 		Comment comment = Comment.builder().member(writer).body("댓글").build();
 
@@ -282,10 +235,11 @@ class CommentServiceTest {
 	@DisplayName("댓글 좋아요 취소 성공")
 	void test6() {
 		Member member1 = Member.builder().build();
-		ReflectionTestUtils.setField(member1, "id", UUID.randomUUID());
+		ReflectionTestUtils.setField(member1, "email", "test1@email.com");
 		ReflectionTestUtils.setField(member1, "nickname", "testUser1");
 		Member member2 = Member.builder().build();
 		ReflectionTestUtils.setField(member2, "id", UUID.randomUUID());
+		ReflectionTestUtils.setField(member2, "email", "test2@email.com");
 		ReflectionTestUtils.setField(member2, "nickname", "testUser2");
 
 		Comment comment = Comment.builder().member(member2).body("댓글").likeCount(1).build();

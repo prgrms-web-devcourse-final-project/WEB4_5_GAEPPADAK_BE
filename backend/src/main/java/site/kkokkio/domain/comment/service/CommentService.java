@@ -2,7 +2,6 @@ package site.kkokkio.domain.comment.service;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -60,13 +59,9 @@ public class CommentService {
 	}
 
 	@Transactional
-	public CommentDto updateComment(Long commentId, UUID memberId, CommentCreateRequest request) {
+	public CommentDto updateComment(Long commentId, CommentCreateRequest request) {
 		Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
-
-		if (!comment.getMember().getId().equals(memberId)) {
-			throw new ServiceException("403", "본인 댓글만 수정할 수 있습니다.");
-		}
 
 		comment.updateBody(request.body());
 		commentRepository.save(comment);
@@ -75,13 +70,9 @@ public class CommentService {
 	}
 
 	@Transactional
-	public void deleteCommentById(Long commentId, UUID memberId) {
+	public void deleteCommentById(Long commentId) {
 		Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
-
-		if (!comment.getMember().getId().equals(memberId)) {
-			throw new ServiceException("403", "본인 댓글만 삭제할 수 있습니다.");
-		}
 
 		comment.softDelete();
 		commentRepository.save(comment);
@@ -92,7 +83,7 @@ public class CommentService {
 		Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
 
-		if (comment.getMember().getId().equals(member.getId())) {
+		if (comment.getMember().getEmail().equals(member.getEmail())) {
 			throw new ServiceException("403", "본인 댓글은 좋아요 할 수 없습니다.");
 		}
 
@@ -117,7 +108,7 @@ public class CommentService {
 		Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
 
-		if (comment.getMember().getId().equals(member.getId())) {
+		if (comment.getMember().getEmail().equals(member.getEmail())) {
 			throw new ServiceException("403", "본인 댓글은 좋아요 할 수 없습니다.");
 		}
 

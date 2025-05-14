@@ -31,7 +31,7 @@ public class CommentControllerV2 {
 
 	@Operation(summary = "댓글 신고")
 	@ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
-		ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH,
+		ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH, ErrorCode.FORBIDDEN,
 		ErrorCode.COMMENT_NOT_FOUND,
 		ErrorCode.REPORT_COMMENT_BAD_REQUEST,
 		ErrorCode.REPORT_COMMENT_FORBIDDEN,

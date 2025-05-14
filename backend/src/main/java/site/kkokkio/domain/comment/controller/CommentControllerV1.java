@@ -76,7 +76,7 @@ public class CommentControllerV1 {
 	@Operation(summary = "댓글 수정")
 	@ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
 		ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH,
-		ErrorCode.COMMENT_UPDATE_FORBIDDEN, ErrorCode.COMMENT_NOT_FOUND})
+		ErrorCode.FORBIDDEN, ErrorCode.COMMENT_NOT_FOUND})
 	@PatchMapping("/comments/{commentId}")
 	@IsCommentActiveOwner
 	public RsData<CommentDto> updateComment(
@@ -94,7 +94,7 @@ public class CommentControllerV1 {
 	@Operation(summary = "댓글 삭제")
 	@ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
 		ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH,
-		ErrorCode.COMMENT_DELETE_FORBIDDEN, ErrorCode.COMMENT_NOT_FOUND})
+		ErrorCode.FORBIDDEN, ErrorCode.COMMENT_NOT_FOUND})
 	@DeleteMapping("/comments/{commentId}")
 	@IsCommentOwner
 	public RsData<Empty> deleteComment(

@@ -4,8 +4,13 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 import static org.springframework.http.MediaType.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
@@ -13,6 +18,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -22,6 +32,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import site.kkokkio.domain.comment.dto.CommentReportRequestDto;
+import site.kkokkio.domain.comment.dto.ReportedCommentSummary;
 import site.kkokkio.domain.comment.service.CommentService;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.global.auth.CustomUserDetails;
@@ -211,5 +222,84 @@ class CommentControllerV2Test {
 				.contentType(APPLICATION_JSON)
 				.content(invalidRequestBodyJson))
 			.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 목록 조회 - 성공")
+	@WithMockUser(roles = "ADMIN")
+	void test8() throws Exception {
+		/// given
+		Pageable expectedPageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "reportedAt"));
+
+		// 서비스가 반환할 Mock 데이터 생성
+		LocalDateTime now = LocalDateTime.now();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+		ReportedCommentSummary summary1 = new ReportedCommentSummary(
+			1L, UUID.randomUUID(), "신고자", false, 10L, "포스트 제목 1",
+			"댓글 내용 1", "BAD_CONTENT,SPAM", now.minusHours(1), 5
+		);
+
+		ReportedCommentSummary summary2 = new ReportedCommentSummary(
+			2L, UUID.randomUUID(), "탈퇴 예정자", true, 11L, "포스트 제목 2",
+			"댓글 내용 2", "RUDE_LANGUAGE", now.minusHours(2), 3
+		);
+
+		List<ReportedCommentSummary> summaryList = Arrays.asList(summary1, summary2);
+
+		// 서비스 Mock이 반환할 Page 객체 생성
+		Page<ReportedCommentSummary> mockPage = new PageImpl<>(summaryList, expectedPageable, 100);
+
+		// commentService.getReportedCommentsList 메서드 호출 시 mockPage를 반환하도록 Mocking
+		// 파라미터 없음 -> 서비스 메서드는 Pageable과 search 인자 null 4개를 받음
+		given(commentService.getReportedCommentsList(
+			eq(expectedPageable),
+			eq(null),
+			eq(null)
+		)).willReturn(mockPage);
+
+		/// when & then
+		mockMvc.perform(get("/api/v2/admin/reports/comments"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").value("신고된 댓글 목록이 조회되었습니다."))
+			.andExpect(jsonPath("$.data").isMap())
+			.andExpect(jsonPath("$.data.list").isArray())
+			.andExpect(jsonPath("$.data.list.length()").value(summaryList.size()))
+
+			// summary1 데이터 검증
+			.andExpect(jsonPath("$.data.list[0].commentId").value(summary1.commentId()))
+			.andExpect(jsonPath("$.data.list[0].nickname").value(summary1.nickname()))
+			.andExpect(jsonPath("$.data.list[0].postId").value(summary1.postId()))
+			.andExpect(jsonPath("$.data.list[0].title").value(summary1.postTitle()))
+			.andExpect(jsonPath("$.data.list[0].body").value(summary1.commentBody()))
+			.andExpect(jsonPath("$.data.list[0].reportReason").isArray())
+			.andExpect(jsonPath("$.data.list[0].reportReason.length()").value(2))
+			.andExpect(jsonPath("$.data.list[0].reportReason[0]").value("BAD_CONTENT"))
+			.andExpect(jsonPath("$.data.list[0].reportReason[1]").value("SPAM"))
+			.andExpect(jsonPath("$.data.list[0].reportedAt").value(summary1.latestReportedAt().format(formatter)))
+
+			// summary2 데이터 검증
+			.andExpect(jsonPath("$.data.list[1].commentId").value(summary2.commentId()))
+			.andExpect(jsonPath("$.data.list[1].nickname").value("탈퇴한 회원"))
+			.andExpect(jsonPath("$.data.list[1].postId").value(summary2.postId()))
+			.andExpect(jsonPath("$.data.list[1].title").value(summary2.postTitle()))
+			.andExpect(jsonPath("$.data.list[1].body").value(summary2.commentBody()))
+			.andExpect(jsonPath("$.data.list[1].reportReason").isArray())
+			.andExpect(jsonPath("$.data.list[1].reportReason.length()").value(1))
+			.andExpect(jsonPath("$.data.list[1].reportReason[0]").value("RUDE_LANGUAGE"))
+			.andExpect(jsonPath("$.data.list[1].reportedAt").value(summary2.latestReportedAt().format(formatter)))
+
+			// data.meta 검증
+			.andExpect(jsonPath("$.data.meta.page").value(expectedPageable.getPageNumber()))
+			.andExpect(jsonPath("$.data.meta.size").value(expectedPageable.getPageSize()))
+			.andExpect(jsonPath("$.data.meta.totalElements").value(mockPage.getTotalElements()))
+			.andExpect(jsonPath("$.data.meta.totalPages").value(mockPage.getTotalPages()))
+			.andExpect(jsonPath("$.data.meta.hasNext").value(mockPage.hasNext()))
+			.andExpect(jsonPath("$.data.meta.hasPrevious").value(mockPage.hasPrevious()));
+
+		// 서비스 메서드가 예상된 인자로 한 번 호출되었는지 검증
+		Mockito.verify(commentService)
+			.getReportedCommentsList(eq(expectedPageable), eq(null), eq(null));
 	}
 }

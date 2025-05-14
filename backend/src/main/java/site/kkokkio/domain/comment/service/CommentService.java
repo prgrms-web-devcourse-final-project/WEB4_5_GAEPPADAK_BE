@@ -1,25 +1,31 @@
 package site.kkokkio.domain.comment.service;
 
-import lombok.RequiredArgsConstructor;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.comment.controller.dto.CommentCreateRequest;
 import site.kkokkio.domain.comment.dto.CommentDto;
+import site.kkokkio.domain.comment.dto.ReportedCommentSummary;
 import site.kkokkio.domain.comment.entity.Comment;
 import site.kkokkio.domain.comment.entity.CommentLike;
+import site.kkokkio.domain.comment.entity.CommentReport;
 import site.kkokkio.domain.comment.repository.CommentLikeRepository;
+import site.kkokkio.domain.comment.repository.CommentReportRepository;
 import site.kkokkio.domain.comment.repository.CommentRepository;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.repository.PostRepository;
-import site.kkokkio.domain.comment.entity.CommentReport;
-import site.kkokkio.domain.comment.repository.CommentReportRepository;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
-
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -135,7 +141,7 @@ public class CommentService {
 
 		// 1. 신고 대상 댓글 조회
 		Comment comment = commentRepository.findById(commentId)
-				.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
+			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
 
 		// 2. 삭제된 댓글인지 확인
 		if (comment.isDeleted()) {
@@ -156,10 +162,10 @@ public class CommentService {
 
 		// 5. 신고 정보 생성
 		CommentReport commentReport = CommentReport.builder()
-				.comment(comment)
-				.reporter(reporter)
-				.reason(reason)
-				.build();
+			.comment(comment)
+			.reporter(reporter)
+			.reason(reason)
+			.build();
 
 		// 6. 신고 정보 저장
 		commentReportRepository.save(commentReport);
@@ -167,5 +173,82 @@ public class CommentService {
 		// 7. 댓글의 신고 카운트 증가 및 저장
 		comment.increaseReportCount();
 		commentRepository.save(comment);
+	}
+
+	/**
+	 * 관리자용 신고된 댓글 목록을 페이징, 정렬, 검색하여 조회합니다.
+	 * @param pageable 페이징 및 정렬 정보
+	 * @param searchTarget 검색 대상 필드
+	 * @param searchValue 검색어
+	 * @return 페이징된 ReportedCommentSummary 목록
+	 */
+	@Transactional(readOnly = true)
+	public Page<ReportedCommentSummary> getReportedCommentsList
+	(Pageable pageable, String searchTarget, String searchValue) {
+
+		// 1. 정렬 옵션 검증 및 매핑
+		Sort apiSort = pageable.getSort();
+		Sort repositorySort = Sort.unsorted();
+
+		// 정렬 속성 및 기본 정렬 방향 정의
+		List<String> sortProperties = Arrays.asList("reportedAt", "reportCount");
+		Sort.Direction defaultDirection = Sort.Direction.DESC;
+
+		// Pageable의 Sort 객체 순회
+		for (Sort.Order order : apiSort) {
+			String property = order.getProperty();
+
+			// 정렬 속성 이름이 허용된 목록에 있는지 확인
+			if (!sortProperties.contains(property)) {
+				// 허용되지 않은 정렬 속성이면 오류 발생
+				throw new ServiceException("400", "부적절한 정렬 옵션입니다.");
+			}
+
+			// 정렬 속성 이름을 CommentRepositoryRepository 쿼리의 별칭과 연결
+			repositorySort = repositorySort.and(Sort.by(order.getDirection(), property));
+		}
+
+		// 만약 Pageable에 정렬 정보가 전혀 없었다면 기본 정렬 적용
+		if (repositorySort.isEmpty()) {
+			repositorySort = Sort.by(defaultDirection, "reportedAt");
+		}
+
+		// Pageable 객체 재생성 (원본 Pageable의 다른 정보(page, size)를 유지하고 정렬만 대체
+		Pageable repositoryPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), repositorySort);
+
+		// 2. 검색 조건 매핑
+		String searchNickname = null;
+		String searchPostTitle = null;
+		String searchCommentBody = null;
+		String searchReportReason = null;
+
+		// 검색 대상과 검색어가 모두 존재하고, 검색어가 공백만으로 이루어지지 않았다면 매핑 로직 실행
+		if (searchTarget != null && searchValue != null && !searchValue.trim().isEmpty()) {
+			String trimmedSearchTarget = searchTarget.trim().toLowerCase();
+			String trimmedSearchValue = searchValue.trim();
+
+			// 검색 대상 문자열을 Repository 메서드의 인자로 매핑
+			switch (trimmedSearchTarget) {
+				case "nickname" -> searchNickname = trimmedSearchValue;
+				case "post title" -> searchPostTitle = trimmedSearchValue;
+				case "comment body" -> searchCommentBody = trimmedSearchValue;
+				case "report reason" -> searchReportReason = trimmedSearchValue;
+				default -> throw new ServiceException("400", "부적절한 검색 옵션입니다.");
+			}
+		}
+
+		// 3. ReportedCommentRepository 메서드 호출
+		// 매핑된 검색 인자들과 정렬/페이징 정보(repositoryPageable)를 넘겨 호출
+		Page<ReportedCommentSummary> reportedCommentPage =
+			commentReportRepository.findReportedCommentSummary(
+				searchNickname,
+				searchPostTitle,
+				searchCommentBody,
+				searchReportReason,
+				repositoryPageable
+			);
+
+		// 4. 결과 반환
+		return reportedCommentPage;
 	}
 }

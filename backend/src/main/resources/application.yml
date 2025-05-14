@@ -172,6 +172,8 @@ ai:
     project-id: ${GEMINI_PROJECT_ID:test-gemini-project-id}
     model: ${GEMINI_MODEL:gemini-2.0-flash}
     base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta/openai}
+    prompts:
+      summary: ${GEMINI_PROMPTS_SUMMARY}
 
 mock:
   enabled: true

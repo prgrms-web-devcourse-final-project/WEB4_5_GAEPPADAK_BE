@@ -1,18 +1,23 @@
 package site.kkokkio.domain.post.service;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -42,6 +47,8 @@ import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
+import site.kkokkio.infra.ai.adapter.AiSummaryClient;
+import site.kkokkio.infra.ai.gemini.GeminiProperties;
 
 @Slf4j
 @Service
@@ -58,6 +65,8 @@ public class PostService {
 	private final PostSourceRepository postSourceRepository;
 	private final StringRedisTemplate redisTemplate;
 	private final ObjectMapper objectMapper;
+	private final AiSummaryClient aiClient;
+	private final GeminiProperties geminiProperties;
 
 	public Post getPostById(Long id) {
 		return postRepository.findById(id)
@@ -142,15 +151,75 @@ public class PostService {
 			}
 
 			// Step 3B. low_variation=false → 신규 Post 생성
-			// TODO: AI 연결 전이므로 임시로 특정 Source의 Title, Description으로 작성
-			Source temp = sources.getFirst();
-			Post post = postRepository.save(Post.builder()
-				.title(temp.getTitle() != null ? temp.getTitle() : "제목 없음")
-				.summary(temp.getDescription() != null ? temp.getDescription() : "내용 없음")
-				.thumbnailUrl(temp.getThumbnailUrl())
+
+
+			// 1) 여러 소스 내용을 하나의 userContent로 합치기
+			StringBuilder sb = new StringBuilder();
+			for (Source src : sources) {
+				sb.append("제목: ").append(src.getTitle()).append("\n")
+					.append("설명: ").append(src.getDescription()).append("\n")
+					.append("URL: ").append(src.getNormalizedUrl()).append("\n")
+					.append("플랫폼: ").append(src.getPlatform()).append("\n\n");
+			}
+			String userContent = sb.toString();
+
+			// 2) Gemini 요약 프롬프트 호출
+			String systemPrompt = geminiProperties.getSummaryPrompt();
+
+			// 2.1)요청시 문자가 깨지지 않게 프롬프트를 바이트로 뽑았다가 UTF-8로 다시 디코딩
+			byte[] raw = systemPrompt.getBytes(StandardCharsets.ISO_8859_1);
+			systemPrompt = new String(raw, StandardCharsets.UTF_8);
+
+			String aiResponse = aiClient.requestSummary(systemPrompt, userContent);
+			log.info("[AI 응답(raw)] {}", aiResponse);
+
+			// 2.2) 마크다운 펜스 제거
+			String jsonResponse = aiResponse
+				.replaceAll("(?m)^```(?:json)?\\s*", "")
+				.replaceAll("(?m)```\\s*$", "")
+				.trim();
+
+			// 3) JSON 파싱 (jsonResponse 사용)
+			String postTitle;
+			String postSummary;
+			try {
+				JsonNode root = objectMapper.readTree(jsonResponse);
+
+				String rawTitle   = root.path("title").asText(null);
+				String rawSummary = root.path("summary").asText(null);
+
+				if (rawTitle == null || rawSummary == null) {
+					//키 누락 시 폴백 처리 - 첫 소스의 제목과 요약을 사용
+					log.info("AI 응답 누락, 포스트 작성에 첫 번째 소스 사용");
+					postTitle   = sources.get(0).getTitle();
+					postSummary = sources.get(0).getDescription();
+				} else {
+					postTitle   = rawTitle;
+					postSummary = "AI가 찾아낸 핵심\n\n" + rawSummary;
+				}
+
+			} catch (IOException e) {
+				log.error("AI 응답 파싱 실패, keyword={} → fallback 사용", keywordText, e);
+				postTitle   = sources.get(0).getTitle();
+				postSummary = sources.get(0).getDescription();
+			}
+
+			// 5) Post 엔티티 생성
+			// sources 리스트를 순회하면서 첫 번째 non-null 썸네일 URL을 찾는다.
+			String thumbnailUrl = sources.stream()
+				.map(Source::getThumbnailUrl)
+				.filter(Objects::nonNull)
+				.findFirst()
+				.orElse(null);
+
+			Post post = Post.builder()
+				.title(postTitle)
+				.summary(postSummary)
+				.thumbnailUrl(thumbnailUrl)
 				.bucketAt(bucketAt)
 				.reportCount(0)
-				.build());
+				.build();
+			post = postRepository.save(post);
 
 			// Step 4. 신규 Post 연결
 			// Source ↔ Post 매핑

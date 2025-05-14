@@ -2,11 +2,13 @@ package site.kkokkio.infra.ai.gemini.dto;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Data;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class GeminiResponse {
 
 	// 전체 응답에서 choices 배열을 담고 있다.

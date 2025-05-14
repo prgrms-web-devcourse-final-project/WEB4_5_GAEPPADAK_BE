@@ -76,15 +76,14 @@ public class CommentControllerV1 {
 	@Operation(summary = "댓글 수정")
 	@ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
 		ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH,
-		ErrorCode.COMMENT_UPDATE_FORBIDDEN, ErrorCode.COMMENT_NOT_FOUND})
+		ErrorCode.FORBIDDEN, ErrorCode.COMMENT_NOT_FOUND})
 	@PatchMapping("/comments/{commentId}")
 	@IsCommentActiveOwner
 	public RsData<CommentDto> updateComment(
 		@PathVariable("commentId") Long commentId,
-		@AuthenticationPrincipal CustomUserDetails userDetails,
 		@Valid @RequestBody CommentCreateRequest request
 	) {
-		CommentDto comment = commentService.updateComment(commentId, userDetails.getMember().getId(), request);
+		CommentDto comment = commentService.updateComment(commentId, request);
 		return new RsData<>(
 			"200",
 			"댓글이 수정되었습니다.",
@@ -95,14 +94,13 @@ public class CommentControllerV1 {
 	@Operation(summary = "댓글 삭제")
 	@ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
 		ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH,
-		ErrorCode.COMMENT_DELETE_FORBIDDEN, ErrorCode.COMMENT_NOT_FOUND})
+		ErrorCode.FORBIDDEN, ErrorCode.COMMENT_NOT_FOUND})
 	@DeleteMapping("/comments/{commentId}")
 	@IsCommentOwner
 	public RsData<Empty> deleteComment(
-		@PathVariable("commentId") Long commentId,
-		@AuthenticationPrincipal CustomUserDetails userDetails
+		@PathVariable("commentId") Long commentId
 	) {
-		commentService.deleteCommentById(commentId, userDetails.getMember().getId());
+		commentService.deleteCommentById(commentId);
 		return new RsData<>(
 			"200",
 			"댓글이 삭제되었습니다."

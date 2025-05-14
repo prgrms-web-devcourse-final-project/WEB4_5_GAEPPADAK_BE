@@ -3,8 +3,8 @@ package site.kkokkio.domain.member.controller;
 import static org.hamcrest.text.StringContainsInOrder.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 import static org.springframework.http.MediaType.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -25,8 +25,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
-import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.controller.dto.MemberUpdateRequest;
+import site.kkokkio.domain.member.controller.dto.PasswordResetRequest;
+import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.service.AuthService;
 import site.kkokkio.domain.member.service.MailService;
 import site.kkokkio.domain.member.service.MemberService;
@@ -36,6 +37,7 @@ import site.kkokkio.global.auth.CustomUserDetailsService;
 import site.kkokkio.global.config.SecurityConfig;
 import site.kkokkio.global.enums.MemberRole;
 import site.kkokkio.global.exception.CustomAuthException;
+import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.global.util.JwtUtils;
 
 @WebMvcTest(MemberControllerV1.class)
@@ -47,7 +49,6 @@ class MemberControllerV1Test {
 
 	@Autowired
 	private ObjectMapper objectMapper;
-
 
 	@MockitoBean
 	AuthChecker authChecker;
@@ -165,7 +166,7 @@ class MemberControllerV1Test {
 	@DisplayName("회원 정보 수정 성공")
 	void modifyMember_success() throws Exception {
 		// given
-		MemberUpdateRequest request = new MemberUpdateRequest( "ps123123!","after");
+		MemberUpdateRequest request = new MemberUpdateRequest("ps123123!", "after");
 		MemberResponse expectedResponse = new MemberResponse(
 			"user@example.com",
 			request.nickname(),
@@ -202,7 +203,7 @@ class MemberControllerV1Test {
 	@DisplayName("회원 정보 수정 실패 - 유효성")
 	void modifyMember_Validation_failed() throws Exception {
 		// given
-		MemberUpdateRequest request = new MemberUpdateRequest( "ps","veryverylongNickname");
+		MemberUpdateRequest request = new MemberUpdateRequest("ps", "veryverylongNickname");
 		MemberResponse memberResponse = new MemberResponse(
 			"user@example.com",
 			request.nickname(), // 요청 닉네임 사용
@@ -237,5 +238,88 @@ class MemberControllerV1Test {
 				"password : Pattern : 비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다.\n",
 				"password : Size : 비밀번호는 8~20자 사이여야 합니다."
 			)));
+	}
+
+	@Test
+	@DisplayName("회원 탈퇴 - 성공")
+	void deleteMember_success() throws Exception {
+		// given
+		Member member = Member.builder()
+			.id(UUID.randomUUID())
+			.email("user@example.com")
+			.nickname("currentNickname")
+			.role(MemberRole.USER)
+			.build();
+
+		// when & then
+		mockMvc.perform(delete("/api/v1/member/me")
+				.with(user(new CustomUserDetails(member)))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").value("회원이 삭제 되었습니다."));
+	}
+
+	@Test
+	@DisplayName("비밀번호 초기화 - 성공")
+	void resetPassword_success() throws Exception {
+		// given
+		PasswordResetRequest req = new PasswordResetRequest(
+			"user@example.com",
+			"newPass123!"
+		);
+		doNothing().when(memberService).resetPassword(any(PasswordResetRequest.class));
+		String json = objectMapper.writeValueAsString(req);
+
+		// when & then
+		mockMvc.perform(patch("/api/v1/member/password")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(json))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").value("비밀번호가 변경되었습니다."));
+	}
+
+	@Test
+	@DisplayName("비밀번호 초기화 - 인증 미완료")
+	void resetPassword_notVerified_fail() throws Exception {
+		// given
+		PasswordResetRequest req = new PasswordResetRequest(
+			"user@example.com",
+			"newPass123!"
+		);
+		doThrow(new ServiceException("401", "인증코드가 유효하지 않습니다."))
+			.when(memberService).resetPassword(any(PasswordResetRequest.class));
+		String json = objectMapper.writeValueAsString(req);
+
+		// when & then
+		mockMvc.perform(patch("/api/v1/member/password")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(json))
+			.andExpect(status().isUnauthorized())
+			.andExpect(jsonPath("$.code").value(401))
+			.andExpect(jsonPath("$.message").value("인증코드가 유효하지 않습니다."));
+	}
+
+	@Test
+	@DisplayName("비밀번호 초기화 - 이메일 없음")
+	void resetPassword_emailNotFound_fail() throws Exception {
+		// given
+		PasswordResetRequest req = new PasswordResetRequest(
+			"unknown@example.com",
+			"newPass123!"
+		);
+		doThrow(new ServiceException("404", "존재하지 않는 이메일입니다."))
+			.when(memberService).resetPassword(any(PasswordResetRequest.class));
+		String json = objectMapper.writeValueAsString(req);
+
+		// when & then
+		mockMvc.perform(patch("/api/v1/member/password")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(json))
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.code").value(404))
+			.andExpect(jsonPath("$.message").value("존재하지 않는 이메일입니다."));
 	}
 }

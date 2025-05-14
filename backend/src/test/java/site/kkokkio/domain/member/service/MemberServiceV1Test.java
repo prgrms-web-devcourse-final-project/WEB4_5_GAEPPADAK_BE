@@ -12,12 +12,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
 import site.kkokkio.domain.member.controller.dto.MemberUpdateRequest;
+import site.kkokkio.domain.member.controller.dto.PasswordResetRequest;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.repository.MemberRepository;
 import site.kkokkio.global.auth.CustomUserDetails;
@@ -39,6 +43,12 @@ class MemberServiceV1Test {
 
 	@Mock
 	private JwtUtils jwtUtils;
+
+	@Mock
+	private RedisTemplate<String, String> redisTemplate;
+
+	@Mock
+	private ValueOperations<String, String> valueOperations;
 
 	@Test
 	@DisplayName("회원가입 성공")
@@ -187,6 +197,90 @@ class MemberServiceV1Test {
 			.isInstanceOf(NullPointerException.class)
 			.hasMessageContaining("userDetails");
 
+	}
+
+	@Test
+	@DisplayName("회원 탈퇴 성공")
+	void deleteMember_success() {
+		// given
+		Member member = Mockito.spy(Member.builder()
+			.id(UUID.randomUUID())
+			.email("test@example.com")
+			.nickname("사용자")
+			.build());
+
+		// when
+		memberService.deleteMember(member);
+
+		// then
+		verify(member).maskPersonalInfo();
+		verify(member).softDelete();
+		verify(memberRepository).save(member);
+	}
+
+	@Test
+	@DisplayName("비밀번호 초기화 - 성공")
+	void resetPassword_success() {
+		// given
+		String email = "user@example.com";
+		String key = "EMAIL_VERIFIED:" + email;
+		given(redisTemplate.opsForValue()).willReturn(valueOperations);
+		given(valueOperations.get(key)).willReturn("true"); // 인증 상태
+
+		String newPassword = "newPass123!";
+		String encryptedPassword = "encrypted-hash";
+		PasswordResetRequest req = new PasswordResetRequest(email, newPassword);
+
+		given(memberRepository.findByEmail(email)).willReturn(Optional.of(
+			Member.builder().email(email).nickname("nick").build()
+		));
+		given(passwordEncoder.encode(newPassword)).willReturn(encryptedPassword);
+
+		// when
+		memberService.resetPassword(req);
+
+		// then : 비밀번호 암호화되어 저장, Redis 키 삭제 여부 확인
+		assertThat(memberRepository.findByEmail(email).get().getPasswordHash()).isEqualTo(encryptedPassword);
+		verify(memberRepository).save(any(Member.class));
+		verify(redisTemplate).delete(key);
+	}
+
+	@Test
+	@DisplayName("비밀번호 초기화 - 인증 미완료")
+	void resetPassword_notVerified_fail() {
+		// given
+		String email = "user@example.com";
+		String key = "EMAIL_VERIFIED:" + email;
+		given(redisTemplate.opsForValue()).willReturn(valueOperations);
+		given(valueOperations.get(key)).willReturn(null);// 미인증 상태
+
+		// when
+		PasswordResetRequest req = new PasswordResetRequest(email, "password1!");
+
+		// then : 인증 미완료 예외 발생 여부 확인
+		assertThatThrownBy(() -> memberService.resetPassword(req))
+			.isInstanceOf(ServiceException.class)
+			.hasMessageContaining("인증코드가 유효하지 않습니다.");
+	}
+
+	@Test
+	@DisplayName("비밀번호 초기화 - 이메일 없음")
+	void resetPassword_emailNotFound_fail() {
+		// given
+		String email = "unknown@example.com";
+		String key = "EMAIL_VERIFIED:" + email;
+		given(redisTemplate.opsForValue()).willReturn(valueOperations);
+		given(valueOperations.get(key)).willReturn("true");
+
+		// when
+		PasswordResetRequest req = new PasswordResetRequest(email, "newPass1");
+
+		given(memberRepository.findByEmail(email)).willReturn(Optional.empty()); // 존재하지 않는 이메일 입력
+
+		// then
+		assertThatThrownBy(() -> memberService.resetPassword(req))
+			.isInstanceOf(ServiceException.class)
+			.hasMessageContaining("존재하지 않는 이메일입니다.");
 	}
 
 }

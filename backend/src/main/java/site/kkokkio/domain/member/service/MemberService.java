@@ -13,8 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
+import site.kkokkio.domain.member.controller.dto.MemberUpdateRequest;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.repository.MemberRepository;
+import site.kkokkio.global.auth.CustomUserDetails;
 import site.kkokkio.global.enums.MemberRole;
 import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.global.util.JwtUtils;
@@ -97,6 +99,28 @@ public class MemberService {
 		// 멤버 조회 및 응답 DTO 변환
 		Member memberInfo = findByEmail(email);
 		return new MemberResponse(memberInfo);
+	}
+
+	// 회원 정보 수정
+	public MemberResponse modifyMemberInfo(CustomUserDetails userDetails, MemberUpdateRequest requestBody) {
+
+		Member member = userDetails.getMember();
+
+		// 회원 정보 수정
+		Member modifiedMember = Member.builder()
+			.id(member.getId())
+			.email(member.getEmail())
+			.nickname(requestBody.nickname() != null ? requestBody.nickname() : member.getNickname())
+			.birthDate(member.getBirthDate()) // 기존 생년월일 유지
+			.passwordHash(requestBody.password() != null ? passwordEncoder.encode(requestBody.password()) :
+				member.getPasswordHash())
+			.role(member.getRole())
+			.emailVerified(member.isEmailVerified())
+			.build(); // 기존 역할 유지
+
+		memberRepository.save(modifiedMember);
+
+		return new MemberResponse(modifiedMember);
 	}
 
 	/**

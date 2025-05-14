@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
-import site.kkokkio.domain.member.controller.dto.EmailVerificationRequest;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.repository.MemberRepository;
 import site.kkokkio.global.exception.ServiceException;
@@ -123,30 +122,33 @@ public class MailService {
 
 	// 인증 코드 검증
 	@Transactional
-	public void validationAuthCode(EmailVerificationRequest emailVerificationRequest) {
-		String email = emailVerificationRequest.getEmail();
-		String authCode = emailVerificationRequest.getAuthCode();
-
-		// Redis에서 인증 코드 조회
-		ValueOperations<String, String> values = redisTemplate.opsForValue();
+	public boolean verifyAuthCode(String email, String authCode) {
 		String key = EMAIL_AUTH_PREFIX + email;
-		String storedAuthCode = values.get(key);
+		ValueOperations<String, String> values = redisTemplate.opsForValue();
+		String storedCode = values.get(key);
 
-		// 인증 코드 유효성 검사: 유효하지 않으면 예외 발생
-		if (storedAuthCode == null || !storedAuthCode.equals(authCode)) {
-			throw new ServiceException("404", "인증 코드가 유효하지 않습니다.");
+		if (storedCode == null || !storedCode.equals(authCode)) {
+			return false;
 		}
 
-		// 인증 코드가 유효한 경우 진행
+		// 인증 상태를 Redis에 저장
+		redisTemplate.opsForValue().set("EMAIL_VERIFIED:" + email, "true", Duration.ofMinutes(5));// 5분간 저장
+		redisTemplate.delete(key);
+		return true;
+	}
+
+	// 회원 가입 이메일 인증
+	@Transactional
+	public void confirmSignup(String email, String authCode) {
+		if (!verifyAuthCode(email, authCode)) {
+			throw new ServiceException("404", "인증 코드가 유효하지 않습니다.");
+		}
 		Member member = memberRepository.findByEmail(email)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 이메일입니다."));
-
-		// 인증된 회원으로 변경 후 저장
 		member.setEmailVerified(true);
 		memberRepository.save(member);
-
-		// redise에서 인증 코드 삭제
-		redisTemplate.delete(key);
+		// 이메일 인증 플래그 삭제
+		redisTemplate.delete("EMAIL_VERIFIED:" + email);
 	}
 
 }

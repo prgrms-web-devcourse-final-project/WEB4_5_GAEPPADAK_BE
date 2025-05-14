@@ -5,6 +5,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,6 +22,7 @@ import site.kkokkio.domain.member.controller.dto.PasswordVerificationRequest;
 import site.kkokkio.domain.member.service.AuthService;
 import site.kkokkio.domain.member.service.MailService;
 import site.kkokkio.global.dto.RsData;
+import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.global.exception.doc.ApiErrorCodeExamples;
 import site.kkokkio.global.exception.doc.ErrorCode;
 import site.kkokkio.global.auth.CustomUserDetails;
@@ -75,7 +77,7 @@ public class AuthControllerV1 {
 
 	@Operation(summary = "이메일 인증 코드 전송")
 	@PostMapping("/verify-email")
-	public RsData<Void> requestAuthCode(String email) throws MessagingException {
+	public RsData<Void> requestAuthCode(@RequestParam String email) throws MessagingException {
 
 		boolean isSend = mailService.sendAuthCode(email);
 		return isSend
@@ -83,10 +85,10 @@ public class AuthControllerV1 {
 			: new RsData<>("500", "인증 코드 전송이 실패하였습니다.");
 	}
 
-	@Operation(summary = "이메일 인증")
+	@Operation(summary = "회원가입 이메일 인증")
 	@PostMapping("/check-email")
-	public RsData<Void> validateAuthCode(@RequestBody @Valid EmailVerificationRequest emailVerificationRequestDto) {
-		mailService.validationAuthCode(emailVerificationRequestDto);
+	public RsData<Void> checkEmailForSignup(@RequestBody @Valid EmailVerificationRequest request) {
+		mailService.confirmSignup(request.getEmail(), request.getAuthCode());
 		return new RsData<>("200", "이메일 인증에 성공하였습니다.");
 	}
 
@@ -102,4 +104,15 @@ public class AuthControllerV1 {
 			? new RsData<>("200", "비밀번호가 일치합니다.")
 			: new RsData<>("401", "비밀번호가 올바르지 않습니다.");
 	}
+
+	@Operation(summary = "비밀번호 재설정을 위한 이메일 인증 코드 검증")
+	@PostMapping("/check-email-reset")
+	public RsData<Void> checkEmailForReset(@RequestBody @Valid EmailVerificationRequest request) {
+		boolean verified = mailService.verifyAuthCode(request.getEmail(), request.getAuthCode());
+		if (!verified) {
+			throw new ServiceException("404", "인증 코드가 유효하지 않습니다.");
+		}
+		return new RsData<>("200", "비밀번호 초기화를 위한 인증이 확인되었습니다.");
+	}
+
 }

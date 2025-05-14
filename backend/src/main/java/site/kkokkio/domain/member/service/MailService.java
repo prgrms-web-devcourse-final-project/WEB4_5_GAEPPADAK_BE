@@ -142,7 +142,7 @@ public class MailService {
 	@Transactional
 	public void confirmSignup(String email, String authCode) {
 		if (!verifyAuthCode(email, authCode)) {
-			throw new ServiceException("404", "인증 코드가 유효하지 않습니다.");
+			throw new ServiceException("401", "인증 코드가 유효하지 않습니다.");
 		}
 		Member member = memberRepository.findByEmail(email)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 이메일입니다."));

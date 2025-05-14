@@ -77,9 +77,7 @@ public class Member extends BaseTimeEntity {
 	}
 
 	public void maskPersonalInfo() {
-		String uuid = UUID.randomUUID().toString().replace("-", "").substring(0, 10);
-
-		this.email = "deleted_" + this.id + "_" + uuid + "@deleted.com";
-		this.nickname = "탈퇴한사용자_" + this.id + "_" + uuid;
+		this.email = "deleted_" + this.id + "@deleted.com";
+		this.nickname = "탈퇴한사용자_" + this.id;
 	}
 }

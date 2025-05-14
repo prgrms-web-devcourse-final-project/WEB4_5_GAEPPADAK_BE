@@ -81,10 +81,9 @@ public class CommentControllerV1 {
 	@IsCommentActiveOwner
 	public RsData<CommentDto> updateComment(
 		@PathVariable("commentId") Long commentId,
-		@AuthenticationPrincipal CustomUserDetails userDetails,
 		@Valid @RequestBody CommentCreateRequest request
 	) {
-		CommentDto comment = commentService.updateComment(commentId, userDetails.getMember().getId(), request);
+		CommentDto comment = commentService.updateComment(commentId, request);
 		return new RsData<>(
 			"200",
 			"댓글이 수정되었습니다.",
@@ -99,10 +98,9 @@ public class CommentControllerV1 {
 	@DeleteMapping("/comments/{commentId}")
 	@IsCommentOwner
 	public RsData<Empty> deleteComment(
-		@PathVariable("commentId") Long commentId,
-		@AuthenticationPrincipal CustomUserDetails userDetails
+		@PathVariable("commentId") Long commentId
 	) {
-		commentService.deleteCommentById(commentId, userDetails.getMember().getId());
+		commentService.deleteCommentById(commentId);
 		return new RsData<>(
 			"200",
 			"댓글이 삭제되었습니다."

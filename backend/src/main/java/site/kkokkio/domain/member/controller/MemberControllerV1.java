@@ -24,7 +24,6 @@ import site.kkokkio.global.auth.annotations.IsSelf;
 import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.exception.doc.ApiErrorCodeExamples;
 import site.kkokkio.global.exception.doc.ErrorCode;
-import site.kkokkio.global.security.CustomUserDetails;
 
 @Tag(name = "Member API", description = "회원 관련 기능을 제공")
 @RestController

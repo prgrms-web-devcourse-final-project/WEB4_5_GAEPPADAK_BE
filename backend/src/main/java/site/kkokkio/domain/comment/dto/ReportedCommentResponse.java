@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import lombok.Builder;
 import lombok.NonNull;
+import site.kkokkio.global.enums.ReportProcessingStatus;
 
 @Builder
 public record ReportedCommentResponse(
@@ -17,7 +18,8 @@ public record ReportedCommentResponse(
 	@NonNull String title,
 	@NonNull String body,
 	@NonNull List<String> reportReason,
-	@NonNull String reportedAt
+	@NonNull String reportedAt,
+	@NonNull ReportProcessingStatus status
 ) {
 	private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
@@ -52,6 +54,7 @@ public record ReportedCommentResponse(
 			.body(service.commentBody())
 			.reportReason(reasonStrings)
 			.reportedAt(formattedReportedAt)
+			.status(service.status())
 			.build();
 	}
 }

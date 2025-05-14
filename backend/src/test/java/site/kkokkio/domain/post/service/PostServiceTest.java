@@ -1,6 +1,7 @@
 package site.kkokkio.domain.post.service;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
 import java.io.IOException;
@@ -9,6 +10,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -28,17 +31,22 @@ import site.kkokkio.domain.keyword.entity.KeywordMetricHourlyId;
 import site.kkokkio.domain.keyword.repository.KeywordMetricHourlyRepository;
 import site.kkokkio.domain.keyword.repository.KeywordRepository;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
+import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.post.dto.PostDto;
+import site.kkokkio.domain.post.dto.PostReportRequestDto;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.entity.PostKeyword;
+import site.kkokkio.domain.post.entity.PostReport;
 import site.kkokkio.domain.post.repository.PostKeywordRepository;
 import site.kkokkio.domain.post.repository.PostMetricHourlyRepository;
+import site.kkokkio.domain.post.repository.PostReportRepository;
 import site.kkokkio.domain.post.repository.PostRepository;
 import site.kkokkio.domain.source.entity.KeywordSource;
 import site.kkokkio.domain.source.entity.Source;
 import site.kkokkio.domain.source.repository.KeywordSourceRepository;
 import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.global.enums.Platform;
+import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
 
 @ExtendWith(MockitoExtension.class)
@@ -62,6 +70,8 @@ public class PostServiceTest {
 	private PostMetricHourlyRepository postMetricHourlyRepository;
 	@Mock
 	private PostSourceRepository postSourceRepository;
+	@Mock
+	private PostReportRepository postReportRepository;
 	@Mock
 	private StringRedisTemplate redisTemplate;
 	@Mock
@@ -272,5 +282,133 @@ public class PostServiceTest {
 			.publishedAt(LocalDateTime.now())
 			.platform(Platform.NAVER_NEWS)
 			.build();
+	}
+
+	@Test
+	@DisplayName("포스트 신고 성공")
+	void reportPost_Success() {
+		Long postId = 1L;
+		UUID reporterId = UUID.randomUUID();
+		ReportReason reportReason = ReportReason.BAD_CONTENT;
+		PostReportRequestDto request = new PostReportRequestDto(reportReason);
+
+		// 신고 대상 포스트 실제 객체 생성 및 필드 설정
+		Post post = Post.builder().build();
+		ReflectionTestUtils.setField(post, "id", postId);
+		ReflectionTestUtils.setField(post, "deletedAt", null);
+		ReflectionTestUtils.setField(post, "reportCount", 0);
+
+		// 신고하는 사용자 Member 실제 객체 생성
+		Member reporter = Member.builder().build();
+		ReflectionTestUtils.setField(reporter, "id", reporterId);
+
+		// postRepository.findById 호출 시 실제 post 객체 반환
+		given(postRepository.findById(postId)).willReturn(Optional.of(post));
+
+		// postRepository.save 호출 시 실제 post 객체를 인자로 받아서 실제 post 객체 반환
+		given(postRepository.save(post)).willReturn(post);
+
+		/// when
+		// Service 메소드 호출 시 ReportReason Enum 값을 직접 전달
+		postService.reportPost(postId, reporter, reportReason);
+
+		/// 검증
+		verify(postRepository).findById(postId);
+		verify(postReportRepository).existsByPostAndReporter(post, reporter);
+		verify(postReportRepository).save(any(PostReport.class));
+		verify(postRepository).save(post);
+
+		assertEquals(1, post.getReportCount());
+	}
+
+	@Test
+	@DisplayName("포스트 신고 실패 - 포스트 찾을 수 없음")
+	void reportPost_PostNotFound() {
+		Long postId = 999L;
+		UUID reporterId = UUID.randomUUID();
+		ReportReason reportReason = ReportReason.BAD_CONTENT;
+		Member reporter = Member.builder().build();
+		ReflectionTestUtils.setField(reporter, "id", reporterId);
+
+		// postRepository.findById 호출 시 Optional.empty() 반환
+		given(postRepository.findById(postId)).willReturn(Optional.empty());
+
+		/// when & then
+		// ServiceException 발생 예상 및 검증
+		assertThatThrownBy(() -> postService.reportPost(postId, reporter, reportReason))
+			.isInstanceOf(ServiceException.class)
+			.hasMessageContaining("존재하지 않는 포스트입니다.");
+
+		/// 검증
+		verify(postRepository).findById(postId);
+		verify(postReportRepository, never()).existsByPostAndReporter(any(), any());
+		verify(postReportRepository, never()).save(any());
+		verify(postRepository, never()).save(any());
+	}
+
+	@Test
+	@DisplayName("포스트 신고 실패 - 삭제된 포스트")
+	void reportPost_DeletedPost() {
+		Long postId = 2L;
+		UUID reporterId = UUID.randomUUID();
+		ReportReason reportReason = ReportReason.BAD_CONTENT;
+		Member reporter = Member.builder().build();
+		ReflectionTestUtils.setField(reporter, "id", reporterId);
+
+		// 신고 대상 포스트 실제 객체 생성 및 필드 설정
+		Post post = Post.builder().build();
+		ReflectionTestUtils.setField(post, "id", postId);
+		ReflectionTestUtils.setField(post, "deletedAt", LocalDateTime.now());
+		ReflectionTestUtils.setField(post, "reportCount", 0);
+
+		// postRepository.findById 호출 시 실제 삭제된 post 객체 반환
+		given(postRepository.findById(postId)).willReturn(Optional.of(post));
+
+		/// when & then
+		assertThatThrownBy(() -> postService.reportPost(postId, reporter, reportReason))
+			.isInstanceOf(ServiceException.class)
+			.hasMessageContaining("삭제된 포스트는 신고할 수 없습니다.");
+
+		/// 검증
+		verify(postRepository).findById(postId);
+		verify(postReportRepository, never()).existsByPostAndReporter(any(), any());
+		verify(postReportRepository, never()).save(any());
+		verify(postRepository, never()).save(any());
+	}
+
+	@Test
+	@DisplayName("포스트 신고 실패 - 중복 신고")
+	void reportPost_DuplicateReport() {
+		Long postId = 3L;
+		UUID reporterId = UUID.randomUUID();
+		ReportReason reportReason = ReportReason.BAD_CONTENT;
+
+		// 신고 대상 포스트 실제 객체 생성
+		Post post = Post.builder().build();
+		ReflectionTestUtils.setField(post, "id", postId);
+		ReflectionTestUtils.setField(post, "deletedAt", null);
+		ReflectionTestUtils.setField(post, "reportCount", 0);
+
+		// postRepository.findById 호출 시 실제 post 객체 반환
+		given(postRepository.findById(postId)).willReturn(Optional.of(post));
+
+		// 신고하는 사용자 실제 Member 객체 생성
+		Member reporter = Member.builder().build();
+		ReflectionTestUtils.setField(reporter, "id", reporterId);
+
+		// postReportRepository.existsByPostAndReporter 호출 시 true 반환
+		given(postReportRepository.existsByPostAndReporter(post, reporter)).willReturn(true);
+
+		/// when & then
+		// ServiceException 발생 예상 및 검증
+		assertThatThrownBy(() -> postService.reportPost(postId, reporter, reportReason))
+			.isInstanceOf(ServiceException.class)
+			.hasMessageContaining("이미 신고한 포스트입니다.");
+
+		/// 검증
+		verify(postRepository).findById(postId);
+		verify(postReportRepository).existsByPostAndReporter(post, reporter);
+		verify(postReportRepository, never()).save(any());
+		verify(postRepository, never()).save(any());
 	}
 }

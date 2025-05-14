@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import site.kkokkio.domain.comment.controller.dto.CommentCreateRequest;
 import site.kkokkio.domain.comment.dto.CommentDto;
-import site.kkokkio.domain.comment.dto.CommentReportRequestDto;
 import site.kkokkio.domain.comment.entity.Comment;
 import site.kkokkio.domain.comment.entity.CommentLike;
 import site.kkokkio.domain.comment.repository.CommentLikeRepository;
@@ -15,8 +14,9 @@ import site.kkokkio.domain.comment.repository.CommentRepository;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.repository.PostRepository;
-import site.kkokkio.domain.report.entity.CommentReport;
-import site.kkokkio.domain.report.repository.CommentReportRepository;
+import site.kkokkio.domain.comment.entity.CommentReport;
+import site.kkokkio.domain.comment.repository.CommentReportRepository;
+import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
 
 import java.util.UUID;
@@ -128,10 +128,10 @@ public class CommentService {
 	 * 댓글 신고 기능
 	 * @param commentId 신고 대상 댓글 ID
 	 * @param reporter 신고하는 사용자 (인증된 사용자)
-	 * @param request 신고 요청 DTO (신고 사유 포함)
+	 * @param reason 신고 사유
 	 */
 	@Transactional
-	public void reportComment(Long commentId, Member reporter, CommentReportRequestDto request) {
+	public void reportComment(Long commentId, Member reporter, ReportReason reason) {
 
 		// 1. 신고 대상 댓글 조회
 		Comment comment = commentRepository.findById(commentId)
@@ -158,7 +158,7 @@ public class CommentService {
 		CommentReport commentReport = CommentReport.builder()
 				.comment(comment)
 				.reporter(reporter)
-				.reason(request.reason())
+				.reason(reason)
 				.build();
 
 		// 6. 신고 정보 저장

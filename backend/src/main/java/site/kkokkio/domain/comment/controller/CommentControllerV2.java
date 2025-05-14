@@ -7,6 +7,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -134,6 +135,31 @@ public class CommentControllerV2 {
 		return new RsData<>(
 			"200",
 			"선택하신 댓글이 숨김 처리되었습니다."
+		);
+	}
+
+	@Operation(
+		summary = "신고된 댓글 신고 거부 처리",
+		description = "관리자 권한으로 선택된 신고 댓글들의 신고를 거부(삭제) 처리합니다."
+	)
+	@IsAdmin
+	@ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
+		ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH,
+		ErrorCode.MISSING_TOKEN, ErrorCode.COMMENT_IDS_NOT_PROVIDED,
+		ErrorCode.COMMENT_NOT_INCLUDE
+	})
+	@DeleteMapping("/admin/reports/comments")
+	@ResponseStatus(HttpStatus.OK)
+	public RsData<Void> rejectReportedComments(
+		@Parameter(description = "신고 거부할 댓글 ID 목록을 포함하는 요청 본문", required = true)
+		@Valid @RequestBody ReportedCommentHideRequest request
+	) {
+		// 서비스 레이어의 신고 거부 메서드 호출
+		commentService.rejectReportedComment(request.commentIds());
+
+		return new RsData<>(
+			"200",
+			"선택하신 신고가 거부 처리되었습니다."
 		);
 	}
 }

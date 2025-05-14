@@ -1,8 +1,11 @@
 package site.kkokkio.domain.comment.repository;
 
+import java.util.Collection;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -65,4 +68,9 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
 		@Param("searchReportReason") String searchReportReason,
 		Pageable pageable
 	);
+
+	// 주어진 댓글 ID 목록에 해당하는 모든 신고 엔티티를 삭제
+	@Modifying
+	@Query("DELETE FROM CommentReport cr WHERE cr.comment.id IN :commentIds")
+	void deleteAllByCommentIdIn(@Param("commentIds") Collection<Long> commentIds);
 }

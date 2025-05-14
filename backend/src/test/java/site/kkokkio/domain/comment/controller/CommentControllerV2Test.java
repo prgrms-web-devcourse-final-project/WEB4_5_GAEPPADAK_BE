@@ -488,4 +488,101 @@ class CommentControllerV2Test {
 			.andExpect(jsonPath("$.code").value(ErrorCode.COMMENT_NOT_INCLUDE.getCode()))
 			.andExpect(jsonPath("$.message").value(ErrorCode.COMMENT_NOT_INCLUDE.getMessage()));
 	}
+
+	@Test
+	@DisplayName("신고된 댓글 신고 거부 처리 - 성공")
+	@WithMockUser(roles = "ADMIN")
+	void test11() throws Exception {
+		/// given
+		List<Long> commentIdsToReject = Arrays.asList(1L, 5L, 11L);
+		ReportedCommentHideRequest requestBody = new ReportedCommentHideRequest(commentIdsToReject);
+
+		// commentService.rejectReportedComment 메서드는 void를 반환하므로 doNothing() 모킹
+		doNothing().when(commentService).rejectReportedComment(eq(commentIdsToReject));
+
+		/// when & then
+		mockMvc.perform(delete("/api/v2/admin/reports/comments")
+				.with(csrf())
+				.contentType(APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(requestBody)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").value("선택하신 신고가 거부 처리되었습니다."))
+			.andExpect(jsonPath("$.data").doesNotExist());
+
+		// 서비스 메서드가 예상된 인자로 한 번 호출되었는지 검증
+		verify(commentService).rejectReportedComment(eq(commentIdsToReject));
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 신고 거부 처리 - 실패 (USER 권한)")
+	@WithMockUser(roles = "USER")
+	void test11_1() throws Exception {
+		/// given
+		List<Long> commentIdsToReject = Arrays.asList(1L, 3L);
+		ReportedCommentHideRequest requestBody = new ReportedCommentHideRequest(commentIdsToReject);
+
+		/// when & then
+		mockMvc.perform(delete("/api/v2/admin/reports/comments")
+				.with(csrf())
+				.contentType(APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(requestBody)))
+			.andExpect(status().isForbidden());
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 신고 거부 처리 - 실패 (인증되지 않음)")
+	void test11_2() throws Exception {
+		/// given
+		List<Long> commentIdsToReject = Arrays.asList(2L, 3L);
+		ReportedCommentHideRequest requestBody = new ReportedCommentHideRequest(commentIdsToReject);
+
+		/// when & then
+		mockMvc.perform(delete("/api/v2/admin/reports/comments")
+				.with(csrf())
+				.contentType(APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(requestBody)))
+			.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 신고 거부 처리 - 실패 (인증되지 않음)")
+	@WithMockUser(roles = "ADMIN")
+	void test11_3() throws Exception {
+		/// given
+		List<Long> commentIdsToReject = Arrays.asList();
+		ReportedCommentHideRequest requestBody = new ReportedCommentHideRequest(commentIdsToReject);
+
+		/// when & then
+		mockMvc.perform(delete("/api/v2/admin/reports/comments")
+				.with(csrf())
+				.contentType(APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(requestBody)))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value(ErrorCode.COMMENT_IDS_NOT_PROVIDED.getCode()))
+			.andExpect(jsonPath("$.message").value("commentIds : NotEmpty : 댓글이 선택되지 않았습니다."));
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 신고 거부 처리 - 실패 (댓글 없음)")
+	@WithMockUser(roles = "ADMIN")
+	void test11_4() throws Exception {
+		/// given
+		List<Long> commentIdsToReject = Arrays.asList(999L, 10000000L);
+		ReportedCommentHideRequest requestBody = new ReportedCommentHideRequest(commentIdsToReject);
+
+		// 서비스 메서드가 ServiceException을 던지도록 Mocking
+		doThrow(
+			new ServiceException(ErrorCode.COMMENT_NOT_INCLUDE.getCode(), ErrorCode.COMMENT_NOT_INCLUDE.getMessage()))
+			.when(commentService).rejectReportedComment(anyList());
+
+		/// when & then
+		mockMvc.perform(delete("/api/v2/admin/reports/comments")
+				.with(csrf())
+				.contentType(APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(requestBody)))
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.code").value(ErrorCode.COMMENT_NOT_INCLUDE.getCode()))
+			.andExpect(jsonPath("$.message").value(ErrorCode.COMMENT_NOT_INCLUDE.getMessage()));
+	}
 }

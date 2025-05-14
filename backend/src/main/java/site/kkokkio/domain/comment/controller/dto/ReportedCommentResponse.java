@@ -1,4 +1,4 @@
-package site.kkokkio.domain.comment.dto;
+package site.kkokkio.domain.comment.controller.dto;
 
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import lombok.Builder;
 import lombok.NonNull;
+import site.kkokkio.domain.comment.dto.ReportedCommentSummary;
 import site.kkokkio.global.enums.ReportProcessingStatus;
 
 @Builder

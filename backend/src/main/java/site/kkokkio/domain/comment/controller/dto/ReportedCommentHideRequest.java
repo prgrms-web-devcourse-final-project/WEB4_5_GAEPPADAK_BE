@@ -1,4 +1,4 @@
-package site.kkokkio.domain.comment.dto;
+package site.kkokkio.domain.comment.controller.dto;
 
 import java.util.List;
 

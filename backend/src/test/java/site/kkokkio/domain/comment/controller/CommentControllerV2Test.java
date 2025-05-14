@@ -32,8 +32,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import site.kkokkio.domain.comment.dto.CommentReportRequest;
-import site.kkokkio.domain.comment.dto.ReportedCommentHideRequest;
+import site.kkokkio.domain.comment.controller.dto.CommentReportRequest;
+import site.kkokkio.domain.comment.controller.dto.ReportedCommentHideRequest;
 import site.kkokkio.domain.comment.dto.ReportedCommentSummary;
 import site.kkokkio.domain.comment.service.CommentService;
 import site.kkokkio.domain.member.entity.Member;

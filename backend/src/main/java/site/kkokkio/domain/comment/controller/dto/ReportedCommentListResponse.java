@@ -1,4 +1,4 @@
-package site.kkokkio.domain.comment.dto;
+package site.kkokkio.domain.comment.controller.dto;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 
 import lombok.Builder;
 import lombok.NonNull;
+import site.kkokkio.domain.comment.dto.ReportedCommentSummary;
 import site.kkokkio.global.dto.PaginationMeta;
 
 @Builder

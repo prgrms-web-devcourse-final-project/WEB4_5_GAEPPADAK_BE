@@ -95,13 +95,14 @@ public class AuthControllerV1 {
 
 	@Operation(summary = "비밀번호 인증")
 	@PostMapping("/check-password")
+	@ApiErrorCodeExamples({ErrorCode.PASSWORD_UNAUTHORIZED})
 	public RsData<Void> validatePassword(
 		@AuthenticationPrincipal CustomUserDetails userDetails,
 		@RequestBody @Valid PasswordVerificationRequest passwordCheckRequest
 	) {
 		boolean isSuccess = authService.checkPassword(passwordCheckRequest, userDetails);
 		return isSuccess
-			? new RsData<>("200", "비밀번호 인증에 성공하였습니다.")
-			: new RsData<>("400", "비밀번호 인증에 실패하였습니다.");
+			? new RsData<>("200", "비밀번호가 일치합니다.")
+			: new RsData<>("401", "비밀번호가 올바르지 않습니다.");
 	}
 }

@@ -5,6 +5,7 @@ import static org.mockito.BDDMockito.*;
 
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,8 +17,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
+import site.kkokkio.domain.member.controller.dto.MemberUpdateRequest;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.repository.MemberRepository;
+import site.kkokkio.global.auth.CustomUserDetails;
 import site.kkokkio.global.enums.MemberRole;
 import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.global.util.JwtUtils;
@@ -149,4 +152,41 @@ class MemberServiceV1Test {
 			.isInstanceOf(ServiceException.class)
 			.hasMessageContaining("존재하지 않는 이메일");
 	}
+
+	@Test
+	@DisplayName("회원정보 수정 성공")
+	void modifyMemberInfo_success() {
+		Member member = Member.builder()
+			.id(UUID.randomUUID())
+			.email("user@example.com")
+			.nickname("tester")
+			.passwordHash("encodedPassword")
+			.birthDate(LocalDate.of(1990, 1, 1))
+			.role(MemberRole.USER)
+			.emailVerified(true)
+			.build();
+
+		CustomUserDetails userDetails = new CustomUserDetails(member);
+
+		MemberUpdateRequest request = new MemberUpdateRequest("password0000!", "change");
+
+		MemberResponse response = memberService.modifyMemberInfo(userDetails, request);
+
+		assertThat(response.getEmail()).isEqualTo("user@example.com");
+		assertThat(response.getNickname()).isEqualTo("change");
+	}
+
+	@Test
+	@DisplayName("회원정보 수정 실패 - 토큰 누락")
+	void modifyMemberInfo_fail_tokenExpired() {
+		// given
+		MemberUpdateRequest request = new MemberUpdateRequest("change", "newPassword");
+
+		// when & then
+		assertThatThrownBy(() -> memberService.modifyMemberInfo(null, request))
+			.isInstanceOf(NullPointerException.class)
+			.hasMessageContaining("userDetails");
+
+	}
+
 }

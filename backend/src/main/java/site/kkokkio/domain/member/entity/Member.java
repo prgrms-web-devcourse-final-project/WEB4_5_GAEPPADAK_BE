@@ -70,4 +70,9 @@ public class Member extends BaseTimeEntity {
 	public void setEmailVerified(boolean emailVerified) {
 		this.emailVerified = emailVerified;
 	}
+
+	// 역할 변경을 위한 Setter
+	public void setRole(MemberRole role) {
+		this.role = role;
+	}
 }

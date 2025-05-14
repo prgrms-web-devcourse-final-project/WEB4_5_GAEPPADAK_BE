@@ -5,8 +5,8 @@ import lombok.Builder;
 import site.kkokkio.global.enums.ReportReason;
 
 @Builder
-public record CommentReportRequestDto(
-        @NotNull
-        ReportReason reason
+public record CommentReportRequest(
+	@NotNull
+	ReportReason reason
 ) {
 }

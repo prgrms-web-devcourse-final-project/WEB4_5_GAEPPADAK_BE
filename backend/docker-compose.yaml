@@ -1,6 +1,10 @@
 services:
   prometheus:
+    container_name: prometheus
     image: prom/prometheus:latest
+    restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "9090:9090"
     volumes:
@@ -9,11 +13,40 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
     depends_on:
       - mysql-exporter
+      - loki
+    networks:
+      - monitoring
+
+  loki:
+    container_name: loki
+    image: grafana/loki:latest
+    restart: always
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml
+      - ./tmp/loki:/loki
+    networks:
+      - monitoring
+
+  promtail:
+    container_name: promtail
+    image: grafana/promtail:latest
+    restart: always
+    volumes:
+      - ./logs:/app/logs
+      - ./promtail-config.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
     networks:
       - monitoring
 
   grafana:
+    container_name: grafana
     image: grafana/grafana:latest
+    restart: always
     ports:
       - "3000:3000"
     volumes:
@@ -29,6 +62,7 @@ services:
   mysql-exporter:
     container_name: mysql-exporter
     image: prom/mysqld-exporter:latest
+    restart: always
     ports:
       - "9104:9104"
     command:
@@ -40,7 +74,9 @@ services:
       - monitoring
 
   node-exporter:
+    container_name: node-exporter
     image: prom/node-exporter:latest
+    restart: always
     ports:
       - "9100:9100"
     volumes:
@@ -55,8 +91,8 @@ services:
       - monitoring
 
   db:
-    image: mysql:8.0
     container_name: mysql
+    image: mysql:8.0
     restart: always
     env_file:
       - .env
@@ -74,9 +110,9 @@ services:
     networks:
       - monitoring
 
-  redis: # container name
-    image: redis:alpine
+  redis:
     container_name: redis
+    image: redis:alpine
     restart: always
     ports: # 바인딩할 포트:내부 포트
       - "6379:6379"

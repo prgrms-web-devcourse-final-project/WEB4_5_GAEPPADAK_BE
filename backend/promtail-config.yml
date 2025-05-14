@@ -1,0 +1,22 @@
+server:
+  http_listen_port: 9080 # Promtail 의 HTTP 서버가 요청을 수신할 포트
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: app-logs
+    static_configs:
+      - targets: ["localhost"]
+        labels:
+          job: app
+          __path__: /app/logs/*.log
+
+    pipeline_stages:
+      - multiline:
+          firstline: '^\[ls\] \[' # 로그의 시작을 나타내는 정규식
+          separator: '\] \[le\]' # 멀티라인 로그의 구분자

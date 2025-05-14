@@ -275,7 +275,7 @@ public class PostService {
 				postSummary = sources.get(0).getDescription();
 			}
 
-			// 5) Post 엔티티 생성
+			// 4) Post 엔티티 생성
 			Post post = createAndSavePost(postTitle, postSummary, sources, bucketAt);
 
 

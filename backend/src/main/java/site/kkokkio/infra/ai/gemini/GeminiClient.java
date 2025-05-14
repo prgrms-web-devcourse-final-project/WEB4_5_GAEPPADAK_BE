@@ -53,7 +53,7 @@ public class GeminiClient implements AiSummaryClient {
 	public CompletableFuture<String> requestSummaryAsync(String systemPrompt, String content) {
 
 		if (mockEnabled) {
-			return loadMockSummaryResponse(); // 아래에서 정의할 메서드
+			return loadMockSummaryResponse();
 		}
 
 		Map<String, Object> body = Map.of(
@@ -112,8 +112,8 @@ public class GeminiClient implements AiSummaryClient {
 				throw new IOException("Mock 파일을 찾을 수 없습니다: " + mockFile);
 			}
 			ObjectMapper mapper = new ObjectMapper();
-			GeminiResponse response = mapper.readValue(is, GeminiResponse.class); // <-- 중요!
-			String content = response.getChoices().get(0).getMessage().getContent(); // <-- 여기
+			GeminiResponse response = mapper.readValue(is, GeminiResponse.class);
+			String content = response.getChoices().get(0).getMessage().getContent();
 			return CompletableFuture.completedFuture(content);
 		} catch (IOException e) {
 			throw new RuntimeException("Gemini mock 파일 로딩 실패", e);

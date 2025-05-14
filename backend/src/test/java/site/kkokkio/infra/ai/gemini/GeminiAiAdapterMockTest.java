@@ -20,10 +20,8 @@ class GeminiAiAdapterMockTest {
 	@Test
 	@DisplayName("Mock 모드에서 Gemini 요약 요청 - 성공")
 	void requestSummary_mockData() throws Exception {
-		// given: systemPrompt, content는 mock에서는 의미 없음
 		CompletableFuture<String> result = geminiClient.requestSummaryAsync("시스템 프롬프트", "요약할 콘텐츠");
 
-		// then: mock JSON에서 반환한 기대 값 확인
 		assertThat(result).isNotNull();
 		assertThat(result.get()).contains("\"title\"");
 		assertThat(result.get()).contains("\"summary\"");

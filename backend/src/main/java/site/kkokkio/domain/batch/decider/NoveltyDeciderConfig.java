@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class NoveltyDeciderConfig {
 
-	@Bean
+	@Bean(name = NOVELTY_DECIDER)
 	public JobExecutionDecider noveltyDecider() {
 		return (jobExec, stepExec) -> {
 

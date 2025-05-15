@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -224,10 +223,6 @@ public class PostServiceTest {
 		given(objectMapper.readTree(anyString()))
 			.willReturn(fakeNode);
 
-		// Redis 캐시용 JSON 직렬화 모킹
-		given(objectMapper.writeValueAsString(any()))
-			.willReturn(fakeJson);
-
 		// PostRepository 저장 시 리턴할 엔티티
 		Post savedPost = Post.builder()
 			.id(100L)
@@ -237,11 +232,9 @@ public class PostServiceTest {
 
 		given(postRepository.save(any())).willReturn(savedPost);
 		given(keywordRepository.findById(keywordId)).willReturn(Optional.of(keyword));
-		given(redisTemplate.opsForValue()).willReturn(valueOps);
-		doNothing().when(valueOps).set(any(), any(), any());
 
 		// when
-		postService.generatePosts();
+		postService.generatePosts(List.of(keywordId));
 
 		// then
 		then(postRepository).should().save(argThat(p ->
@@ -252,8 +245,6 @@ public class PostServiceTest {
 		then(postSourceRepository).should().insertIgnoreAll(any());
 		then(postKeywordRepository).should().insertIgnoreAll(any());
 		then(postMetricHourlyRepository).should().save(any());
-		then(valueOps).should().set(startsWith("POST_CARD:"), contains("테스트제목"), eq(Duration.ofHours(24)));
-
 	}
 
 	@Test
@@ -283,7 +274,7 @@ public class PostServiceTest {
 		));
 
 		// when
-		postService.generatePosts();
+		postService.generatePosts(List.of(keywordId));
 
 		// then
 		then(postRepository).should(never()).save(any()); // 신규 포스트 저장 안됨
@@ -306,7 +297,7 @@ public class PostServiceTest {
 		given(keywordSourceRepository.findTopSourcesByKeywordIdsLimited(List.of(keywordId), 10)).willReturn(List.of());
 
 		// when
-		postService.generatePosts();
+		postService.generatePosts(List.of(keywordId));
 
 		// then
 		then(postRepository).shouldHaveNoInteractions();

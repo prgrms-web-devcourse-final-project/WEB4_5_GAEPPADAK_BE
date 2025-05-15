@@ -3,10 +3,11 @@ package site.kkokkio.domain.batch.step;
 import static site.kkokkio.domain.batch.context.BatchConstants.*;
 import static site.kkokkio.domain.batch.context.ExecutionContextKeys.*;
 
+import java.time.Duration;
 import java.util.List;
 
-import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ExecutionContext;
@@ -19,43 +20,48 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import site.kkokkio.domain.batch.listener.BatchMetricsListener;
 import site.kkokkio.domain.batch.listener.LogStepListener;
-import site.kkokkio.domain.keyword.dto.NoveltyStatsDto;
-import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
+import site.kkokkio.domain.post.service.PostService;
 
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-public class EvaluateNoveltyStepConfig {
+public class CachePostStepConfig {
 
 	private final JobRepository jobRepository;
 	private final PlatformTransactionManager transactionManager;
-	private final KeywordMetricHourlyService keywordMetricHourlyService;
+	private final PostService postService;
 	private final LogStepListener err;
 	private final BatchMetricsListener metrics;
 
-	@Bean(name = EVALUATE_NOVELTY_STEP)
-	public Step fetchTrendingKeywordsStep() {
-		return new StepBuilder(EVALUATE_NOVELTY_STEP, jobRepository)
+	@Bean(name = CACHE_POST_STEP)
+	public Step cachePostStep() {
+		return new StepBuilder(CACHE_POST_STEP, jobRepository)
 			.tasklet((contrib, ctx) -> {
 
-				JobExecution je = ctx.getStepContext().getStepExecution().getJobExecution();
-				ExecutionContext jobEc = je.getExecutionContext();
-				ExecutionContext stepEc = ctx.getStepContext().getStepExecution().getExecutionContext();
+				StepExecution se = ctx.getStepContext().getStepExecution();
+				ExecutionContext jobEc = ctx.getStepContext()
+					.getStepExecution()
+					.getJobExecution()
+					.getExecutionContext();
+				ExecutionContext stepEc = se.getExecutionContext();
 
-				// Top-10 키워드 ID 가져오기
 				@SuppressWarnings("unchecked")
-				List<Long> topKeywordIds = (List<Long>)jobEc.get(EC_TOP_IDS);
+				List<Long> newPostIds =
+					(List<Long>)se.getJobExecution().getExecutionContext().get(EC_NEW_POST_IDS);
+				@SuppressWarnings("unchecked")
+				List<Long> keywordIds = (List<Long>)jobEc.get(EC_POSTABLE_IDS);
 
-				// 1) Novelty 계산 & keyword_metric_hourly UPDATE
-				NoveltyStatsDto ns = keywordMetricHourlyService.evaluateNovelty(topKeywordIds);
-				int lowVarCnt = ns.lowVariationCount();
+				// 캐싱이 필요 없는 경우 빠른 종료
+				if (newPostIds.isEmpty()) {
+					stepEc.putInt(SC_CACHE_SIZE, 0);
+					return RepeatStatus.FINISHED;
+				}
 
-				// 2) low_variation = false 인 키워드만 다음 Step 전달
-				jobEc.put(EC_POSTABLE_IDS, ns.postableIds());
-				jobEc.putInt(EC_POSTABLE_COUNT, ns.postableIds().size());
+				// Redis 캐싱 (24h TTL)
+				int cached = postService.cacheCardViews(newPostIds, keywordIds, Duration.ofHours(24));
 
-				// 3) StepExecutionContext 업데이트
-				stepEc.putInt(SC_NOVELTY_SKIPPED, lowVarCnt);   // Counter
+				// StepExecutionContext 업데이트
+				stepEc.putInt(SC_CACHE_SIZE, cached);  // Gauge (batch_cache_size)
 
 				return RepeatStatus.FINISHED;
 			}, transactionManager)

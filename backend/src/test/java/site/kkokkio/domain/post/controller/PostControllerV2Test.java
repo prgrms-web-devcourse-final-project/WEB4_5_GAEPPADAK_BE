@@ -23,7 +23,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import site.kkokkio.domain.member.entity.Member;
-import site.kkokkio.domain.post.dto.PostReportRequestDto;
+import site.kkokkio.domain.post.controller.dto.PostReportRequest;
 import site.kkokkio.domain.post.service.PostService;
 import site.kkokkio.global.auth.CustomUserDetails;
 import site.kkokkio.global.auth.CustomUserDetailsService;
@@ -59,7 +59,7 @@ public class PostControllerV2Test {
 	void reportPost_Success() throws Exception {
 		Long postId = 1L;
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		PostReportRequestDto request = new PostReportRequestDto(reportReason);
+		PostReportRequest request = new PostReportRequest(reportReason);
 
 		// postService.reportPost 메소드는 void 이므로 doNothing() 모킹
 		Mockito.doNothing()
@@ -89,7 +89,7 @@ public class PostControllerV2Test {
 	void reportPost_PostNotFound() throws Exception {
 		Long postId = 999L;
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		PostReportRequestDto request = new PostReportRequestDto(reportReason);
+		PostReportRequest request = new PostReportRequest(reportReason);
 
 		// ServiceException 발생 모킹
 		Mockito.doThrow(new ServiceException("404", "존재하지 않는 포스트입니다."))
@@ -116,7 +116,7 @@ public class PostControllerV2Test {
 	void reportPost_DuplicateReport() throws Exception {
 		Long postId = 2L;
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		PostReportRequestDto request = new PostReportRequestDto(reportReason);
+		PostReportRequest request = new PostReportRequest(reportReason);
 
 		// ServiceException 발생 모킹
 		Mockito.doThrow(new ServiceException("400", "이미 신고한 포스트입니다."))

@@ -1,5 +1,8 @@
 package site.kkokkio.domain.batch.listener;
 
+import static site.kkokkio.domain.batch.context.BatchConstants.*;
+import static site.kkokkio.domain.batch.context.ExecutionContextKeys.*;
+
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
@@ -43,14 +46,14 @@ public class BatchMetricsListener implements StepExecutionListener, JobExecution
 		);
 
 		// Gauge & Counter 기록
-		recordGauge(ctx, "rssLatencyMs", "batch_rss_latency_ms", base);
-		recordCounter(ctx, "newsFetched", "batch_news_fetched_total", base);
-		recordCounter(ctx, "newsApiFail", "batch_news_api_fail_total", base);
-		recordCounter(ctx, "videoFetched", "batch_video_fetched_total", base);
-		recordCounter(ctx, "videoApiFail", "batch_video_api_fail_total", base);
-		recordCounter(ctx, "noveltyLowVarCount", "batch_novelty_lowvar_total", base);
-		recordCounter(ctx, "postCreated", "batch_post_created_total", base);
-		recordGauge(ctx, "cacheEntryCount", "batch_cache_size", base);
+		recordGauge(ctx, SEARCH_VIDEO_FLOW, "batch_rss_latency_ms", base);
+		recordCounter(ctx, SC_NEWS_FETCHED, "batch_news_fetched_total", base);
+		recordCounter(ctx, SC_NEWS_API_FAIL, "batch_news_api_fail_total", base);
+		recordCounter(ctx, SC_VIDEO_FETCHED, "batch_video_fetched_total", base);
+		recordCounter(ctx, SC_VIDEO_API_FAIL, "batch_video_api_fail_total", base);
+		recordCounter(ctx, SC_NOVELTY_SKIPPED, "batch_novelty_lowvar_total", base);
+		recordCounter(ctx, SC_POST_CREATED, "batch_post_created_total", base);
+		recordGauge(ctx, SC_CACHE_SIZE, "batch_cache_size", base);
 
 		return stepExec.getExitStatus();
 	}

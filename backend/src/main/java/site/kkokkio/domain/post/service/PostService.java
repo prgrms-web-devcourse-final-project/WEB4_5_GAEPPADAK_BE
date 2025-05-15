@@ -53,6 +53,7 @@ import site.kkokkio.domain.source.entity.Source;
 import site.kkokkio.domain.source.repository.KeywordSourceRepository;
 import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.global.enums.Platform;
+import site.kkokkio.global.enums.ReportProcessingStatus;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.infra.ai.AiType;
@@ -452,5 +453,50 @@ public class PostService {
 
 		// 4. 결과 반환
 		return reportedPostPage;
+	}
+
+	/**
+	 * 관리자용 신고된 포스트들을 소프트 삭제(숨김) 처리합니다.
+	 * @param postIds 숨길 포스트 ID 목록
+	 */
+	@Transactional
+	public void hideReportedPost(List<Long> postIds) {
+		for (Long postId : postIds) {
+			// 1. 포스트 조회 (소프트 삭제 여부와 상관없이 일단 존재하면 가져옴)
+			Post post = postRepository.findById(postId)
+				.orElseThrow(() -> new ServiceException("404", "존재하지 않는 포스트가 포함되어 있습니다."));
+
+			// 2. 이미 삭제(숨김)된 포스트인지 확인
+			if (post.isDeleted()) {
+				throw new ServiceException("400", "ID [" + postId + "]포스트는 이미 삭제되었습니다.");
+			}
+
+			// 3. 포스트를 소프트 딜리트
+			post.softDelete();
+
+			// 4. 변경사항 저장
+			postRepository.save(post);
+		}
+
+		// 요청된 포스트 ID들에 해당하는 모든 신고 엔티티의 상태를 ACCEPTED로 업데이트
+		postReportRepository.updateStatusByPostIdIn(postIds, ReportProcessingStatus.ACCEPTED);
+	}
+
+	/**
+	 * 관리자용 신고된 포스트들의 신고를 거부(삭제) 처리합니다.
+	 * @param postIds 신고를 거부할 포스트 ID 목록
+	 */
+	@Transactional
+	public void rejectReportedPost(List<Long> postIds) {
+		// 1. 요청된 모든 포스트 ID에 해당하는 Post 엔티티들을 한 번에 조회
+		List<Post> posts = postRepository.findAllById(postIds);
+
+		// 2. 조회된 포스트 개수와 요청된 ID 개수를 비교하여, 누락된 포스트가 있는지 확인
+		if (posts.size() != postIds.size()) {
+			throw new ServiceException("404", "존재하지 않는 포스트가 포함되어 있습니다.");
+		}
+
+		// 3. 요청된 포스트 ID들에 해당하는 모든 신고 엔티티 삭제
+		postReportRepository.updateStatusByPostIdIn(postIds, ReportProcessingStatus.REJECTED);
 	}
 }

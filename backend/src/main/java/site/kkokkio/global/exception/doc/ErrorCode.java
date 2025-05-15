@@ -46,7 +46,9 @@ public enum ErrorCode {
 	BAD_SEARCH_OPTION("400", "부적절한 검색 옵션입니다."),
 	BAD_SORT_OPTION("400", "부적절한 정렬 옵션입니다."),
 	COMMENT_IDS_NOT_PROVIDED("400", "댓글이 선택되지 않았습니다."),
-	COMMENT_NOT_INCLUDE("404", "존재하지 않는 댓글이 포함되어 있습니다.");
+	COMMENT_NOT_INCLUDE("404", "존재하지 않는 댓글이 포함되어 있습니다."),
+	POST_IDS_NOT_PROVIDED("400", "포스트가 선택되지 않았습니다."),
+	POST_NOT_INCLUDE("404", "존재하지 않는 포스트가 포함되어 있습니다.");
 
 	private final String code;
 	private final String message;

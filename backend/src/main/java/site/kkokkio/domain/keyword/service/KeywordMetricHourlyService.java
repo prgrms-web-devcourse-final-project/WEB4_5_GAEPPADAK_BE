@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
+import site.kkokkio.domain.keyword.dto.NoveltyStatsDto;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourly;
 import site.kkokkio.domain.keyword.repository.KeywordMetricHourlyRepository;
 import site.kkokkio.global.exception.ServiceException;
@@ -30,7 +31,7 @@ public class KeywordMetricHourlyService {
 		List<KeywordMetricHourly> metrics = keywordMetricHourlyRepository.findTop10HourlyMetricsClosestToNowNative(
 			LocalDateTime.now()
 		);
-		if(metrics == null || metrics.isEmpty()) {
+		if (metrics == null || metrics.isEmpty()) {
 			throw new ServiceException("404", "키워드를 불러오지 못했습니다.");
 		}
 		List<KeywordMetricHourlyDto> responses = new ArrayList<>();
@@ -50,7 +51,8 @@ public class KeywordMetricHourlyService {
 		return responses;
 	}
 
-	public void evaluateNovelty() {
+	public NoveltyStatsDto evaluateNovelty(List<Long> keywordIds) {
 		// TODO: need to implement
+		return new NoveltyStatsDto(0, List.of());
 	}
 }

@@ -22,7 +22,7 @@ import site.kkokkio.domain.source.service.SourceService;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-public class searchVideosStepConfig {
+public class SearchVideosStepConfig {
 
 	private final JobRepository jobRepository;
 	private final PlatformTransactionManager transactionManager;

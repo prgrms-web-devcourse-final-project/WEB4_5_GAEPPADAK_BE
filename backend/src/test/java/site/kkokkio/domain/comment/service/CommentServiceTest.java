@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,11 +19,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import site.kkokkio.domain.comment.controller.dto.CommentCreateRequest;
+import site.kkokkio.domain.comment.controller.dto.CommentReportRequest;
 import site.kkokkio.domain.comment.dto.CommentDto;
-import site.kkokkio.domain.comment.dto.CommentReportRequest;
+import site.kkokkio.domain.comment.dto.ReportedCommentSummary;
 import site.kkokkio.domain.comment.entity.Comment;
 import site.kkokkio.domain.comment.entity.CommentReport;
 import site.kkokkio.domain.comment.repository.CommentLikeRepository;
@@ -31,6 +35,7 @@ import site.kkokkio.domain.comment.repository.CommentRepository;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.repository.PostRepository;
+import site.kkokkio.global.enums.ReportProcessingStatus;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
 
@@ -253,12 +258,13 @@ class CommentServiceTest {
 	@DisplayName("댓글 신고 성공")
 	void test7() {
 		Long commentId = 1L;
+		UUID reporterId = UUID.randomUUID();
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
 		CommentReportRequest request = new CommentReportRequest(reportReason);
 
 		// 댓글 작성자 Member 모킹
 		Member commentWriter = mock(Member.class);
-		when(commentWriter.getEmail()).thenReturn("writer@email.com");
+		when(commentWriter.getId()).thenReturn(UUID.randomUUID());
 
 		// 신고 대상 댓글 Comment 모킹
 		Comment comment = Comment.builder().member(commentWriter).body("댓글 내용").build();
@@ -271,7 +277,7 @@ class CommentServiceTest {
 
 		// 신고하는 사용자 Member 모킹
 		Member reporter = Member.builder().build();
-		ReflectionTestUtils.setField(reporter, "email", "test@email.com");
+		ReflectionTestUtils.setField(reporter, "id", reporterId);
 
 		// commentReportRepository.existsByCommentAndReporter 호출 시 false 반환 모킹
 		when(commentReportRepository.existsByCommentAndReporter(comment, reporter)).thenReturn(false);
@@ -283,7 +289,7 @@ class CommentServiceTest {
 		when(commentRepository.save(comment)).thenReturn(comment);
 
 		// Service 메서드 호출
-		commentService.reportComment(commentId, reporter, request.reason());
+		commentService.reportComment(commentId, reporter, reportReason);
 
 		/// 검증
 		verify(commentRepository).findById(commentId);
@@ -350,12 +356,13 @@ class CommentServiceTest {
 	@DisplayName("댓글 신고 실패 - 본인 댓글 신고")
 	void test7_3() {
 		Long commentId = 3L;
+		UUID reporterId = UUID.randomUUID();
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
 		CommentReportRequest request = new CommentReportRequest(reportReason);
 
 		// 신고하는 사용자 Member 실제 객체 생성 및 필드 설정
 		Member reporter = Member.builder().build();
-		ReflectionTestUtils.setField(reporter, "email", "reporter@email.com");
+		ReflectionTestUtils.setField(reporter, "id", reporterId);
 
 		// 신고 대상 댓글 Comment 실제 객체 생성
 		Comment comment = Comment.builder().member(reporter).body("댓글 내용").build();
@@ -383,12 +390,13 @@ class CommentServiceTest {
 	@DisplayName("댓글 신고 실패 - 중복 신고")
 	void test7_4() {
 		Long commentId = 4L;
+		UUID reporterId = UUID.randomUUID();
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
 		CommentReportRequest request = new CommentReportRequest(reportReason);
 
 		// 댓글 작성자 Member 실제 객체 생성 및 필드 설정
 		Member commentWriter = Member.builder().build();
-		ReflectionTestUtils.setField(commentWriter, "email", "writer@email.com");
+		ReflectionTestUtils.setField(commentWriter, "id", UUID.randomUUID());
 
 		// 신고 대상 댓글 Comment 실제 객체 생성 및 필드 설정
 		Comment comment = Comment.builder().member(commentWriter).body("댓글 내용").build();
@@ -400,7 +408,7 @@ class CommentServiceTest {
 
 		// 신고하는 사용자 Member 실제 객체 생성
 		Member reporter = Member.builder().build();
-		ReflectionTestUtils.setField(reporter, "email", "reporter@email.com");
+		ReflectionTestUtils.setField(reporter, "id", reporterId);
 
 		// 중복 신고 발생 모킹
 		when(commentReportRepository.existsByCommentAndReporter(comment, reporter)).thenReturn(true);
@@ -417,5 +425,308 @@ class CommentServiceTest {
 		verify(commentRepository).findById(commentId);
 		verify(commentReportRepository).existsByCommentAndReporter(comment, reporter);
 		verify(commentReportRepository, Mockito.never()).save(any());
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 목록 조회 - 성공 (기본 파라미터)")
+	void test8() {
+		/// given
+		Pageable inputPageable = PageRequest.of(0, 10, Sort.unsorted());
+		Pageable expectedPageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "reportedAt"));
+
+		// Repository가 반환할 Mock 데이터
+		ReportedCommentSummary mockSummary1 = mock(ReportedCommentSummary.class);
+		ReportedCommentSummary mockSummary2 = mock(ReportedCommentSummary.class);
+
+		List<ReportedCommentSummary> mockSummaryList = Arrays.asList(mockSummary1, mockSummary2);
+		Page<ReportedCommentSummary> mockPage = new PageImpl<>(mockSummaryList, expectedPageable, 100);
+
+		when(commentReportRepository.findReportedCommentSummary(
+			eq(null), eq(null), eq(null), eq(null),
+			eq(expectedPageable)
+		)).thenReturn(mockPage);
+
+		/// when
+		Page<ReportedCommentSummary> resultPage = commentService.getReportedCommentsList(inputPageable, null, null);
+
+		/// then
+		assertNotNull(resultPage);
+		assertEquals(mockPage, resultPage);
+
+		verify(commentReportRepository).findReportedCommentSummary(
+			eq(null), eq(null), eq(null), eq(null),
+			eq(expectedPageable)
+		);
+		verify(commentReportRepository, Mockito.never()).findAll();
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 목록 조회 - 성공 (검색 조건 있음)")
+	void test9() {
+		/// given
+		Pageable inputPageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "reportedAt"));
+		String searchTarget = "nickname";
+		String searchValue = "testUser";
+
+		String expectedSearchNickname = "testUser";
+		String expectedSearchPostTitle = null;
+		String expectedSearchCommentBody = null;
+		String expectedSearchReportReason = null;
+
+		// Repository가 반환할 Mock 데이터
+		ReportedCommentSummary mockSummary1 = mock(ReportedCommentSummary.class);
+
+		List<ReportedCommentSummary> mockSummaryList = Arrays.asList(mockSummary1);
+		Page<ReportedCommentSummary> mockPage = new PageImpl<>(mockSummaryList, inputPageable, 1);
+
+		// commentReportRepository.findReportedCommentSummary 메서드 호출 시 mockPage 반환 모킹
+		when(commentReportRepository.findReportedCommentSummary(
+			eq(expectedSearchNickname), eq(expectedSearchPostTitle), eq(expectedSearchCommentBody),
+			eq(expectedSearchReportReason),
+			eq(inputPageable)
+		)).thenReturn(mockPage);
+
+		/// when
+		Page<ReportedCommentSummary> resultPage = commentService.getReportedCommentsList(inputPageable, searchTarget,
+			searchValue);
+
+		/// then
+		assertNotNull(resultPage);
+		assertEquals(mockPage, resultPage);
+
+		verify(commentReportRepository).findReportedCommentSummary(
+			eq(expectedSearchNickname), eq(expectedSearchPostTitle), eq(expectedSearchCommentBody),
+			eq(expectedSearchReportReason),
+			eq(inputPageable)
+		);
+		verify(commentReportRepository, Mockito.never()).findAll();
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 목록 조회 - 성공 (정렬 조건 있음)")
+	void test10() {
+		/// given
+		Pageable inputPageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.ASC, "reportCount"));
+
+		// Service 로직에서 정렬 속성 이름이 유효한지 검증 후 Repository로 전달될 Pageable
+		Pageable expectedPageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.ASC, "reportCount"));
+
+		// Repository가 반환할 Mock 데이터
+		ReportedCommentSummary mockSummary1 = mock(ReportedCommentSummary.class);
+		ReportedCommentSummary mockSummary2 = mock(ReportedCommentSummary.class);
+
+		List<ReportedCommentSummary> mockSummaryList = Arrays.asList(mockSummary1, mockSummary2);
+		Page<ReportedCommentSummary> mockPage = new PageImpl<>(mockSummaryList, expectedPageable, 50);
+
+		// commentReportRepository.findReportedCommentSummary 메서드 호출 시 mockPage 반환 모킹
+		when(commentReportRepository.findReportedCommentSummary(
+			eq(null), eq(null), eq(null), eq(null),
+			eq(expectedPageable)
+		)).thenReturn(mockPage);
+
+		/// when
+		Page<ReportedCommentSummary> resultPage = commentService.getReportedCommentsList(inputPageable, null, null);
+
+		/// then
+		assertNotNull(resultPage);
+		assertEquals(mockPage, resultPage);
+
+		verify(commentReportRepository).findReportedCommentSummary(
+			eq(null), eq(null), eq(null), eq(null),
+			eq(expectedPageable)
+		);
+		verify(commentReportRepository, Mockito.never()).findAll();
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 목록 조회 - 실패 (부적절한 검색 옵션)")
+	void test10_1() {
+		/// given
+		Pageable inputPageable = PageRequest.of(0, 10);
+		String invalidSearchTarget = "invalidTarget";
+		String searchValue = "someValue";
+
+		/// when & then
+		ServiceException e = assertThrows(ServiceException.class, () ->
+			commentService.getReportedCommentsList(inputPageable, invalidSearchTarget, searchValue));
+
+		assertEquals("400", e.getCode());
+		assertEquals("부적절한 검색 옵션입니다.", e.getMessage());
+
+		verify(commentReportRepository, Mockito.never()).findReportedCommentSummary(
+			any(), any(), any(), any(), any()
+		);
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 목록 조회 - 실패 (부적절한 정렬 옵션)")
+	void test10_2() {
+		/// given
+		Pageable inputPageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.ASC, "invalidSortProperty"));
+
+		/// when & then
+		ServiceException e = assertThrows(ServiceException.class, () ->
+			commentService.getReportedCommentsList(inputPageable, null, null));
+
+		assertEquals("400", e.getCode());
+		assertEquals("부적절한 정렬 옵션입니다.", e.getMessage());
+
+		verify(commentReportRepository, Mockito.never()).findReportedCommentSummary(
+			any(), any(), any(), any(), any()
+		);
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 숨김 처리 - 성공 (여러 개 ID)")
+	void test11() {
+		/// given
+		List<Long> commentIdsToHide = Arrays.asList(1L, 2L, 3L);
+
+		// Comment Mock 객체들을 명시적으로 생성 및 필요한 메서드 Stubbing
+		Member mockWriter1 = mock(Member.class);
+
+		Comment mockComment1 = mock(Comment.class);
+		doNothing().when(mockComment1).softDelete();
+
+		Member mockWriter2 = mock(Member.class);
+
+		Comment mockComment2 = mock(Comment.class);
+		doNothing().when(mockComment2).softDelete();
+
+		Member mockWriter3 = mock(Member.class);
+
+		Comment mockComment3 = mock(Comment.class);
+		doNothing().when(mockComment3).softDelete();
+
+		// commentRepository.findById 호출 시 ID별로 모킹된 comment 객체 반환 설정
+		when(commentRepository.findById(eq(1L))).thenReturn(Optional.of(mockComment1));
+		when(commentRepository.findById(eq(2L))).thenReturn(Optional.of(mockComment2));
+		when(commentRepository.findById(eq(3L))).thenReturn(Optional.of(mockComment3));
+
+		// commentRepository.save 메서드 Mocking
+		when(commentRepository.save(any(Comment.class)))
+			.thenAnswer(invocation -> invocation.getArguments()[0]);
+
+		doNothing().when(commentReportRepository)
+			.updateStatusByCommentIdIn(eq(commentIdsToHide), eq(ReportProcessingStatus.ACCEPTED));
+
+		/// when
+		commentService.hideReportedComment(commentIdsToHide);
+
+		/// then
+		verify(commentRepository).findById(eq(1L));
+		verify(commentRepository).findById(eq(2L));
+		verify(commentRepository).findById(eq(3L));
+		verify(mockComment1).softDelete();
+		verify(mockComment2).softDelete();
+		verify(mockComment3).softDelete();
+		verify(commentRepository).save(eq(mockComment1));
+		verify(commentRepository).save(eq(mockComment2));
+		verify(commentRepository).save(eq(mockComment3));
+
+		verify(commentRepository, Mockito.never()).findAllById(anyList());
+		verify(commentReportRepository, Mockito.never())
+			.findReportedCommentSummary(any(), any(), any(), any(), any());
+		verify(commentReportRepository)
+			.updateStatusByCommentIdIn(eq(commentIdsToHide), eq(ReportProcessingStatus.ACCEPTED));
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 숨김 처리 - 실패 (요청 ID 중 댓글 없음)")
+	void test11_1() {
+		/// given
+		List<Long> commentIdsToHide = Arrays.asList(1L, 999L, 3L);
+
+		// Comment Mock 객체들을 명시적으로 생성
+		Comment mockComment1 = mock(Comment.class);
+
+		doNothing().when(mockComment1).softDelete();
+
+		// Service는 commentIdsToHide 목록을 순회하며 findById를 호출
+		when(commentRepository.findById(eq(1L))).thenReturn(Optional.of(mockComment1));
+		when(commentRepository.findById(eq(999L))).thenReturn(Optional.empty());
+
+		when(commentRepository.save(eq(mockComment1))).thenReturn(mockComment1);
+
+		/// when & then
+		ServiceException e = assertThrows(ServiceException.class, () ->
+			commentService.hideReportedComment(commentIdsToHide));
+
+		assertEquals("404", e.getCode());
+		assertEquals("존재하지 않는 댓글이 포함되어 있습니다.", e.getMessage());
+
+		verify(commentRepository).findById(eq(1L));
+		verify(commentRepository).findById(eq(999L));
+		verify(commentRepository, Mockito.never()).findById(eq(3L));
+		verify(mockComment1).softDelete();
+		verify(commentRepository).save(eq(mockComment1));
+
+		verify(commentReportRepository, Mockito.never())
+			.findReportedCommentSummary(any(), any(), any(), any(), any());
+		verify(commentReportRepository, Mockito.never())
+			.updateStatusByCommentIdIn(anyList(), any(ReportProcessingStatus.class));
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 신고 거부 처리 - 성공 (여러 개 ID)")
+	void test12() {
+		/// given
+		List<Long> commentIdsToReject = Arrays.asList(1L, 5L, 10L);
+
+		// Comment Mock 엔티티들을 명시적으로 생성
+		Comment mockComment1 = mock(Comment.class);
+		Comment mockComment2 = mock(Comment.class);
+		Comment mockComment3 = mock(Comment.class);
+
+		// commentRepository.findAllById 호출 시 모킹된 댓글 목록 반환 설정
+		when(commentRepository.findAllById(eq(commentIdsToReject)))
+			.thenReturn(Arrays.asList(mockComment1, mockComment2, mockComment3));
+
+		// commentReportRepository.deleteAllByCommentIdIn 메서드 Mocking
+		doNothing().when(commentReportRepository)
+			.updateStatusByCommentIdIn(eq(commentIdsToReject), eq(ReportProcessingStatus.REJECTED));
+
+		/// when
+		commentService.rejectReportedComment(commentIdsToReject);
+
+		/// then
+		verify(commentRepository).findAllById(eq(commentIdsToReject));
+		verify(commentReportRepository)
+			.updateStatusByCommentIdIn(eq(commentIdsToReject), eq(ReportProcessingStatus.REJECTED));
+		verify(mockComment1, Mockito.never()).softDelete();
+		verify(mockComment2, Mockito.never()).softDelete();
+		verify(mockComment3, Mockito.never()).softDelete();
+		verify(commentRepository, Mockito.never()).save(any(Comment.class));
+
+		verify(commentReportRepository, Mockito.never())
+			.findReportedCommentSummary(any(), any(), any(), any(), any());
+	}
+
+	@Test
+	@DisplayName("신고된 댓글 신고 거부 처리 - 실패 (요청 ID 중 댓글 없음)")
+	void test12_1() {
+		/// given
+		List<Long> commentIdsToReject = Arrays.asList(1L, 999L, 3L);
+
+		// Comment Mock 엔티티들을 명시적으로 생성
+		Comment mockComment1 = mock(Comment.class);
+		Comment mockComment2 = mock(Comment.class);
+
+		// commentRepository.findAllById 호출 시, 요청된 ID 개수보다 적게
+		when(commentRepository.findAllById(eq(commentIdsToReject)))
+			.thenReturn(Arrays.asList(mockComment1, mockComment2));
+
+		/// when
+		ServiceException e = assertThrows(ServiceException.class, () ->
+			commentService.rejectReportedComment(commentIdsToReject));
+
+		/// then
+		assertEquals("404", e.getCode());
+		assertEquals("존재하지 않는 댓글이 포함되어 있습니다.", e.getMessage());
+
+		verify(commentRepository).findAllById(eq(commentIdsToReject));
+		verify(commentReportRepository, Mockito.never())
+			.updateStatusByCommentIdIn(anyList(), any(ReportProcessingStatus.class));
+		verify(commentRepository, Mockito.never()).save(any(Comment.class));
 	}
 }

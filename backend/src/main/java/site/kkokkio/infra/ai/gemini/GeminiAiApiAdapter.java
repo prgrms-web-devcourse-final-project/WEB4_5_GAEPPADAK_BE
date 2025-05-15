@@ -29,7 +29,7 @@ import site.kkokkio.infra.common.exception.ExternalApiErrorUtil;
 @Component
 public class GeminiAiApiAdapter implements AiSummaryAdapter {
 
-	@Value("${mock.enabled:false}")
+	@Value("${mock.enabled:true}")
 	private boolean mockEnabled;
 
 	@Value("${mock.gemini-file:gemini-summary.json}")

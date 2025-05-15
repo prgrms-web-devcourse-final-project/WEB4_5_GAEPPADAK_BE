@@ -7,7 +7,7 @@ import lombok.Data;
 
 @Data
 @Component
-public class GeminiProperties {
+public class GeminiApiProperties {
 	@Value("${ai.gemini.key}")
 	private String key;
 
@@ -16,7 +16,4 @@ public class GeminiProperties {
 
 	@Value("${ai.gemini.base-url}")
 	private String baseUrl;
-
-	@Value("${ai.gemini.prompts.summary}")
-	private String summaryPrompt;
 }

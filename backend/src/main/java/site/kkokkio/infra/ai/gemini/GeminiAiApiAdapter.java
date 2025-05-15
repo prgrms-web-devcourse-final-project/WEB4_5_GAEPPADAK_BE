@@ -19,11 +19,13 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.github.resilience4j.retry.annotation.Retry;
 import reactor.core.publisher.Mono;
+import site.kkokkio.infra.ai.AiType;
 import site.kkokkio.infra.ai.adapter.AiSummaryAdapter;
 import site.kkokkio.infra.ai.gemini.dto.GeminiError;
 import site.kkokkio.infra.ai.gemini.dto.GeminiErrorDetail;
 import site.kkokkio.infra.ai.gemini.dto.GeminiErrorResponse;
 import site.kkokkio.infra.ai.gemini.dto.GeminiResponse;
+import site.kkokkio.infra.ai.prompt.AiSystemPromptResolver;
 import site.kkokkio.infra.common.exception.ExternalApiErrorUtil;
 
 @Component
@@ -34,27 +36,42 @@ public class GeminiAiApiAdapter implements AiSummaryAdapter {
 
 	@Value("${mock.gemini-file:gemini-summary.json}")
 	private String mockFile;
+
 	private final WebClient webClient;
-	private final GeminiProperties props;
+	private final GeminiApiProperties props;
+	private final AiSystemPromptResolver promptResolver;
 
 	public GeminiAiApiAdapter(
 		@Qualifier("geminiWebClient")
 		WebClient geminiWebClient,
-		GeminiProperties props
+		GeminiApiProperties props,
+		AiSystemPromptResolver promptResolver
 	) {
 		this.webClient = geminiWebClient;
 		this.props = props;
+		this.promptResolver = promptResolver;
 	}
 
 	@CircuitBreaker(name = "GEMINI_AI_CIRCUIT_BREAKER")
 	@Retry(name = "GEMINI_AI_RETRY")
 	@RateLimiter(name = "GEMINI_AI_RATE_LIMITER")
 	@Override
-	public CompletableFuture<String> summarize(String systemPrompt, String content) {
+	public CompletableFuture<String> summarize(AiType aiType, String content) {
+		if (aiType != AiType.GEMINI) {
+			// 요약 요청 타입이 GEMINI가 아니면 예외 처리
+			throw new IllegalArgumentException("이 어댑터는 GEMINI 타입만 지원합니다.");
+		}
+		return summarize(content); // ✅ 내부 공통 처리 로직 분리
+	}
+
+	private CompletableFuture<String> summarize(String content) {
 
 		if (mockEnabled) {
 			return loadMockSummaryResponse();
 		}
+
+		// 시스템 프롬프트를 불러옴
+		String systemPrompt = promptResolver.getPromptFor(AiType.GEMINI);
 
 		Map<String, Object> body = Map.of(
 			"model", props.getModel(),

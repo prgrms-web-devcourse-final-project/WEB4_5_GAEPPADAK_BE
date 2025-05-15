@@ -1,5 +1,4 @@
 package site.kkokkio.global.config;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -18,7 +17,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import reactor.netty.http.client.HttpClient;
-import site.kkokkio.infra.ai.gemini.GeminiProperties;
+import site.kkokkio.infra.ai.gemini.GeminiApiProperties;
 
 @Configuration
 public class WebClientConfig {
@@ -53,7 +52,7 @@ public class WebClientConfig {
 	@Bean
 	@Qualifier("geminiWebClient")
 	public WebClient geminiWebClient(
-		GeminiProperties props
+		GeminiApiProperties props
 	) {
 		// WebClient 전용 ObjectMapper
 		ObjectMapper geminiMapper = new ObjectMapper()

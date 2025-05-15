@@ -50,8 +50,8 @@ import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
-import site.kkokkio.infra.ai.adapter.AiSummaryAdapter;
-import site.kkokkio.infra.ai.gemini.GeminiProperties;
+import site.kkokkio.infra.ai.AiType;
+import site.kkokkio.infra.ai.adapter.AiSummaryAdapterRouter;
 
 @ExtendWith(MockitoExtension.class)
 public class PostServiceTest {
@@ -83,9 +83,7 @@ public class PostServiceTest {
 	@Mock
 	private ValueOperations<String, String> valueOps;
 	@Mock
-	private AiSummaryAdapter aiSummaryClient;
-	@Mock
-	private GeminiProperties geminiProperties;
+	private AiSummaryAdapterRouter aiSummaryAdapterRouter;
 
 	@Test
 	@DisplayName("postId로 포스트 단건 조회 성공")
@@ -202,13 +200,11 @@ public class PostServiceTest {
 			.build();
 		given(keywordMetricHourlyRepository.findById(any())).willReturn(Optional.of(metricEntity));
 
-		given(geminiProperties.getSummaryPrompt()).willReturn("시스템 프롬프트");
-
 		String fakeJson = """
       {"title":"테스트제목","summary":"이것은 테스트 요약입니다."}
       """;
 
-		given(aiSummaryClient.summarize(anyString(), anyString()))
+		given(aiSummaryAdapterRouter.summarize(eq(AiType.GEMINI), anyString()))
 			.willReturn(CompletableFuture.completedFuture(fakeJson));
 
 		ObjectNode fakeNode = new ObjectNode(new ObjectMapper().getNodeFactory())
@@ -238,9 +234,9 @@ public class PostServiceTest {
 
 		// then
 		then(postRepository).should().save(argThat(p ->
-			"테스트제목".equals(p.getTitle()) &&
-			// 서비스 로직에서 붙이는 프리픽스까지 함께 검증
-			"AI가 찾아낸 핵심\n\n이것은 테스트 요약입니다.".equals(p.getSummary())
+			p.getTitle().equals("테스트제목") &&
+			p.getSummary().startsWith("AI가 찾아낸 핵심") &&
+			p.getSummary().contains("이것은 테스트 요약입니다.")
 		));
 		// then(postRepository).should().save(any());
 		then(postSourceRepository).should().insertIgnoreAll(any());

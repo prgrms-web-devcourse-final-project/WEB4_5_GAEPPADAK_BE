@@ -47,8 +47,10 @@ import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
+import site.kkokkio.infra.ai.AiType;
 import site.kkokkio.infra.ai.adapter.AiSummaryAdapter;
-import site.kkokkio.infra.ai.gemini.GeminiProperties;
+import site.kkokkio.infra.ai.adapter.AiSummaryAdapterRouter;
+import site.kkokkio.infra.ai.gemini.GeminiApiProperties;
 
 @Slf4j
 @Service
@@ -65,8 +67,7 @@ public class PostService {
 	private final PostSourceRepository postSourceRepository;
 	private final StringRedisTemplate redisTemplate;
 	private final ObjectMapper objectMapper;
-	private final AiSummaryAdapter aiSummaryAdapter;
-	private final GeminiProperties geminiProperties;
+	private final AiSummaryAdapterRouter aiSummaryAdapterRouter;
 
 	public Post getPostById(Long id) {
 		return postRepository.findById(id)
@@ -107,8 +108,8 @@ public class PostService {
 	 * 비동기로 요약을 요청한다.
 	 */
 	@Async
-	public CompletableFuture<String> summarizeAsync(String prompt, String content) {
-		return aiSummaryAdapter.summarize(prompt, content);
+	public CompletableFuture<String> summarizeAsync(String content) {
+		return aiSummaryAdapterRouter.summarize(AiType.GEMINI, content);
 	}
 
 	/**
@@ -233,19 +234,19 @@ public class PostService {
 			}
 			String userContent = sb.toString();
 
-			// 2) Gemini 요약 프롬프트 호출
-			String systemPrompt = geminiProperties.getSummaryPrompt();
-
-			// 2.1)요청시 문자가 깨지지 않게 프롬프트를 바이트로 뽑았다가 UTF-8로 다시 디코딩
-			byte[] raw = systemPrompt.getBytes(StandardCharsets.ISO_8859_1);
-			systemPrompt = new String(raw, StandardCharsets.UTF_8);
+			// // 2) Gemini 요약 프롬프트 호출
+			// String systemPrompt = geminiApiProperties.getSummaryPrompt();
+			//
+			// // 2.1)요청시 문자가 깨지지 않게 프롬프트를 바이트로 뽑았다가 UTF-8로 다시 디코딩
+			// byte[] raw = systemPrompt.getBytes(StandardCharsets.ISO_8859_1);
+			// systemPrompt = new String(raw, StandardCharsets.UTF_8);
 
 			String aiResponse = null;
 			String postTitle;
 			String postSummary;
 
 			try {
-				aiResponse = summarizeAsync(systemPrompt, userContent).get();
+				aiResponse = summarizeAsync(userContent).get();
 				log.info("[AI 응답(raw)] {}", aiResponse);
 			} catch (Exception e) {
 				log.error("AI 요약 실패, keyword={} → fallback 사용", keywordText, e);

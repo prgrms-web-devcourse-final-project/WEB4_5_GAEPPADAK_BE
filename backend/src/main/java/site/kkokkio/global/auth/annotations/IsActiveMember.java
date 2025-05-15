@@ -9,6 +9,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@PreAuthorize("!hasRole('BLACK')")
+@PreAuthorize("isAuthenticated() && !hasRole('BLACK')")
 public @interface IsActiveMember {
 }

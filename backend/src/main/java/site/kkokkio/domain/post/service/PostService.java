@@ -136,21 +136,29 @@ public class PostService {
 	/**
 	 * 요약에서 오류 발생 시 Fallback 처리
 	 */
-	private void savePostWithFallback(String title, String summary, List<Source> sources, LocalDateTime bucketAt, Long keywordId, String keywordText) {
+	private void createPostAndRelations(String title, String summary, List<Source> sources, LocalDateTime bucketAt, Long keywordId, String keywordText) {
+
+		// 1) Post 엔티티 생성
 		Post post = savePost(title, summary, sources, bucketAt);
 
+		// 2) 신규 Post 연결
+		// Source ↔ Post 매핑
 		linkSourcesToPost(post, sources);
 
-		KeywordMetricHourlyId id = new KeywordMetricHourlyId(bucketAt, Platform.GOOGLE_TREND, keywordId);
-		KeywordMetricHourly keywordMetricHourly = keywordMetricHourlyRepository.findById(id)
+		// KeywordMetricHourly ↔ Post 연결
+		KeywordMetricHourlyId keywordMetricHourlyId = new KeywordMetricHourlyId(bucketAt, Platform.GOOGLE_TREND,
+			keywordId);
+		KeywordMetricHourly keywordMetricHourly = keywordMetricHourlyRepository.findById(keywordMetricHourlyId)
 			.orElseThrow(() -> new ServiceException("404", "KeywordMetricHourly를 찾을 수 없습니다."));
 		keywordMetricHourly.setPost(post);
 
+		// 3) Keyword ↔ Post 매핑
 		Keyword keyword = keywordRepository.findById(keywordId)
 			.orElseThrow(() -> new ServiceException("404", "Keyword를 찾을 수 없습니다."));
 		PostKeyword postKeyword = PostKeyword.builder().post(post).keyword(keyword).build();
 		postKeywordRepository.insertIgnoreAll(List.of(postKeyword));
 
+		// 4) PostMetricHourly 생성
 		PostMetricHourly postMetricHourly = PostMetricHourly.builder()
 			.post(post)
 			.bucketAt(bucketAt)
@@ -159,8 +167,10 @@ public class PostService {
 			.build();
 		postMetricHourlyRepository.save(postMetricHourly);
 
+		// 5) Redis 캐싱 (TTL 24시간)
 		cachePostCardView(post, keywordText, Duration.ofHours(24));
-		log.info("신규 포스트 (fallback) 생성 완료 - postId={}, keyword={}", post.getId(), keywordText);
+
+		log.info("신규 포스트 생성 완료 - postId={}, keyword={}", post.getId(), keywordText);
 	}
 
 	/**
@@ -241,7 +251,8 @@ public class PostService {
 				log.error("AI 요약 실패, keyword={} → fallback 사용", keywordText, e);
 				postTitle = sources.get(0).getTitle();
 				postSummary = sources.get(0).getDescription();
-				savePostWithFallback(postTitle, postSummary, sources, bucketAt, keywordId, keywordText); // ★
+				// 포스트 생성 및 관련 링크 생성
+				createPostAndRelations(postTitle, postSummary, sources, bucketAt, keywordId, keywordText); // ★
 				continue;
 			}
 
@@ -274,41 +285,8 @@ public class PostService {
 				postTitle   = sources.get(0).getTitle();
 				postSummary = sources.get(0).getDescription();
 			}
-
-			// 4) Post 엔티티 생성
-			Post post = savePost(postTitle, postSummary, sources, bucketAt);
-
-
-			// Step 4. 신규 Post 연결
-			// Source ↔ Post 매핑
-			linkSourcesToPost(post, sources);
-
-			// KeywordMetricHourly ↔ Post 연결
-			KeywordMetricHourlyId keywordMetricHourlyId = new KeywordMetricHourlyId(bucketAt, Platform.GOOGLE_TREND,
-				keywordId);
-			KeywordMetricHourly keywordMetricHourly = keywordMetricHourlyRepository.findById(keywordMetricHourlyId)
-				.orElseThrow(() -> new ServiceException("404", "KeywordMetricHourly를 찾을 수 없습니다."));
-			keywordMetricHourly.setPost(post);
-
-			// Keyword ↔ Post 매핑
-			Keyword keyword = keywordRepository.findById(keywordId)
-				.orElseThrow(() -> new ServiceException("404", "Keyword를 찾을 수 없습니다."));
-			PostKeyword postKeyword = PostKeyword.builder().post(post).keyword(keyword).build();
-			postKeywordRepository.insertIgnoreAll(List.of(postKeyword));
-
-			// PostMetricHourly 생성
-			PostMetricHourly postMetricHourly = PostMetricHourly.builder()
-				.post(post)
-				.bucketAt(bucketAt)
-				.clickCount(0)
-				.likeCount(0)
-				.build();
-			postMetricHourlyRepository.save(postMetricHourly);
-
-			// Redis 캐싱 (TTL 24시간)
-			cachePostCardView(post, keywordText, Duration.ofHours(24));
-
-			log.info("신규 포스트 생성 완료 - postId={}, keyword={}", post.getId(), keywordText);
+			// 4) 포스트 생성 및 관련 링크 생성
+			createPostAndRelations(postTitle, postSummary, sources, bucketAt, keywordId, keywordText); // ★
 		}
 	}
 

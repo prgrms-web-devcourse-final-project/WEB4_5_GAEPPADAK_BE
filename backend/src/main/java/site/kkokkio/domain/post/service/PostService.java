@@ -234,13 +234,6 @@ public class PostService {
 			}
 			String userContent = sb.toString();
 
-			// // 2) Gemini 요약 프롬프트 호출
-			// String systemPrompt = geminiApiProperties.getSummaryPrompt();
-			//
-			// // 2.1)요청시 문자가 깨지지 않게 프롬프트를 바이트로 뽑았다가 UTF-8로 다시 디코딩
-			// byte[] raw = systemPrompt.getBytes(StandardCharsets.ISO_8859_1);
-			// systemPrompt = new String(raw, StandardCharsets.UTF_8);
-
 			String aiResponse = null;
 			String postTitle;
 			String postSummary;
@@ -257,14 +250,13 @@ public class PostService {
 				continue;
 			}
 
-			// 2.2) 마크다운 펜스 제거
+			// 2) 마크다운 펜스 제거
 			String jsonResponse = aiResponse
 				.replaceAll("(?m)^```(?:json)?\\s*", "")
 				.replaceAll("(?m)```\\s*$", "")
 				.trim();
 
-			// 3) JSON 파싱 (jsonResponse 사용)
-
+			// 3) JSON 파싱
 			try {
 				JsonNode root = objectMapper.readTree(jsonResponse);
 

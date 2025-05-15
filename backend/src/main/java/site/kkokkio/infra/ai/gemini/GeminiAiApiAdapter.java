@@ -1,10 +1,10 @@
 package site.kkokkio.infra.ai.gemini;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.io.IOException;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +18,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.github.resilience4j.retry.annotation.Retry;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import site.kkokkio.infra.ai.AiType;
 import site.kkokkio.infra.ai.adapter.AiSummaryAdapter;
@@ -28,8 +30,16 @@ import site.kkokkio.infra.ai.gemini.dto.GeminiResponse;
 import site.kkokkio.infra.ai.prompt.AiSystemPromptResolver;
 import site.kkokkio.infra.common.exception.ExternalApiErrorUtil;
 
+@Slf4j
 @Component
+@RequiredArgsConstructor
 public class GeminiAiApiAdapter implements AiSummaryAdapter {
+
+	@Qualifier("geminiWebClient")
+	private final WebClient geminiWebClient;
+
+	private final GeminiApiProperties props;
+	private final AiSystemPromptResolver promptResolver;
 
 	@Value("${mock.enabled:true}")
 	private boolean mockEnabled;
@@ -37,35 +47,18 @@ public class GeminiAiApiAdapter implements AiSummaryAdapter {
 	@Value("${mock.gemini-file:gemini-summary.json}")
 	private String mockFile;
 
-	private final WebClient webClient;
-	private final GeminiApiProperties props;
-	private final AiSystemPromptResolver promptResolver;
-
-	public GeminiAiApiAdapter(
-		@Qualifier("geminiWebClient")
-		WebClient geminiWebClient,
-		GeminiApiProperties props,
-		AiSystemPromptResolver promptResolver
-	) {
-		this.webClient = geminiWebClient;
-		this.props = props;
-		this.promptResolver = promptResolver;
-	}
-
 	@CircuitBreaker(name = "GEMINI_AI_CIRCUIT_BREAKER")
 	@Retry(name = "GEMINI_AI_RETRY")
 	@RateLimiter(name = "GEMINI_AI_RATE_LIMITER")
 	@Override
 	public CompletableFuture<String> summarize(AiType aiType, String content) {
 		if (aiType != AiType.GEMINI) {
-			// 요약 요청 타입이 GEMINI가 아니면 예외 처리
 			throw new IllegalArgumentException("이 어댑터는 GEMINI 타입만 지원합니다.");
 		}
-		return summarize(content); // ✅ 내부 공통 처리 로직 분리
+		return summarize(content);
 	}
 
 	private CompletableFuture<String> summarize(String content) {
-
 		if (mockEnabled) {
 			return loadMockSummaryResponse();
 		}
@@ -81,7 +74,7 @@ public class GeminiAiApiAdapter implements AiSummaryAdapter {
 			)
 		);
 
-		return webClient.post()
+		return geminiWebClient.post()
 			.uri("/chat/completions")
 			.bodyValue(body)
 			.retrieve()
@@ -117,9 +110,7 @@ public class GeminiAiApiAdapter implements AiSummaryAdapter {
 					}
 				}
 
-				return Mono.error(
-					ExternalApiErrorUtil.of(response.statusCode(), vendorCode, vendorMsg)
-				);
+				return Mono.error(ExternalApiErrorUtil.of(response.statusCode(), vendorCode, vendorMsg));
 			});
 	}
 

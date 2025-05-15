@@ -306,23 +306,4 @@ public class CommentService {
 		// 3. 요청된 댓글 ID들에 해당하는 모든 신고 엔티티 삭제
 		commentReportRepository.updateStatusByCommentIdIn(commentIds, ReportProcessingStatus.REJECTED);
 	}
-
-	/**
-	 * 관리자용 신고된 댓글들의 신고를 거부(삭제) 처리합니다.
-	 * @param commentIds 신고를 거부할 댓글 ID 목록
-	 */
-	@Transactional
-	public void rejectReportedComment(List<Long> commentIds) {
-
-		// 1. 요청된 모든 댓글 ID에 해당하는 Comment 엔티티 조회
-		List<Comment> comments = commentRepository.findAllById(commentIds);
-
-		// 2. 조회된 댓글 개수와 요청된 ID 개수를 비교하여, 누락된 댓글(존재하지 않는 댓글)이 있는지 확인
-		if (comments.size() != commentIds.size()) {
-			throw new ServiceException("404", "존재하지 않는 댓글이 포함되어 있습니다.");
-		}
-
-		// 3. 요청된 댓글 ID들에 해당하는 모든 신고 엔티티 삭제
-		commentReportRepository.deleteAllByCommentIdIn(commentIds);
-	}
 }

@@ -9,6 +9,7 @@ public interface ExecutionContextKeys {
 	String EC_POSTABLE_IDS = "postableIds";
 	String EC_POSTABLE_COUNT = "postableCount";
 	String EC_NO_POST_NEEDED = "noPostNeeded";
+	String EC_NEW_POST_IDS = "newPostIds";
 
 	// StepExecutionContext Keys
 	String SC_RSS_LATENCY_MS = "rssLatencyMs";

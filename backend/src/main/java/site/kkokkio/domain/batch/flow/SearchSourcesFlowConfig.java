@@ -19,7 +19,7 @@ public class SearchSourcesFlowConfig {
 	private final Step searchNewsStep;
 	private final Step searchVideosStep;
 
-	@Bean
+	@Bean(name = SEARCH_SOURCES_FLOW)
 	public Flow searchSourcesFlow() {
 		return new FlowBuilder<SimpleFlow>(SEARCH_SOURCES_FLOW)
 			.split(new SimpleAsyncTaskExecutor())

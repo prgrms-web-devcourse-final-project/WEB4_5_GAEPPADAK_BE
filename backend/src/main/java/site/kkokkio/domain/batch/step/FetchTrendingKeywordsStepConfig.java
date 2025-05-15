@@ -34,7 +34,7 @@ public class FetchTrendingKeywordsStepConfig {
 	private final LogStepListener err;
 	private final BatchMetricsListener metrics;
 
-	@Bean
+	@Bean(name = FETCH_KEYWORDS_STEP)
 	public Step fetchTrendingKeywordsStep() {
 		return new StepBuilder(FETCH_KEYWORDS_STEP, jobRepository)
 			.tasklet((contrib, ctx) -> {

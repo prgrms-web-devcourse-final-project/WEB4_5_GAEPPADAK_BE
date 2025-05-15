@@ -11,6 +11,8 @@ public interface BatchConstants {
 	String EVALUATE_NOVELTY_STEP = "evaluateNoveltyStep";
 	String GENERATE_POST_STEP = "generatePostStep";
 	String CACHE_POST_STEP = "cachePostStep";
+	
+	String NOVELTY_DECIDER = "noveltyDecider";
 
 	// Batch Flows
 	String SEARCH_SOURCES_FLOW = "searchSourcesFlow";

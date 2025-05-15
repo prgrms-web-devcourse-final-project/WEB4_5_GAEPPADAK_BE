@@ -30,7 +30,7 @@ public class searchVideosStepConfig {
 	private final LogStepListener err;
 	private final BatchMetricsListener metrics;
 
-	@Bean
+	@Bean(name = SEARCH_VIDEOS_STEP)
 	public Step searchNewsStep() {
 		return new StepBuilder(SEARCH_VIDEOS_STEP, jobRepository)
 			.tasklet((contrib, ctx) -> {

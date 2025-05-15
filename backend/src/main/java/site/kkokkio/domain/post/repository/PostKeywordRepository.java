@@ -1,5 +1,6 @@
 package site.kkokkio.domain.post.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -15,19 +16,27 @@ import site.kkokkio.domain.post.entity.PostKeyword;
 public interface PostKeywordRepository extends JpaRepository<PostKeyword, Long>, PostKeywordRepositoryCustom {
 
 	@Query(value = """
-           SELECT pk
-           FROM PostKeyword pk
-           JOIN FETCH pk.post p
-           JOIN FETCH pk.keyword k
-           WHERE k.text = :keywordText
-           """,
+		SELECT pk
+		FROM PostKeyword pk
+		JOIN FETCH pk.post p
+		JOIN FETCH pk.keyword k
+		WHERE k.text = :keywordText
+		""",
 		countQuery = """
-                   SELECT COUNT(pk)
-                   FROM PostKeyword pk
-                   JOIN pk.keyword k ON pk.keyword.id = k.id
-                   WHERE k.text = :keywordText
-                   """)
+			SELECT COUNT(pk)
+			FROM PostKeyword pk
+			JOIN pk.keyword k ON pk.keyword.id = k.id
+			WHERE k.text = :keywordText
+			""")
 	Page<PostKeyword> findByKeywordTextWithPostAndKeyword(@Param("keywordText") String keywordText, Pageable pageable);
+
 	Optional<PostKeyword> findByPost_Id(Long postId);
+
 	Optional<PostKeyword> findTopByKeywordIdOrderByPost_BucketAtDesc(Long keywordId);
+
+	@Query("SELECT pk FROM PostKeyword pk " +
+		"JOIN FETCH pk.keyword k " +
+		"JOIN FETCH pk.post p " +
+		"WHERE pk.post.id IN :postIds")
+	List<PostKeyword> findAllByPostIdIn(@Param("postIds") List<Long> postIds);
 }

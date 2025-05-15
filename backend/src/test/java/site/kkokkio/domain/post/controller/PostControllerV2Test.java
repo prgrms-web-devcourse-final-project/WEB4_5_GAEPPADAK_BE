@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -62,7 +63,7 @@ public class PostControllerV2Test {
 
 		// postService.reportPost 메소드는 void 이므로 doNothing() 모킹
 		Mockito.doNothing()
-			.when(postService).reportPost(eq(postId), any(Member.class), eq(request.reason()));
+			.when(postService).reportPost(eq(postId), any(UserDetails.class), eq(request.reason()));
 
 		// 인증된 사용자 모킹
 		Member mockReporter = Mockito.mock(Member.class);
@@ -71,7 +72,7 @@ public class PostControllerV2Test {
 
 		// MockMvc를 사용하여 POST 요청 수행
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v2/reports/posts/{postId}", postId)
-				.with(user(new CustomUserDetails(mockReporter)))
+				.with(user(new CustomUserDetails("test@email.com", mockReporter.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -80,7 +81,7 @@ public class PostControllerV2Test {
 			.andExpect(jsonPath("$.message").value("정상적으로 포스트 신고가 접수 되었습니다."));
 
 		/// 검증
-		verify(postService).reportPost(eq(postId), any(Member.class), eq(request.reason()));
+		verify(postService).reportPost(eq(postId), any(UserDetails.class), eq(request.reason()));
 	}
 
 	@Test
@@ -92,7 +93,7 @@ public class PostControllerV2Test {
 
 		// ServiceException 발생 모킹
 		Mockito.doThrow(new ServiceException("404", "존재하지 않는 포스트입니다."))
-			.when(postService).reportPost(eq(postId), any(Member.class), eq(request.reason()));
+			.when(postService).reportPost(eq(postId), any(UserDetails.class), eq(request.reason()));
 
 		// 인증된 사용자 모킹
 		Member mockReporter = Mockito.mock(Member.class);
@@ -101,7 +102,7 @@ public class PostControllerV2Test {
 
 		// MockMvc를 사용하여 POST 요청 수행
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v2/reports/posts/{postId}", postId)
-				.with(user(new CustomUserDetails(mockReporter)))
+				.with(user(new CustomUserDetails("test@email.com", mockReporter.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -119,7 +120,7 @@ public class PostControllerV2Test {
 
 		// ServiceException 발생 모킹
 		Mockito.doThrow(new ServiceException("400", "이미 신고한 포스트입니다."))
-			.when(postService).reportPost(eq(postId), any(Member.class), eq(request.reason()));
+			.when(postService).reportPost(eq(postId), any(UserDetails.class), eq(request.reason()));
 
 		// 인증된 사용자 모킹
 		Member mockReporter = Mockito.mock(Member.class);
@@ -128,7 +129,7 @@ public class PostControllerV2Test {
 
 		// MockMvc를 사용하여 POST 요청 수행
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v2/reports/posts/{postId}", postId)
-				.with(user(new CustomUserDetails(mockReporter)))
+				.with(user(new CustomUserDetails("test@email.com", mockReporter.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -152,7 +153,7 @@ public class PostControllerV2Test {
 
 		// MockMvc를 사용하여 POST 요청 수행
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v2/reports/posts/{postId}", postId)
-				.with(user(new CustomUserDetails(mockReporter)))
+				.with(user(new CustomUserDetails("test@email.com", mockReporter.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(invalidRequestBodyJson))

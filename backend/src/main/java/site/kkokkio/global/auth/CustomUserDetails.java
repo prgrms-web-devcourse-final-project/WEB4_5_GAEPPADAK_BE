@@ -1,4 +1,3 @@
-// 파일: src/main/java/site/kkokkio/global/security/CustomUserDetails.java
 package site.kkokkio.global.auth;
 
 import java.util.Collection;
@@ -7,39 +6,37 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.global.enums.MemberRole;
 
 public class CustomUserDetails implements UserDetails {
-	private final Member member;
+	private final String email;
+	private final String role;
+	private final Boolean isVerified;
 
-	public CustomUserDetails(Member member) {
-		this.member = member;
-	}
-
-	/** 도메인 Member 객체를 외부에서 꺼내 쓸 때 사용합니다. */
-	public Member getMember() {
-		return member;
+	public CustomUserDetails(String email, String role, Boolean isVerified) {
+		this.email = email;
+		this.role = role;
+		this.isVerified = isVerified;
 	}
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
-		return AuthorityUtils.createAuthorityList("ROLE_" + member.getRole().name());
+		return AuthorityUtils.createAuthorityList("ROLE_" + role);
 	}
 
 	@Override
 	public String getPassword() {
-		return member.getPasswordHash();
+		return null;
 	}
 
 	@Override
 	public String getUsername() {
-		return member.getEmail();
+		return email;
 	}
 
 	@Override
 	public boolean isEnabled() {
-		return member.isEmailVerified();
+		return isVerified;
 	}
 
 	@Override
@@ -51,7 +48,7 @@ public class CustomUserDetails implements UserDetails {
 	@Override
 	public boolean isAccountNonLocked() {
 		// BLACK 역할인 경우 잠금 처리
-		return member.getRole() != MemberRole.BLACK;
+		return !MemberRole.BLACK.toString().equals(role);
 	}
 
 	@Override

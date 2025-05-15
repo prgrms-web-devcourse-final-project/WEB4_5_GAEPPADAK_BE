@@ -150,7 +150,7 @@ public class SecurityConfig {
 	// JwtAuthenticationFilter Bean 등록
 	@Bean
 	public JwtAuthenticationFilter jwtAuthenticationFilter() {
-		return new JwtAuthenticationFilter(jwtUtils, customUserDetailsService, redisTemplate);
+		return new JwtAuthenticationFilter(jwtUtils, redisTemplate);
 	}
 
 	// 인증 안 된 상태로 보호된 엔드포인트에 접근했을 때 (401)

@@ -16,6 +16,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
@@ -176,7 +177,9 @@ class MemberServiceV1Test {
 			.emailVerified(true)
 			.build();
 
-		CustomUserDetails userDetails = new CustomUserDetails(member);
+		CustomUserDetails userDetails = new CustomUserDetails(
+			member.getEmail(), member.getRole().toString(), member.isEmailVerified());
+		when(memberRepository.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
 
 		MemberUpdateRequest request = new MemberUpdateRequest("password0000!", "change");
 
@@ -208,9 +211,11 @@ class MemberServiceV1Test {
 			.email("test@example.com")
 			.nickname("사용자")
 			.build());
+		UserDetails userDetails = new CustomUserDetails(member.getEmail(), "USER", true);
+		when(memberRepository.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
 
 		// when
-		memberService.deleteMember(member);
+		memberService.deleteMember(userDetails);
 
 		// then
 		verify(member).maskPersonalInfo();
@@ -252,7 +257,7 @@ class MemberServiceV1Test {
 		String email = "user@example.com";
 		String key = "EMAIL_VERIFIED:" + email;
 		given(redisTemplate.opsForValue()).willReturn(valueOperations);
-		given(valueOperations.get(key)).willReturn(null);// 미인증 상태
+		given(valueOperations.get(key)).willReturn(null); // 미인증 상태
 
 		// when
 		PasswordResetRequest req = new PasswordResetRequest(email, "password1!");

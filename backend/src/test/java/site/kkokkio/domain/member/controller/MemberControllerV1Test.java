@@ -127,7 +127,7 @@ class MemberControllerV1Test {
 
 		// when & then
 		mockMvc.perform(get("/api/v1/member/me")
-				.with(user(new CustomUserDetails(member)))
+				.with(user(new CustomUserDetails(member.getEmail(), member.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(APPLICATION_JSON))
 			.andExpect(status().isOk())
@@ -154,7 +154,7 @@ class MemberControllerV1Test {
 
 		// when & then
 		mockMvc.perform(get("/api/v1/member/me")
-				.with(user(new CustomUserDetails(member)))
+				.with(user(new CustomUserDetails(member.getEmail(), member.getRole().toString(), true)))
 				.with(csrf())
 				.accept(MediaType.APPLICATION_JSON))
 			.andExpect(status().isUnauthorized())
@@ -190,7 +190,8 @@ class MemberControllerV1Test {
 
 		// when & then
 		mockMvc.perform(patch("/api/v1/member/me")
-				.with(user(new CustomUserDetails(member)))
+				.with(user(new CustomUserDetails(
+					member.getEmail(), member.getRole().toString(), member.isEmailVerified())))
 				.with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(updateJson))
@@ -227,7 +228,8 @@ class MemberControllerV1Test {
 
 		// when & then
 		mockMvc.perform(patch("/api/v1/member/me")
-				.with(user(new CustomUserDetails(member)))
+				.with(user(new CustomUserDetails(
+					member.getEmail(), member.getRole().toString(), member.isEmailVerified())))
 				.with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(updateJson))
@@ -253,7 +255,7 @@ class MemberControllerV1Test {
 
 		// when & then
 		mockMvc.perform(delete("/api/v1/member/me")
-				.with(user(new CustomUserDetails(member)))
+				.with(user(new CustomUserDetails(member.getEmail(), member.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(MediaType.APPLICATION_JSON))
 			.andExpect(status().isOk())

@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +21,6 @@ import site.kkokkio.domain.member.repository.MemberRepository;
 import site.kkokkio.global.auth.CustomUserDetails;
 import site.kkokkio.global.enums.MemberRole;
 import site.kkokkio.global.exception.ServiceException;
-import site.kkokkio.global.util.JwtUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -28,9 +28,7 @@ public class MemberService {
 
 	private final MemberRepository memberRepository;
 	private final PasswordEncoder passwordEncoder;
-	private final JwtUtils jwtUtils;
 	private final RedisTemplate<String, String> redisTemplate;
-	private final MailService mailService;
 
 	// 회원 가입
 	@Transactional
@@ -83,7 +81,7 @@ public class MemberService {
 	// 회원 정보 수정
 	public MemberResponse modifyMemberInfo(CustomUserDetails userDetails, MemberUpdateRequest requestBody) {
 
-		Member member = userDetails.getMember();
+		Member member = findByEmail(userDetails.getUsername());
 
 		// 회원 정보 수정
 		Member modifiedMember = Member.builder()
@@ -115,8 +113,7 @@ public class MemberService {
 		}
 
 		// 회원 조회
-		Member member = memberRepository.findByEmail(request.email())
-			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 이메일입니다."));
+		Member member = findByEmail(request.email());
 
 		// 비밀번호 암호화 및 저장
 		String encryptedPassword = passwordEncoder.encode(request.newPassword());
@@ -128,7 +125,8 @@ public class MemberService {
 	}
 
 	@Transactional
-	public void deleteMember(Member member) {
+	public void deleteMember(UserDetails userDetails) {
+		Member member = findByEmail(userDetails.getUsername());
 		member.maskPersonalInfo();
 		member.softDelete();
 		memberRepository.save(member);

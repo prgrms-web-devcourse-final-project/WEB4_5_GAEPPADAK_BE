@@ -1,14 +1,11 @@
 package site.kkokkio.global.filter;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -27,7 +24,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import site.kkokkio.global.auth.CustomUserDetailsService;
+import site.kkokkio.global.auth.CustomUserDetails;
 import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.exception.CustomAuthException;
 import site.kkokkio.global.util.JwtUtils;
@@ -37,7 +34,6 @@ import site.kkokkio.global.util.JwtUtils;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private final JwtUtils jwtUtils;
-	private final CustomUserDetailsService userDetailsService;
 	private final RedisTemplate<String, String> redisTemplate;
 
 	@Override
@@ -66,12 +62,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 				if (email != null && Boolean.TRUE.equals(isVerified)) {
 					// UserDetails 객체 생성 (DB에서 사용자 정보 조회)
-					UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-					List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
+					UserDetails userDetails = new CustomUserDetails(email, role, isVerified);
 
 					// UserDetails 기반으로 Authentication 객체 생성
 					UsernamePasswordAuthenticationToken authentication =
-						new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
+						new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
 					// SecurityContextHolder에 인증 정보 설정
 					SecurityContextHolder.getContext().setAuthentication(authentication);

@@ -57,15 +57,15 @@ public class CommentControllerV1 {
 	}
 
 	@Operation(summary = "댓글 작성")
-	@ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
-		ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH, ErrorCode.POST_NOT_FOUND_3})
+	@ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN, ErrorCode.MALFORMED_TOKEN,
+		ErrorCode.CREDENTIALS_MISMATCH, ErrorCode.POST_NOT_FOUND_3, ErrorCode.EMAIL_NOT_FOUND})
 	@PostMapping("/posts/{postId}/comments")
 	@IsActiveMember
 	public RsData<CommentDto> createComment(
 		@PathVariable("postId") Long postId,
 		@AuthenticationPrincipal CustomUserDetails userDetails,
 		@Valid @RequestBody CommentCreateRequest request) {
-		CommentDto comment = commentService.createComment(postId, userDetails.getMember(), request);
+		CommentDto comment = commentService.createComment(postId, userDetails, request);
 		return new RsData<>(
 			"200",
 			"댓글이 등록되었습니다.",
@@ -118,7 +118,7 @@ public class CommentControllerV1 {
 		@PathVariable("commentId") Long commentId,
 		@AuthenticationPrincipal CustomUserDetails userDetails
 	) {
-		CommentDto comment = commentService.likeComment(commentId, userDetails.getMember());
+		CommentDto comment = commentService.likeComment(commentId, userDetails);
 		return new RsData<>(
 			"200",
 			"좋아요가 정상 처리되었습니다.",
@@ -136,7 +136,7 @@ public class CommentControllerV1 {
 		@PathVariable("commentId") Long commentId,
 		@AuthenticationPrincipal CustomUserDetails userDetails
 	) {
-		CommentDto comment = commentService.unlikeComment(commentId, userDetails.getMember());
+		CommentDto comment = commentService.unlikeComment(commentId, userDetails);
 		return new RsData<>(
 			"200",
 			"좋아요가 취소되었습니다.",

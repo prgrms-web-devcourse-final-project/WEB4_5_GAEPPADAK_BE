@@ -5,6 +5,7 @@ import static org.mockito.BDDMockito.*;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import site.kkokkio.domain.comment.controller.dto.CommentCreateRequest;
@@ -33,8 +35,10 @@ import site.kkokkio.domain.comment.repository.CommentLikeRepository;
 import site.kkokkio.domain.comment.repository.CommentReportRepository;
 import site.kkokkio.domain.comment.repository.CommentRepository;
 import site.kkokkio.domain.member.entity.Member;
+import site.kkokkio.domain.member.service.MemberService;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.repository.PostRepository;
+import site.kkokkio.global.auth.CustomUserDetails;
 import site.kkokkio.global.enums.ReportProcessingStatus;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
@@ -55,6 +59,9 @@ class CommentServiceTest {
 
 	@Mock
 	private CommentReportRepository commentReportRepository;
+
+	@Mock
+	private MemberService memberService;
 
 	@Test
 	@DisplayName("댓글 목록 조회 성공")
@@ -94,6 +101,9 @@ class CommentServiceTest {
 		Member member = Member.builder().build();
 		ReflectionTestUtils.setField(member, "id", UUID.randomUUID());
 		ReflectionTestUtils.setField(member, "nickname", "testUser");
+		UserDetails userDetails = mock(UserDetails.class);
+		when(userDetails.getUsername()).thenReturn("test@email.com");
+		given(memberService.findByEmail(any())).willReturn(member);
 
 		Comment comment = Comment.builder()
 			.post(post)
@@ -104,7 +114,7 @@ class CommentServiceTest {
 		ReflectionTestUtils.setField(comment, "createdAt", LocalDateTime.now());
 		given(commentRepository.save(any(Comment.class))).willReturn(comment);
 
-		CommentDto result = commentService.createComment(1L, member, request);
+		CommentDto result = commentService.createComment(1L, userDetails, request);
 
 		assertEquals("새 댓글", result.body());
 	}
@@ -112,14 +122,11 @@ class CommentServiceTest {
 	@Test
 	@DisplayName("댓글 작성 실패 - 없는 포스트")
 	void test2_1() {
-		Member member = Member.builder().build();
-		ReflectionTestUtils.setField(member, "id", UUID.randomUUID());
-
 		CommentCreateRequest request = new CommentCreateRequest("댓글");
 
 		when(postRepository.findById(1L)).thenReturn(Optional.empty());
 
-		assertThrows(ServiceException.class, () -> commentService.createComment(1L, member, request));
+		assertThrows(ServiceException.class, () -> commentService.createComment(1L, any(), request));
 	}
 
 	@Test
@@ -191,14 +198,18 @@ class CommentServiceTest {
 		ReflectionTestUtils.setField(member2, "email", "test2@email.com");
 		ReflectionTestUtils.setField(member2, "nickname", "testUser2");
 
+		UserDetails userDetails = mock(UserDetails.class);
+
 		Comment comment = Comment.builder().member(member2).body("댓글").likeCount(0).build();
 		ReflectionTestUtils.setField(comment, "id", 1L);
 		ReflectionTestUtils.setField(comment, "createdAt", LocalDateTime.now());
 
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
 		when(commentLikeRepository.existsByComment(comment)).thenReturn(false);
+		when(userDetails.getUsername()).thenReturn(member1.getEmail());
+		when(memberService.findByEmail(any())).thenReturn(member1);
 
-		CommentDto result = commentService.likeComment(1L, member1);
+		CommentDto result = commentService.likeComment(1L, userDetails);
 
 		assertEquals(1, result.likeCount());
 	}
@@ -206,12 +217,9 @@ class CommentServiceTest {
 	@Test
 	@DisplayName("댓글 좋아요 실패 - 없는 댓글")
 	void test5_1() {
-		Member member = Member.builder().build();
-		ReflectionTestUtils.setField(member, "id", UUID.randomUUID());
-
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.empty());
 
-		assertThrows(ServiceException.class, () -> commentService.likeComment(1L, member));
+		assertThrows(ServiceException.class, () -> commentService.likeComment(1L, any()));
 	}
 
 	@Test
@@ -219,6 +227,7 @@ class CommentServiceTest {
 	void test5_3() {
 		Member member = Member.builder().build();
 		ReflectionTestUtils.setField(member, "email", "test@email.com");
+		UserDetails userDetails = new CustomUserDetails(member.getEmail(), "USER", true);
 
 		Member writer = Member.builder().build();
 		ReflectionTestUtils.setField(writer, "email", "writer@email.com"); // 랜덤 스트링
@@ -226,17 +235,16 @@ class CommentServiceTest {
 		Comment comment = Comment.builder().member(writer).body("댓글").build();
 
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
+		when(memberService.findByEmail(any())).thenReturn(member);
 		when(commentLikeRepository.existsByComment(comment)).thenReturn(true);
 
-		assertThrows(ServiceException.class, () -> commentService.likeComment(1L, member));
+		assertThrows(ServiceException.class, () -> commentService.likeComment(1L, userDetails));
 	}
 
 	@Test
 	@DisplayName("댓글 좋아요 취소 성공")
 	void test6() {
-		Member member1 = Member.builder().build();
-		ReflectionTestUtils.setField(member1, "email", "test1@email.com");
-		ReflectionTestUtils.setField(member1, "nickname", "testUser1");
+		UserDetails member1 = new CustomUserDetails("test1@email.com", "USER", true);
 		Member member2 = Member.builder().build();
 		ReflectionTestUtils.setField(member2, "id", UUID.randomUUID());
 		ReflectionTestUtils.setField(member2, "email", "test2@email.com");
@@ -260,7 +268,6 @@ class CommentServiceTest {
 		Long commentId = 1L;
 		UUID reporterId = UUID.randomUUID();
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		CommentReportRequest request = new CommentReportRequest(reportReason);
 
 		// 댓글 작성자 Member 모킹
 		Member commentWriter = mock(Member.class);
@@ -278,6 +285,9 @@ class CommentServiceTest {
 		// 신고하는 사용자 Member 모킹
 		Member reporter = Member.builder().build();
 		ReflectionTestUtils.setField(reporter, "id", reporterId);
+		UserDetails userDetails = mock(UserDetails.class);
+		when(userDetails.getUsername()).thenReturn("test@email.com");
+		when(memberService.findByEmail(any())).thenReturn(reporter);
 
 		// commentReportRepository.existsByCommentAndReporter 호출 시 false 반환 모킹
 		when(commentReportRepository.existsByCommentAndReporter(comment, reporter)).thenReturn(false);
@@ -289,7 +299,7 @@ class CommentServiceTest {
 		when(commentRepository.save(comment)).thenReturn(comment);
 
 		// Service 메서드 호출
-		commentService.reportComment(commentId, reporter, reportReason);
+		commentService.reportComment(commentId, userDetails, reportReason);
 
 		/// 검증
 		verify(commentRepository).findById(commentId);
@@ -314,7 +324,7 @@ class CommentServiceTest {
 
 		// ServiceException 발생 예상 및 검증
 		ServiceException exception = assertThrows(ServiceException.class, () ->
-			commentService.reportComment(commentId, reporter, request.reason()));
+			commentService.reportComment(commentId, any(), request.reason()));
 
 		// 예외 메시지 및 코드 검증
 		assertEquals("404", exception.getCode());
@@ -340,7 +350,7 @@ class CommentServiceTest {
 
 		// ServiceException 발생 예상 및 검증
 		ServiceException exception = assertThrows(ServiceException.class, () ->
-			commentService.reportComment(commentId, reporter, request.reason()));
+			commentService.reportComment(commentId, any(), request.reason()));
 
 		// 예외 메시지 및 코드 검증
 		assertEquals("404", exception.getCode());
@@ -363,6 +373,8 @@ class CommentServiceTest {
 		// 신고하는 사용자 Member 실제 객체 생성 및 필드 설정
 		Member reporter = Member.builder().build();
 		ReflectionTestUtils.setField(reporter, "id", reporterId);
+		UserDetails userDetails = mock(UserDetails.class);
+		when(userDetails.getUsername()).thenReturn("test@email.com");
 
 		// 신고 대상 댓글 Comment 실제 객체 생성
 		Comment comment = Comment.builder().member(reporter).body("댓글 내용").build();
@@ -371,10 +383,11 @@ class CommentServiceTest {
 		ReflectionTestUtils.setField(comment, "reportCount", 0);
 
 		when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+		when(memberService.findByEmail(any())).thenReturn(reporter);
 
 		// ServiceException 발생 예상 및 검증
 		ServiceException exception = assertThrows(ServiceException.class, () ->
-			commentService.reportComment(commentId, reporter, request.reason()));
+			commentService.reportComment(commentId, userDetails, request.reason()));
 
 		// 예외 메시지 및 코드 검증
 		assertEquals("403", exception.getCode());
@@ -409,13 +422,16 @@ class CommentServiceTest {
 		// 신고하는 사용자 Member 실제 객체 생성
 		Member reporter = Member.builder().build();
 		ReflectionTestUtils.setField(reporter, "id", reporterId);
+		UserDetails userDetails = mock(UserDetails.class);
+		when(userDetails.getUsername()).thenReturn("test@email.com");
+		when(memberService.findByEmail(any())).thenReturn(reporter);
 
 		// 중복 신고 발생 모킹
 		when(commentReportRepository.existsByCommentAndReporter(comment, reporter)).thenReturn(true);
 
 		// ServiceException 발생 예상 및 검증
 		ServiceException exception = assertThrows(ServiceException.class, () ->
-			commentService.reportComment(commentId, reporter, request.reason()));
+			commentService.reportComment(commentId, userDetails, request.reason()));
 
 		// 예외 메시지 및 코드 검증
 		assertEquals("400", exception.getCode());
@@ -476,7 +492,7 @@ class CommentServiceTest {
 		// Repository가 반환할 Mock 데이터
 		ReportedCommentSummary mockSummary1 = mock(ReportedCommentSummary.class);
 
-		List<ReportedCommentSummary> mockSummaryList = Arrays.asList(mockSummary1);
+		List<ReportedCommentSummary> mockSummaryList = Collections.singletonList(mockSummary1);
 		Page<ReportedCommentSummary> mockPage = new PageImpl<>(mockSummaryList, inputPageable, 1);
 
 		// commentReportRepository.findReportedCommentSummary 메서드 호출 시 mockPage 반환 모킹
@@ -547,11 +563,11 @@ class CommentServiceTest {
 		String searchValue = "someValue";
 
 		/// when & then
-		ServiceException e = assertThrows(ServiceException.class, () ->
+		ServiceException ex = assertThrows(ServiceException.class, () ->
 			commentService.getReportedCommentsList(inputPageable, invalidSearchTarget, searchValue));
 
-		assertEquals("400", e.getCode());
-		assertEquals("부적절한 검색 옵션입니다.", e.getMessage());
+		assertEquals("400", ex.getCode());
+		assertEquals("부적절한 검색 옵션입니다.", ex.getMessage());
 
 		verify(commentReportRepository, Mockito.never()).findReportedCommentSummary(
 			any(), any(), any(), any(), any()
@@ -565,11 +581,11 @@ class CommentServiceTest {
 		Pageable inputPageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.ASC, "invalidSortProperty"));
 
 		/// when & then
-		ServiceException e = assertThrows(ServiceException.class, () ->
+		ServiceException ex = assertThrows(ServiceException.class, () ->
 			commentService.getReportedCommentsList(inputPageable, null, null));
 
-		assertEquals("400", e.getCode());
-		assertEquals("부적절한 정렬 옵션입니다.", e.getMessage());
+		assertEquals("400", ex.getCode());
+		assertEquals("부적절한 정렬 옵션입니다.", ex.getMessage());
 
 		verify(commentReportRepository, Mockito.never()).findReportedCommentSummary(
 			any(), any(), any(), any(), any()
@@ -582,18 +598,11 @@ class CommentServiceTest {
 		/// given
 		List<Long> commentIdsToHide = Arrays.asList(1L, 2L, 3L);
 
-		// Comment Mock 객체들을 명시적으로 생성 및 필요한 메서드 Stubbing
-		Member mockWriter1 = mock(Member.class);
-
 		Comment mockComment1 = mock(Comment.class);
 		doNothing().when(mockComment1).softDelete();
 
-		Member mockWriter2 = mock(Member.class);
-
 		Comment mockComment2 = mock(Comment.class);
 		doNothing().when(mockComment2).softDelete();
-
-		Member mockWriter3 = mock(Member.class);
 
 		Comment mockComment3 = mock(Comment.class);
 		doNothing().when(mockComment3).softDelete();
@@ -649,11 +658,11 @@ class CommentServiceTest {
 		when(commentRepository.save(eq(mockComment1))).thenReturn(mockComment1);
 
 		/// when & then
-		ServiceException e = assertThrows(ServiceException.class, () ->
+		ServiceException ex = assertThrows(ServiceException.class, () ->
 			commentService.hideReportedComment(commentIdsToHide));
 
-		assertEquals("404", e.getCode());
-		assertEquals("존재하지 않는 댓글이 포함되어 있습니다.", e.getMessage());
+		assertEquals("404", ex.getCode());
+		assertEquals("존재하지 않는 댓글이 포함되어 있습니다.", ex.getMessage());
 
 		verify(commentRepository).findById(eq(1L));
 		verify(commentRepository).findById(eq(999L));
@@ -717,12 +726,12 @@ class CommentServiceTest {
 			.thenReturn(Arrays.asList(mockComment1, mockComment2));
 
 		/// when
-		ServiceException e = assertThrows(ServiceException.class, () ->
+		ServiceException ex = assertThrows(ServiceException.class, () ->
 			commentService.rejectReportedComment(commentIdsToReject));
 
 		/// then
-		assertEquals("404", e.getCode());
-		assertEquals("존재하지 않는 댓글이 포함되어 있습니다.", e.getMessage());
+		assertEquals("404", ex.getCode());
+		assertEquals("존재하지 않는 댓글이 포함되어 있습니다.", ex.getMessage());
 
 		verify(commentRepository).findAllById(eq(commentIdsToReject));
 		verify(commentReportRepository, Mockito.never())

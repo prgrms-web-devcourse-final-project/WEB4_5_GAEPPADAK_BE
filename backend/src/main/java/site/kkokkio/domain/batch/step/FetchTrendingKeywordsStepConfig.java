@@ -1,5 +1,6 @@
 package site.kkokkio.domain.batch.step;
 
+import static site.kkokkio.domain.batch.context.BatchConstants.*;
 import static site.kkokkio.domain.batch.context.ExecutionContextKeys.*;
 
 import java.time.LocalDateTime;
@@ -35,7 +36,7 @@ public class FetchTrendingKeywordsStepConfig {
 
 	@Bean
 	public Step fetchTrendingKeywordsStep() {
-		return new StepBuilder("fetchTrendingKeywordsStep", jobRepository)
+		return new StepBuilder(FETCH_KEYWORDS_STEP, jobRepository)
 			.tasklet((contrib, ctx) -> {
 
 				ExecutionContext jobEc = ctx.getStepContext()

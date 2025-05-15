@@ -1,5 +1,6 @@
 package site.kkokkio.domain.batch.step;
 
+import static site.kkokkio.domain.batch.context.BatchConstants.*;
 import static site.kkokkio.domain.batch.context.ExecutionContextKeys.*;
 
 import org.springframework.batch.core.Step;
@@ -31,7 +32,7 @@ public class searchNewsStepConfig {
 
 	@Bean
 	public Step searchNewsStep() {
-		return new StepBuilder("searchNewsStep", jobRepository)
+		return new StepBuilder(SEARCH_NEWS_STEP, jobRepository)
 			.tasklet((contrib, ctx) -> {
 
 				ExecutionContext stepEc = ctx.getStepContext()

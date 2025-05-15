@@ -114,7 +114,7 @@ public class PostService {
 	/**
 	 * 중복 제거를 위해 분리
 	 */
-	private Post createAndSavePost(String title, String summary, List<Source> sources, LocalDateTime bucketAt) {
+	private Post savePost(String title, String summary, List<Source> sources, LocalDateTime bucketAt) {
 		// sources 리스트를 순회하면서 첫 번째 non-null 썸네일 URL을 찾는다.
 		String thumbnailUrl = sources.stream()
 			.map(Source::getThumbnailUrl)
@@ -137,7 +137,7 @@ public class PostService {
 	 * 요약에서 오류 발생 시 Fallback 처리
 	 */
 	private void savePostWithFallback(String title, String summary, List<Source> sources, LocalDateTime bucketAt, Long keywordId, String keywordText) {
-		Post post = createAndSavePost(title, summary, sources, bucketAt);
+		Post post = savePost(title, summary, sources, bucketAt);
 
 		linkSourcesToPost(post, sources);
 
@@ -276,7 +276,7 @@ public class PostService {
 			}
 
 			// 4) Post 엔티티 생성
-			Post post = createAndSavePost(postTitle, postSummary, sources, bucketAt);
+			Post post = savePost(postTitle, postSummary, sources, bucketAt);
 
 
 			// Step 4. 신규 Post 연결

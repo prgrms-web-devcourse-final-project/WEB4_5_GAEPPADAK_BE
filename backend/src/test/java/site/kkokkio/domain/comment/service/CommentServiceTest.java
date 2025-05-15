@@ -35,7 +35,7 @@ import site.kkokkio.domain.comment.repository.CommentLikeRepository;
 import site.kkokkio.domain.comment.repository.CommentReportRepository;
 import site.kkokkio.domain.comment.repository.CommentRepository;
 import site.kkokkio.domain.member.entity.Member;
-import site.kkokkio.domain.member.repository.MemberRepository;
+import site.kkokkio.domain.member.service.MemberService;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.repository.PostRepository;
 import site.kkokkio.global.auth.CustomUserDetails;
@@ -61,7 +61,7 @@ class CommentServiceTest {
 	private CommentReportRepository commentReportRepository;
 
 	@Mock
-	private MemberRepository memberRepository;
+	private MemberService memberService;
 
 	@Test
 	@DisplayName("댓글 목록 조회 성공")
@@ -103,7 +103,7 @@ class CommentServiceTest {
 		ReflectionTestUtils.setField(member, "nickname", "testUser");
 		UserDetails userDetails = mock(UserDetails.class);
 		when(userDetails.getUsername()).thenReturn("test@email.com");
-		given(memberRepository.findByEmail(any())).willReturn(Optional.of(member));
+		given(memberService.findByEmail(any())).willReturn(member);
 
 		Comment comment = Comment.builder()
 			.post(post)
@@ -207,7 +207,7 @@ class CommentServiceTest {
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
 		when(commentLikeRepository.existsByComment(comment)).thenReturn(false);
 		when(userDetails.getUsername()).thenReturn(member1.getEmail());
-		when(memberRepository.findByEmail(any())).thenReturn(Optional.of(member1));
+		when(memberService.findByEmail(any())).thenReturn(member1);
 
 		CommentDto result = commentService.likeComment(1L, userDetails);
 
@@ -235,7 +235,7 @@ class CommentServiceTest {
 		Comment comment = Comment.builder().member(writer).body("댓글").build();
 
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
-		when(memberRepository.findByEmail(any())).thenReturn(Optional.of(member));
+		when(memberService.findByEmail(any())).thenReturn(member);
 		when(commentLikeRepository.existsByComment(comment)).thenReturn(true);
 
 		assertThrows(ServiceException.class, () -> commentService.likeComment(1L, userDetails));
@@ -287,7 +287,7 @@ class CommentServiceTest {
 		ReflectionTestUtils.setField(reporter, "id", reporterId);
 		UserDetails userDetails = mock(UserDetails.class);
 		when(userDetails.getUsername()).thenReturn("test@email.com");
-		when(memberRepository.findByEmail(any())).thenReturn(Optional.of(reporter));
+		when(memberService.findByEmail(any())).thenReturn(reporter);
 
 		// commentReportRepository.existsByCommentAndReporter 호출 시 false 반환 모킹
 		when(commentReportRepository.existsByCommentAndReporter(comment, reporter)).thenReturn(false);
@@ -383,7 +383,7 @@ class CommentServiceTest {
 		ReflectionTestUtils.setField(comment, "reportCount", 0);
 
 		when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
-		when(memberRepository.findByEmail(any())).thenReturn(Optional.of(reporter));
+		when(memberService.findByEmail(any())).thenReturn(reporter);
 
 		// ServiceException 발생 예상 및 검증
 		ServiceException exception = assertThrows(ServiceException.class, () ->
@@ -424,7 +424,7 @@ class CommentServiceTest {
 		ReflectionTestUtils.setField(reporter, "id", reporterId);
 		UserDetails userDetails = mock(UserDetails.class);
 		when(userDetails.getUsername()).thenReturn("test@email.com");
-		when(memberRepository.findByEmail(any())).thenReturn(Optional.of(reporter));
+		when(memberService.findByEmail(any())).thenReturn(reporter);
 
 		// 중복 신고 발생 모킹
 		when(commentReportRepository.existsByCommentAndReporter(comment, reporter)).thenReturn(true);

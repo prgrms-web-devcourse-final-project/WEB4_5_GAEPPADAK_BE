@@ -34,7 +34,7 @@ import site.kkokkio.domain.keyword.repository.KeywordMetricHourlyRepository;
 import site.kkokkio.domain.keyword.repository.KeywordRepository;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
 import site.kkokkio.domain.member.entity.Member;
-import site.kkokkio.domain.member.repository.MemberRepository;
+import site.kkokkio.domain.member.service.MemberService;
 import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.entity.PostKeyword;
@@ -76,10 +76,8 @@ public class PostServiceTest {
 	private PostSourceRepository postSourceRepository;
 	@Mock
 	private PostReportRepository postReportRepository;
-
 	@Mock
-	private MemberRepository memberRepository;
-
+	private MemberService memberService;
 	@Mock
 	private StringRedisTemplate redisTemplate;
 	@Mock
@@ -206,8 +204,8 @@ public class PostServiceTest {
 		given(keywordMetricHourlyRepository.findById(any())).willReturn(Optional.of(metricEntity));
 
 		String fakeJson = """
-      {"title":"테스트제목","summary":"이것은 테스트 요약입니다."}
-      """;
+			{"title":"테스트제목","summary":"이것은 테스트 요약입니다."}
+			""";
 
 		given(aiSummaryAdapterRouter.summarize(eq(AiType.GEMINI), anyString()))
 			.willReturn(CompletableFuture.completedFuture(fakeJson));
@@ -239,9 +237,8 @@ public class PostServiceTest {
 
 		// then
 		then(postRepository).should().save(argThat(p ->
-			p.getTitle().equals("테스트제목") &&
-			p.getSummary().startsWith("AI가 찾아낸 핵심") &&
-			p.getSummary().contains("이것은 테스트 요약입니다.")
+			p.getTitle().equals("테스트제목") && p.getSummary().startsWith("AI가 찾아낸 핵심")
+				&& p.getSummary().contains("이것은 테스트 요약입니다.")
 		));
 		// then(postRepository).should().save(any());
 		then(postSourceRepository).should().insertIgnoreAll(any());
@@ -339,7 +336,7 @@ public class PostServiceTest {
 		// 신고하는 사용자 Member 실제 객체 생성
 		Member reporter = Member.builder().build();
 		ReflectionTestUtils.setField(reporter, "id", reporterId);
-		given(memberRepository.findByEmail(any())).willReturn(Optional.of(reporter));
+		given(memberService.findByEmail(any())).willReturn(reporter);
 		UserDetails userDetails = mock(UserDetails.class);
 		given(userDetails.getUsername()).willReturn("test@email.com");
 
@@ -395,7 +392,7 @@ public class PostServiceTest {
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
 		Member reporter = Member.builder().build();
 		ReflectionTestUtils.setField(reporter, "id", reporterId);
-		given(memberRepository.findByEmail(any())).willReturn(Optional.of(reporter));
+		given(memberService.findByEmail(any())).willReturn(reporter);
 		UserDetails userDetails = mock(UserDetails.class);
 		given(userDetails.getUsername()).willReturn("test@email.com");
 
@@ -439,7 +436,7 @@ public class PostServiceTest {
 		// 신고하는 사용자 실제 Member 객체 생성
 		Member reporter = Member.builder().build();
 		ReflectionTestUtils.setField(reporter, "id", reporterId);
-		given(memberRepository.findByEmail(any())).willReturn(Optional.of(reporter));
+		given(memberService.findByEmail(any())).willReturn(reporter);
 		UserDetails userDetails = mock(UserDetails.class);
 		given(userDetails.getUsername()).willReturn("test@email.com");
 

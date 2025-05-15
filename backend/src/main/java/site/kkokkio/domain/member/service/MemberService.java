@@ -127,6 +127,13 @@ public class MemberService {
 		redisTemplate.delete(key);
 	}
 
+	@Transactional
+	public void deleteMember(Member member) {
+		member.maskPersonalInfo();
+		member.softDelete();
+		memberRepository.save(member);
+	}
+
 	/**
 	 * 관리자용 회원 목록 조회
 	 * @param pageable 페이징 및 정렬 정보
@@ -206,12 +213,5 @@ public class MemberService {
 		member.setRole(newRole);
 
 		return member;
-	}
-
-	@Transactional
-	public void deleteMember(Member member) {
-		member.maskPersonalInfo();
-		member.softDelete();
-		memberRepository.save(member);
 	}
 }

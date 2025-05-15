@@ -10,24 +10,29 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import site.kkokkio.domain.keyword.entity.Keyword;
 import site.kkokkio.domain.keyword.repository.KeywordRepository;
+import site.kkokkio.global.init.BaseInitData;
 
 @SpringBootTest
 @ActiveProfiles("test")
-public class GoogleTrendsRssServiceTest {
+public class TrendsServiceTest {
 	@Autowired
-	private GoogleTrendsRssService googleTrendsRssService;
+	private TrendsService trendsService;
 
 	@Autowired
 	private KeywordRepository keywordRepository;
+
+	@MockitoBean
+	private BaseInitData baseInitData;
 
 	@Test
 	@DisplayName("키워드 추출 테스트")
 	void getTrendingKeywordsFromRss_ParsesKeywords() {
 		// when
-		List<Keyword> trendingKeywords = googleTrendsRssService.getTrendingKeywordsFromRss();
+		List<Keyword> trendingKeywords = trendsService.getTrendingKeywordsFromRss();
 
 		// then
 		assertThat(trendingKeywords).isNotEmpty();

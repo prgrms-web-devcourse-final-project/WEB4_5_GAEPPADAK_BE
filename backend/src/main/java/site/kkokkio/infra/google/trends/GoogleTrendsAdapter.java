@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import site.kkokkio.domain.keyword.port.out.TrendsPort;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
 import site.kkokkio.domain.keyword.service.KeywordService;
+import site.kkokkio.global.exception.ExternalApiException;
 import site.kkokkio.infra.google.trends.dto.KeywordInfo;
 
 @Slf4j
@@ -46,7 +47,7 @@ public class GoogleTrendsAdapter implements TrendsPort {
 				trendingKeywordsInfo.add(KeywordInfo.builder().text(text).volume(volume).build());
 			}
 		} catch (Exception e) {
-			log.error("Failed to fetch Google Trends RSS", e);
+			throw new ExternalApiException("Failed to fetch Google Trends RSS", e);
 		}
 		return trendingKeywordsInfo;
 	}

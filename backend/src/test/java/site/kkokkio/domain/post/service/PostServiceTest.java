@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.entity.Keyword;
@@ -48,6 +50,8 @@ import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
+import site.kkokkio.infra.ai.AiType;
+import site.kkokkio.infra.ai.adapter.AiSummaryPortRouter;
 
 @ExtendWith(MockitoExtension.class)
 public class PostServiceTest {
@@ -78,6 +82,8 @@ public class PostServiceTest {
 	private ObjectMapper objectMapper;
 	@Mock
 	private ValueOperations<String, String> valueOps;
+	@Mock
+	private AiSummaryPortRouter aiSummaryAdapterRouter;
 
 	@Test
 	@DisplayName("postId로 포스트 단건 조회 성공")
@@ -170,10 +176,10 @@ public class PostServiceTest {
 
 	@Test
 	@DisplayName("포스트 생성 - 성공")
-	void generatePosts_success() {
+	void generatePosts_success() throws Exception {
 		// given
 		Long keywordId = 100L;
-		LocalDateTime bucketAt = LocalDateTime.now().withMinute(0).withSecond(0).withNano(0);
+		LocalDateTime bucketAt = LocalDateTime.now();
 		String KeywordText = "키워드";
 
 		KeywordMetricHourlyDto metric = new KeywordMetricHourlyDto(keywordId, KeywordText, Platform.GOOGLE_TREND,
@@ -183,7 +189,6 @@ public class PostServiceTest {
 		Keyword keyword = Keyword.builder().id(keywordId).text(KeywordText).build();
 		Source source1 = createSource("url1");
 		Source source2 = createSource("url2");
-		Post savedPost = Post.builder().id(100L).title("title").summary("desc").build();
 
 		KeywordSource ks1 = KeywordSource.builder().keyword(keyword).source(source1).build();
 		KeywordSource ks2 = KeywordSource.builder().keyword(keyword).source(source2).build();
@@ -195,6 +200,30 @@ public class PostServiceTest {
 			.build();
 		given(keywordMetricHourlyRepository.findById(any())).willReturn(Optional.of(metricEntity));
 
+		String fakeJson = """
+      {"title":"테스트제목","summary":"이것은 테스트 요약입니다."}
+      """;
+
+		given(aiSummaryAdapterRouter.summarize(eq(AiType.GEMINI), anyString()))
+			.willReturn(CompletableFuture.completedFuture(fakeJson));
+
+		ObjectNode fakeNode = new ObjectNode(new ObjectMapper().getNodeFactory())
+			.put("title", "테스트제목")
+			.put("summary", "이것은 테스트 요약입니다.");
+		given(objectMapper.readTree(anyString()))
+			.willReturn(fakeNode);
+
+		// Redis 캐시용 JSON 직렬화 모킹
+		given(objectMapper.writeValueAsString(any()))
+			.willReturn(fakeJson);
+
+		// PostRepository 저장 시 리턴할 엔티티
+		Post savedPost = Post.builder()
+			.id(100L)
+			.title("테스트제목")
+			.summary("이것은 테스트 요약입니다.")
+			.build();
+
 		given(postRepository.save(any())).willReturn(savedPost);
 		given(keywordRepository.findById(keywordId)).willReturn(Optional.of(keyword));
 		given(redisTemplate.opsForValue()).willReturn(valueOps);
@@ -204,11 +233,16 @@ public class PostServiceTest {
 		postService.generatePosts();
 
 		// then
-		then(postRepository).should().save(any());
+		then(postRepository).should().save(argThat(p ->
+			p.getTitle().equals("테스트제목") &&
+			p.getSummary().startsWith("AI가 찾아낸 핵심") &&
+			p.getSummary().contains("이것은 테스트 요약입니다.")
+		));
+		// then(postRepository).should().save(any());
 		then(postSourceRepository).should().insertIgnoreAll(any());
 		then(postKeywordRepository).should().insertIgnoreAll(any());
 		then(postMetricHourlyRepository).should().save(any());
-		then(valueOps).should().set(contains("POST_CARD:"), any(), eq(Duration.ofHours(24)));
+		then(valueOps).should().set(startsWith("POST_CARD:"), contains("테스트제목"), eq(Duration.ofHours(24)));
 
 	}
 

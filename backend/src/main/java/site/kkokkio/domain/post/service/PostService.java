@@ -6,13 +6,17 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -30,6 +34,7 @@ import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.entity.PostKeyword;
 import site.kkokkio.domain.post.entity.PostMetricHourly;
 import site.kkokkio.domain.post.entity.PostReport;
+import site.kkokkio.domain.post.port.out.AiSummaryPort;
 import site.kkokkio.domain.post.repository.PostKeywordRepository;
 import site.kkokkio.domain.post.repository.PostMetricHourlyRepository;
 import site.kkokkio.domain.post.repository.PostReportRepository;
@@ -42,6 +47,7 @@ import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
+import site.kkokkio.infra.ai.AiType;
 
 @Slf4j
 @Service
@@ -58,6 +64,7 @@ public class PostService {
 	private final PostSourceRepository postSourceRepository;
 	private final StringRedisTemplate redisTemplate;
 	private final ObjectMapper objectMapper;
+	private final AiSummaryPort aiSummaryPort;
 
 	public Post getPostById(Long id) {
 		return postRepository.findById(id)
@@ -92,6 +99,77 @@ public class PostService {
 			}) // post_id가 null인 키워드 발견 시 서버 문제 예외처리
 			.map(metric -> PostDto.from(metric.getPost(), metric.getKeyword().getText()))
 			.toList();
+	}
+
+	/**
+	 * 비동기로 요약을 요청한다.
+	 */
+	@Async
+	public CompletableFuture<String> summarizeAsync(String content) {
+		return aiSummaryPort.summarize(AiType.GEMINI, content);
+	}
+
+	/**
+	 * 중복 제거를 위해 분리
+	 */
+	private Post savePost(String title, String summary, List<Source> sources, LocalDateTime bucketAt) {
+		// sources 리스트를 순회하면서 첫 번째 non-null 썸네일 URL을 찾는다.
+		String thumbnailUrl = sources.stream()
+			.map(Source::getThumbnailUrl)
+			.filter(Objects::nonNull)
+			.findFirst()
+			.orElse(null);
+
+		Post post = Post.builder()
+			.title(title)
+			.summary(summary)
+			.thumbnailUrl(thumbnailUrl)
+			.bucketAt(bucketAt)
+			.reportCount(0)
+			.build();
+
+		return postRepository.save(post);
+	}
+
+	/**
+	 * 요약에서 오류 발생 시 Fallback 처리
+	 */
+	private void createPostAndRelations(String title, String summary, List<Source> sources, LocalDateTime bucketAt,
+		Long keywordId, String keywordText) {
+
+		// 1) Post 엔티티 생성
+		Post post = savePost(title, summary, sources, bucketAt);
+
+		// 2) 신규 Post 연결
+		// Source ↔ Post 매핑
+		linkSourcesToPost(post, sources);
+
+		// KeywordMetricHourly ↔ Post 연결
+		KeywordMetricHourlyId keywordMetricHourlyId = new KeywordMetricHourlyId(bucketAt, Platform.GOOGLE_TREND,
+			keywordId);
+		KeywordMetricHourly keywordMetricHourly = keywordMetricHourlyRepository.findById(keywordMetricHourlyId)
+			.orElseThrow(() -> new ServiceException("404", "KeywordMetricHourly를 찾을 수 없습니다."));
+		keywordMetricHourly.setPost(post);
+
+		// 3) Keyword ↔ Post 매핑
+		Keyword keyword = keywordRepository.findById(keywordId)
+			.orElseThrow(() -> new ServiceException("404", "Keyword를 찾을 수 없습니다."));
+		PostKeyword postKeyword = PostKeyword.builder().post(post).keyword(keyword).build();
+		postKeywordRepository.insertIgnoreAll(List.of(postKeyword));
+
+		// 4) PostMetricHourly 생성
+		PostMetricHourly postMetricHourly = PostMetricHourly.builder()
+			.post(post)
+			.bucketAt(bucketAt)
+			.clickCount(0)
+			.likeCount(0)
+			.build();
+		postMetricHourlyRepository.save(postMetricHourly);
+
+		// 5) Redis 캐싱 (TTL 24시간)
+		cachePostCardView(post, keywordText, Duration.ofHours(24));
+
+		log.info("신규 포스트 생성 완료 - postId={}, keyword={}", post.getId(), keywordText);
 	}
 
 	/**
@@ -142,46 +220,63 @@ public class PostService {
 			}
 
 			// Step 3B. low_variation=false → 신규 Post 생성
-			// TODO: AI 연결 전이므로 임시로 특정 Source의 Title, Description으로 작성
-			Source temp = sources.getFirst();
-			Post post = postRepository.save(Post.builder()
-				.title(temp.getTitle() != null ? temp.getTitle() : "제목 없음")
-				.summary(temp.getDescription() != null ? temp.getDescription() : "내용 없음")
-				.thumbnailUrl(temp.getThumbnailUrl())
-				.bucketAt(bucketAt)
-				.reportCount(0)
-				.build());
 
-			// Step 4. 신규 Post 연결
-			// Source ↔ Post 매핑
-			linkSourcesToPost(post, sources);
+			// 1) 여러 소스 내용을 하나의 userContent로 합치기
+			StringBuilder sb = new StringBuilder();
+			for (Source src : sources) {
+				sb.append("제목: ").append(src.getTitle()).append("\n")
+					.append("설명: ").append(src.getDescription()).append("\n")
+					.append("URL: ").append(src.getNormalizedUrl()).append("\n")
+					.append("플랫폼: ").append(src.getPlatform()).append("\n\n");
+			}
+			String userContent = sb.toString();
 
-			// KeywordMetricHourly ↔ Post 연결
-			KeywordMetricHourlyId keywordMetricHourlyId = new KeywordMetricHourlyId(bucketAt, Platform.GOOGLE_TREND,
-				keywordId);
-			KeywordMetricHourly keywordMetricHourly = keywordMetricHourlyRepository.findById(keywordMetricHourlyId)
-				.orElseThrow(() -> new ServiceException("404", "KeywordMetricHourly를 찾을 수 없습니다."));
-			keywordMetricHourly.setPost(post);
+			String aiResponse = null;
+			String postTitle;
+			String postSummary;
 
-			// Keyword ↔ Post 매핑
-			Keyword keyword = keywordRepository.findById(keywordId)
-				.orElseThrow(() -> new ServiceException("404", "Keyword를 찾을 수 없습니다."));
-			PostKeyword postKeyword = PostKeyword.builder().post(post).keyword(keyword).build();
-			postKeywordRepository.insertIgnoreAll(List.of(postKeyword));
+			try {
+				aiResponse = summarizeAsync(userContent).get();
+				log.info("[AI 응답(raw)] {}", aiResponse);
+			} catch (Exception e) {
+				log.error("AI 요약 실패, keyword={} → fallback 사용", keywordText, e);
+				postTitle = sources.get(0).getTitle();
+				postSummary = sources.get(0).getDescription();
+				// 포스트 생성 및 관련 링크 생성
+				createPostAndRelations(postTitle, postSummary, sources, bucketAt, keywordId, keywordText); // ★
+				continue;
+			}
 
-			// PostMetricHourly 생성
-			PostMetricHourly postMetricHourly = PostMetricHourly.builder()
-				.post(post)
-				.bucketAt(bucketAt)
-				.clickCount(0)
-				.likeCount(0)
-				.build();
-			postMetricHourlyRepository.save(postMetricHourly);
+			// 2) 마크다운 펜스 제거
+			String jsonResponse = aiResponse
+				.replaceAll("(?m)^```(?:json)?\\s*", "")
+				.replaceAll("(?m)```\\s*$", "")
+				.trim();
 
-			// Redis 캐싱 (TTL 24시간)
-			cachePostCardView(post, keywordText, Duration.ofHours(24));
+			// 3) JSON 파싱
+			try {
+				JsonNode root = objectMapper.readTree(jsonResponse);
 
-			log.info("신규 포스트 생성 완료 - postId={}, keyword={}", post.getId(), keywordText);
+				String rawTitle = root.path("title").asText(null);
+				String rawSummary = root.path("summary").asText(null);
+
+				if (rawTitle == null || rawSummary == null) {
+					//키 누락 시 폴백 처리 - 첫 소스의 제목과 요약을 사용
+					log.info("AI 응답 누락, 포스트 작성에 첫 번째 소스 사용");
+					postTitle = sources.get(0).getTitle();
+					postSummary = sources.get(0).getDescription();
+				} else {
+					postTitle = rawTitle;
+					postSummary = "AI가 찾아낸 핵심\n\n" + rawSummary;
+				}
+
+			} catch (IOException e) {
+				log.error("AI 응답 파싱 실패, keyword={} → fallback 사용", keywordText, e);
+				postTitle = sources.get(0).getTitle();
+				postSummary = sources.get(0).getDescription();
+			}
+			// 4) 포스트 생성 및 관련 링크 생성
+			createPostAndRelations(postTitle, postSummary, sources, bucketAt, keywordId, keywordText); // ★
 		}
 	}
 

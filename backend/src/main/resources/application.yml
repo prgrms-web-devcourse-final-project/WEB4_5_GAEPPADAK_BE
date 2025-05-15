@@ -5,19 +5,21 @@ spring:
   application:
     name: kkokkio
 
-  batch: # spring Batch 스키마 생성 설정
+  batch:
     jdbc:
-      initialize-schema: always
+      initialize-schema: always # JobRepository 테이블 자동 생성
     job:
-      enabled: false
+      enabled: false # 스케줄러가 직접 Job 실행
 
   profiles:
-    active: ${SPRING_ACTIVE_PROFILES:dev}
+    active: ${SPRING_ACTIVE_PROFILES:test}
 
   data:
     redis:
       host: ${REDIS_HOST:127.0.0.1}
       port: ${REDIS_PORT:6379}
+      repositories:
+        enabled: false
 
   config:
     import: optional:file:./.env[.properties]
@@ -31,7 +33,6 @@ spring:
       auto-commit: false # 트랜잭션의 자동 커밋을 비활성화하여 명시적 commit 필요
 
   jpa:
-    database-platform: org.hibernate.dialect.MySQLDialect
     open-in-view: false # 영속성 컨텍스트를 뷰까지 열지 않음 (성능 및 Side-effect 방지)
     properties:
       hibernate:
@@ -143,11 +144,13 @@ management:
       exposure:
         include: health,info,metrics,prometheus
       base-path: /api/actuator
+
   endpoint:
     health:
       probes:
         enabled: true # readiness/liveness 포함
       show-details: always
+
   health:
     circuitbreakers:
       enabled: true

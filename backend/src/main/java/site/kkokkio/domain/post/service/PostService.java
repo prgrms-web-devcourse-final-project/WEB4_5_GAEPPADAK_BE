@@ -3,11 +3,16 @@ package site.kkokkio.domain.post.service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.scheduling.annotation.Async;
@@ -32,6 +37,7 @@ import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.service.MemberService;
 import site.kkokkio.domain.post.dto.PostDto;
+import site.kkokkio.domain.post.dto.ReportedPostSummary;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.entity.PostKeyword;
 import site.kkokkio.domain.post.entity.PostMetricHourly;
@@ -350,5 +356,101 @@ public class PostService {
 		// 6. 포스트의 신고 카운트 증가 및 저장
 		post.incrementReportCount();
 		postRepository.save(post);
+	}
+
+	/**
+	 * 관리자용 신고된 포스트 목록을 페이징, 정렬, 검색하여 조회합니다.
+	 * @param pageable 페이징 및 정렬 정보
+	 * @param searchTarget 검색 대상 필드
+	 * @param searchValue 검색어
+	 * @return 페이징된 ReportedPostSummary 목록
+	 */
+	@Transactional(readOnly = true)
+	public Page<ReportedPostSummary> getReportedPostsList(
+		Pageable pageable, String searchTarget, String searchValue
+	) {
+		// 1. 정렬 옵션 검증 및 Repository 쿼리 별칭에 맞게 매핑
+		Sort apisort = pageable.getSort();
+		Sort repositorySort = Sort.unsorted();
+
+		// 정렬 속성 이름
+		List<String> sortProperty = Arrays.asList("reportedAt", "reportCount");
+
+		// Reporitory 쿼리의 SELECT 절 별칭과 일치해야 하는 정렬 속성 이름
+		List<String> repositorySortProperty = Arrays.asList("latestReportedAt", "reportCount");
+
+		// 기본 정렬: 최신순 내림차순
+		String defaultSortProperty = "reportedAt";
+		Sort.Direction defaultDirection = Sort.Direction.DESC;
+
+		// Pageable의 Sort 객체 순회하며 개별 정렬 Order 처리
+		for (Sort.Order order : apisort) {
+			String property = order.getProperty();
+			Sort.Direction direction = order.getDirection();
+
+			// 정렬 속성 이름이 허용된 목록에 있는지 확인
+			int propertyIndex = sortProperty.indexOf(property);
+
+			// 허용되지 않은 정렬 속성이면 오류 발생
+			if (propertyIndex == -1) {
+				throw new ServiceException("400", "부적절한 정렬 옵션입니다.");
+			}
+
+			// 속성 이름을 Repository 쿼리의 별칭과 연결하여 repositorySort에 추가
+			String repositoryProperty = repositorySortProperty.get(propertyIndex);
+			repositorySort = repositorySort.and(Sort.by(direction, repositoryProperty));
+		}
+
+		// 만약 Pageable에 정렬 정보가 전혀 없었다면 기본 정렬 적용
+		if (repositorySort.isEmpty()) {
+			// 기본 정렬 reportedAt 내림차순
+			int defaultPropertyIndex = sortProperty.indexOf(defaultSortProperty);
+			String defaultRepositoryProperty = repositorySortProperty.get(defaultPropertyIndex);
+			repositorySort = Sort.by(defaultDirection, defaultRepositoryProperty);
+		}
+
+		// Repository에 전달한 최종 Pageable 객체 생성
+		Pageable repositoryPageable = PageRequest.of(
+			pageable.getPageNumber(),
+			pageable.getPageSize(),
+			repositorySort
+		);
+
+		// 2. 검색 조건 검증 및 Repository 쿼리 파라미터에 맞게 매핑
+		String searchTitle = null;
+		String searchSummary = null;
+		String searchKeyword = null;
+		String searchReportReason = null;
+
+		// 검색 대상과 검색어가 모두 존재하고, 검색어가 공백만으로 이루어지지 않았다면 매핑 로직 실행
+		if (searchTarget != null && searchValue != null && !searchValue.trim().isEmpty()) {
+			String trimmedSearchTarget = searchTarget.trim().toLowerCase();
+			String trimmedSearchValue = searchValue.trim();
+
+			// 검색 대상 문자열을 Repository 메서드의 인자로 매핑
+			switch (trimmedSearchTarget) {
+				case "post title" -> searchTitle = trimmedSearchValue;
+				case "post summary" -> searchSummary = trimmedSearchValue;
+				case "keyword" -> searchKeyword = trimmedSearchValue;
+				case "report reason" -> searchReportReason = trimmedSearchValue;
+				default -> {
+					throw new ServiceException("400", "부적절한 검색 옵션입니다.");
+				}
+			}
+		}
+
+		// 3. PostReportRepository 메서드 호출
+		// 매핑된 검색 인자들과 Repository용 Pageable 객체를 넘겨 호출
+		Page<ReportedPostSummary> reportedPostPage =
+			postReportRepository.findReportedPostSummary(
+				searchTitle,
+				searchSummary,
+				searchKeyword,
+				searchReportReason,
+				repositoryPageable
+			);
+
+		// 4. 결과 반환
+		return reportedPostPage;
 	}
 }

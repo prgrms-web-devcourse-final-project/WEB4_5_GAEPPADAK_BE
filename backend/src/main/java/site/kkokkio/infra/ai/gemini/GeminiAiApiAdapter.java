@@ -19,7 +19,7 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.github.resilience4j.retry.annotation.Retry;
 import reactor.core.publisher.Mono;
-import site.kkokkio.infra.ai.adapter.AiSummaryClient;
+import site.kkokkio.infra.ai.adapter.AiSummaryAdapter;
 import site.kkokkio.infra.ai.gemini.dto.GeminiError;
 import site.kkokkio.infra.ai.gemini.dto.GeminiErrorDetail;
 import site.kkokkio.infra.ai.gemini.dto.GeminiErrorResponse;
@@ -27,7 +27,7 @@ import site.kkokkio.infra.ai.gemini.dto.GeminiResponse;
 import site.kkokkio.infra.common.exception.ExternalApiErrorUtil;
 
 @Component
-public class GeminiClient implements AiSummaryClient {
+public class GeminiAiApiAdapter implements AiSummaryAdapter {
 
 	@Value("${mock.enabled:false}")
 	private boolean mockEnabled;
@@ -37,7 +37,7 @@ public class GeminiClient implements AiSummaryClient {
 	private final WebClient webClient;
 	private final GeminiProperties props;
 
-	public GeminiClient(
+	public GeminiAiApiAdapter(
 		@Qualifier("geminiWebClient")
 		WebClient geminiWebClient,
 		GeminiProperties props
@@ -50,7 +50,7 @@ public class GeminiClient implements AiSummaryClient {
 	@Retry(name = "GEMINI_AI_RETRY")
 	@RateLimiter(name = "GEMINI_AI_RATE_LIMITER")
 	@Override
-	public CompletableFuture<String> requestSummaryAsync(String systemPrompt, String content) {
+	public CompletableFuture<String> summarize(String systemPrompt, String content) {
 
 		if (mockEnabled) {
 			return loadMockSummaryResponse();

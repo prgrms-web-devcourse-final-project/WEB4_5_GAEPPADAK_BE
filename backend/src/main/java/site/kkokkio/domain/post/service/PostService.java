@@ -47,7 +47,7 @@ import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
-import site.kkokkio.infra.ai.adapter.AiSummaryClient;
+import site.kkokkio.infra.ai.adapter.AiSummaryAdapter;
 import site.kkokkio.infra.ai.gemini.GeminiProperties;
 
 @Slf4j
@@ -65,7 +65,7 @@ public class PostService {
 	private final PostSourceRepository postSourceRepository;
 	private final StringRedisTemplate redisTemplate;
 	private final ObjectMapper objectMapper;
-	private final AiSummaryClient aiClient;
+	private final AiSummaryAdapter aiSummaryAdapter;
 	private final GeminiProperties geminiProperties;
 
 	public Post getPostById(Long id) {
@@ -108,7 +108,7 @@ public class PostService {
 	 */
 	@Async
 	public CompletableFuture<String> summarizeAsync(String prompt, String content) {
-		return aiClient.requestSummaryAsync(prompt, content);
+		return aiSummaryAdapter.summarize(prompt, content);
 	}
 
 	/**

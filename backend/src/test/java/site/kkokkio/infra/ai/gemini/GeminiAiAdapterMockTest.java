@@ -15,12 +15,12 @@ import org.springframework.test.context.ActiveProfiles;
 class GeminiAiAdapterMockTest {
 
 	@Autowired
-	private GeminiClient geminiClient;
+	private GeminiAiApiAdapter geminiAiApiAdapter;
 
 	@Test
 	@DisplayName("Mock 모드에서 Gemini 요약 요청 - 성공")
 	void requestSummary_mockData() throws Exception {
-		CompletableFuture<String> result = geminiClient.requestSummaryAsync("시스템 프롬프트", "요약할 콘텐츠");
+		CompletableFuture<String> result = geminiAiApiAdapter.summarize("시스템 프롬프트", "요약할 콘텐츠");
 
 		assertThat(result).isNotNull();
 		assertThat(result.get()).contains("\"title\"");

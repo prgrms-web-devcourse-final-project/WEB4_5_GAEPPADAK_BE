@@ -50,7 +50,7 @@ import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
-import site.kkokkio.infra.ai.adapter.AiSummaryClient;
+import site.kkokkio.infra.ai.adapter.AiSummaryAdapter;
 import site.kkokkio.infra.ai.gemini.GeminiProperties;
 
 @ExtendWith(MockitoExtension.class)
@@ -83,7 +83,7 @@ public class PostServiceTest {
 	@Mock
 	private ValueOperations<String, String> valueOps;
 	@Mock
-	private AiSummaryClient aiSummaryClient;
+	private AiSummaryAdapter aiSummaryClient;
 	@Mock
 	private GeminiProperties geminiProperties;
 
@@ -208,7 +208,7 @@ public class PostServiceTest {
       {"title":"테스트제목","summary":"이것은 테스트 요약입니다."}
       """;
 
-		given(aiSummaryClient.requestSummaryAsync(anyString(), anyString()))
+		given(aiSummaryClient.summarize(anyString(), anyString()))
 			.willReturn(CompletableFuture.completedFuture(fakeJson));
 
 		ObjectNode fakeNode = new ObjectNode(new ObjectMapper().getNodeFactory())

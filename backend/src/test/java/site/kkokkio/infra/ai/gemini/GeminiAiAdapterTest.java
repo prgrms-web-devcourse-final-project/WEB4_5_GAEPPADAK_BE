@@ -28,10 +28,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
-import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
-import io.github.resilience4j.retry.RetryRegistry;
 import reactor.core.publisher.Mono;
-import site.kkokkio.infra.ai.adapter.AiSummaryClient;
+import site.kkokkio.infra.ai.adapter.AiSummaryAdapter;
 import site.kkokkio.infra.common.exception.RetryableExternalApiException;
 
 @SpringBootTest
@@ -73,7 +71,7 @@ public class GeminiAiAdapterTest {
 	ExchangeFunction ef;
 
 	@Autowired
-	AiSummaryClient ai;
+	AiSummaryAdapter aiSummaryAdapter;
 
 	@Autowired
 	CircuitBreakerRegistry cbRegistry;
@@ -101,7 +99,7 @@ public class GeminiAiAdapterTest {
 
 		when(ef.exchange(any()))
 			.thenReturn(Mono.just(resp(geminiResponseJson, HttpStatus.OK)));
-		CompletableFuture<String> result = ai.requestSummaryAsync("sys", "user");
+		CompletableFuture<String> result = aiSummaryAdapter.summarize("sys", "user");
 		assertThat(result).isNotNull();
 		assertThat(result.get()).isEqualTo("{\"title\":\"T\",\"summary\":\"S\"}");
 	}
@@ -129,7 +127,7 @@ public class GeminiAiAdapterTest {
 			.thenReturn(Mono.just(resp(errBody, HttpStatus.SERVICE_UNAVAILABLE)));
 
 		// 첫 번째 요청 → RetryableExternalApiException 발생 기대
-		CompletableFuture<String> future = ai.requestSummaryAsync("x", "y");
+		CompletableFuture<String> future = aiSummaryAdapter.summarize("x", "y");
 
 		assertThatThrownBy(future::get)
 			.hasCauseInstanceOf(RetryableExternalApiException.class);
@@ -139,7 +137,7 @@ public class GeminiAiAdapterTest {
 		assertThat(cb.getState()).isEqualTo(CircuitBreaker.State.OPEN);
 
 		// 두 번째 호출: Circuit breaker 열려 있어서 바로 실패
-		CompletableFuture<String> blocked = ai.requestSummaryAsync("x", "y");
+		CompletableFuture<String> blocked = aiSummaryAdapter.summarize("x", "y");
 		assertThatThrownBy(blocked::get)
 			.hasCauseInstanceOf(CallNotPermittedException.class);
 
@@ -170,15 +168,15 @@ public class GeminiAiAdapterTest {
 			);
 
 		// when
-		CompletableFuture<String> f1 = ai.requestSummaryAsync("s", "u");
-		CompletableFuture<String> f2 = ai.requestSummaryAsync("s", "u");
+		CompletableFuture<String> f1 = aiSummaryAdapter.summarize("s", "u");
+		CompletableFuture<String> f2 = aiSummaryAdapter.summarize("s", "u");
 
 		// then
 		assertThat(f1.get()).contains("title");
 		assertThat(f2.get()).contains("summary");
 
 		// 3번째 요청은 RateLimiter에 막힘 예상
-		assertThatThrownBy(() -> ai.requestSummaryAsync("s", "u").get())
+		assertThatThrownBy(() -> aiSummaryAdapter.summarize("s", "u").get())
 			.hasCauseInstanceOf(io.github.resilience4j.ratelimiter.RequestNotPermitted.class);
 
 		verify(ef, times(2)).exchange(any());

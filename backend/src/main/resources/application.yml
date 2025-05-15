@@ -155,6 +155,17 @@ management:
     circuitbreakers:
       enabled: true
 
+  metrics:
+    tags:
+      application: trend-batch
+      instance: ${SPRING_ACTIVE_PROFILES:test}
+    enable:
+      scheduling: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
 google:
   trends:
     rss:

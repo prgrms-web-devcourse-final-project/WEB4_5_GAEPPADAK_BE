@@ -9,6 +9,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-@PreAuthorize("@authChecker.isOwner('comment', #commentId, authentication)")
+@PreAuthorize("isAuthenticated() && @authChecker.isOwner('comment', #commentId, authentication)")
 public @interface IsCommentOwner {
 }

@@ -41,30 +41,37 @@ public class KeywordMetricHourly extends BaseTimeEntity {
     @JoinColumn(name = "post_id")
     private Post post;
 
+    // 1시간 동안 검색량 총합
     @Builder.Default
     @Column(nullable = false)
     private int volume = 0;
 
+    // rankDelta, noveltyRatio, weightedNovelty을 종합적으로 판단하여 신규성을 평가해 점수를 매김
     @Builder.Default
     @Column(nullable = false)
     private int score = 0;
 
+    // 순위 변화량
     @Builder.Default
     @Column(name = "rank_delta", nullable = false)
     private double rankDelta = -1.0;
 
+    // 신규 소스 비율
     @Builder.Default
     @Column(name = "novelty_ratio", nullable = false)
     private double noveltyRatio = -1.0;
 
+    // 비율에 가중치 반영
     @Builder.Default
     @Column(name = "weighted_novelty", nullable = false)
     private double weightedNovelty = -1.0;
 
+    // 연속 Post 생성 없음 (시간)
     @Builder.Default
     @Column(name = "no_post_streak", nullable = false)
     private int noPostStreak = -1;
 
+    // 최종 Post 생성 제외 여부
     @Builder.Default
     @Column(name = "low_variation", nullable = false)
     private boolean lowVariation = false;

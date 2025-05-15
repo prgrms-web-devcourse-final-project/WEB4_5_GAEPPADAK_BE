@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +22,7 @@ import site.kkokkio.domain.comment.repository.CommentLikeRepository;
 import site.kkokkio.domain.comment.repository.CommentReportRepository;
 import site.kkokkio.domain.comment.repository.CommentRepository;
 import site.kkokkio.domain.member.entity.Member;
+import site.kkokkio.domain.member.repository.MemberRepository;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.repository.PostRepository;
 import site.kkokkio.global.enums.ReportProcessingStatus;
@@ -35,6 +37,7 @@ public class CommentService {
 	private final PostRepository postRepository;
 	private final CommentLikeRepository commentLikeRepository;
 	private final CommentReportRepository commentReportRepository;
+	private final MemberRepository memberRepository;
 
 	public Page<CommentDto> getCommentListByPostId(Long postId, Pageable pageable) {
 		Post post = postRepository.findById(postId)
@@ -45,9 +48,12 @@ public class CommentService {
 	}
 
 	@Transactional
-	public CommentDto createComment(Long postId, Member member, CommentCreateRequest request) {
+	public CommentDto createComment(Long postId, UserDetails userDetails, CommentCreateRequest request) {
 		Post post = postRepository.findById(postId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 포스트입니다."));
+
+		Member member = memberRepository.findByEmail(userDetails.getUsername())
+			.orElseThrow(() -> new ServiceException("404", "사용자를 찾을 수 없습니다."));
 
 		Comment comment = Comment.builder()
 			.post(post)
@@ -79,11 +85,14 @@ public class CommentService {
 	}
 
 	@Transactional
-	public CommentDto likeComment(Long commentId, Member member) {
+	public CommentDto likeComment(Long commentId, UserDetails userDetails) {
 		Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
 
-		if (comment.getMember().getEmail().equals(member.getEmail())) {
+		Member member = memberRepository.findByEmail(userDetails.getUsername())
+			.orElseThrow(() -> new ServiceException("404", "사용자를 찾을 수 없습니다."));
+
+		if (comment.getMember().getEmail().equals(userDetails.getUsername())) {
 			throw new ServiceException("403", "본인 댓글은 좋아요 할 수 없습니다.");
 		}
 
@@ -104,11 +113,11 @@ public class CommentService {
 	}
 
 	@Transactional
-	public CommentDto unlikeComment(Long commentId, Member member) {
+	public CommentDto unlikeComment(Long commentId, UserDetails userDetails) {
 		Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
 
-		if (comment.getMember().getEmail().equals(member.getEmail())) {
+		if (comment.getMember().getEmail().equals(userDetails.getUsername())) {
 			throw new ServiceException("403", "본인 댓글은 좋아요 할 수 없습니다.");
 		}
 
@@ -125,15 +134,18 @@ public class CommentService {
 	/**
 	 * 댓글 신고 기능
 	 * @param commentId 신고 대상 댓글 ID
-	 * @param reporter 신고하는 사용자 (인증된 사용자)
+	 * @param userDetails 신고하는 사용자 (인증된 사용자)
 	 * @param reason 신고 사유
 	 */
 	@Transactional
-	public void reportComment(Long commentId, Member reporter, ReportReason reason) {
+	public void reportComment(Long commentId, UserDetails userDetails, ReportReason reason) {
 
 		// 1. 신고 대상 댓글 조회
 		Comment comment = commentRepository.findById(commentId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
+
+		Member reporter = memberRepository.findByEmail(userDetails.getUsername())
+			.orElseThrow(() -> new ServiceException("404", "사용자를 찾을 수 없습니다."));
 
 		// 2. 삭제된 댓글인지 확인
 		if (comment.isDeleted()) {
@@ -175,8 +187,8 @@ public class CommentService {
 	 * @return 페이징된 ReportedCommentSummary 목록
 	 */
 	@Transactional(readOnly = true)
-	public Page<ReportedCommentSummary> getReportedCommentsList
-	(Pageable pageable, String searchTarget, String searchValue) {
+	public Page<ReportedCommentSummary> getReportedCommentsList(
+		Pageable pageable, String searchTarget, String searchValue) {
 
 		// 1. 정렬 옵션 검증 및 매핑
 		Sort apiSort = pageable.getSort();
@@ -229,19 +241,15 @@ public class CommentService {
 			}
 		}
 
-		// 3. ReportedCommentRepository 메서드 호출
+		// 3. ReportedCommentRepository 메서드 호출 및 반환
 		// 매핑된 검색 인자들과 정렬/페이징 정보(repositoryPageable)를 넘겨 호출
-		Page<ReportedCommentSummary> reportedCommentPage =
-			commentReportRepository.findReportedCommentSummary(
-				searchNickname,
-				searchPostTitle,
-				searchCommentBody,
-				searchReportReason,
-				repositoryPageable
-			);
-
-		// 4. 결과 반환
-		return reportedCommentPage;
+		return commentReportRepository.findReportedCommentSummary(
+			searchNickname,
+			searchPostTitle,
+			searchCommentBody,
+			searchReportReason,
+			repositoryPageable
+		);
 	}
 
 	/**

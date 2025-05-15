@@ -25,6 +25,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -83,7 +84,7 @@ class CommentControllerV2Test {
 
 		// commentService.reportComment 메소드는 void 이므로 doNothing() 모킹
 		Mockito.doNothing()
-			.when(commentService).reportComment(eq(commentId), any(Member.class), eq(request.reason()));
+			.when(commentService).reportComment(eq(commentId), any(UserDetails.class), eq(request.reason()));
 
 		// 인증된 사용자 모킹
 		Member mockReporter = mock(Member.class);
@@ -91,7 +92,7 @@ class CommentControllerV2Test {
 		when(mockReporter.getRole()).thenReturn(MemberRole.USER);
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v2/reports/comments/{commentId}", commentId)
-				.with(user(new CustomUserDetails(mockReporter)))
+				.with(user(new CustomUserDetails("test@email.com", mockReporter.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -112,7 +113,7 @@ class CommentControllerV2Test {
 		// ServiceException 발생 모킹 (ErrorCode.COMMENT_NOT_FOUND 사용)
 		Mockito.doThrow(
 				new ServiceException(ErrorCode.COMMENT_NOT_FOUND.getCode(), ErrorCode.COMMENT_NOT_FOUND.getMessage()))
-			.when(commentService).reportComment(eq(commentId), any(Member.class), eq(request.reason()));
+			.when(commentService).reportComment(eq(commentId), any(UserDetails.class), eq(request.reason()));
 
 		// 인증된 사용자 모킹
 		Member mockReporter = mock(Member.class);
@@ -120,7 +121,7 @@ class CommentControllerV2Test {
 		when(mockReporter.getRole()).thenReturn(MemberRole.USER);
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v2/reports/comments/{commentId}", commentId)
-				.with(user(new CustomUserDetails(mockReporter)))
+				.with(user(new CustomUserDetails("test@email.com", mockReporter.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -139,7 +140,7 @@ class CommentControllerV2Test {
 
 		// ServiceException 발생 모킹
 		Mockito.doThrow(new ServiceException("400", "삭제된 댓글은 신고할 수 없습니다."))
-			.when(commentService).reportComment(eq(commentId), any(Member.class), eq(request.reason()));
+			.when(commentService).reportComment(eq(commentId), any(UserDetails.class), eq(request.reason()));
 
 		// 인증된 사용자 모킹
 		Member mockReporter = mock(Member.class);
@@ -147,7 +148,7 @@ class CommentControllerV2Test {
 		when(mockReporter.getRole()).thenReturn(MemberRole.USER);
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v2/reports/comments/{commentId}", commentId)
-				.with(user(new CustomUserDetails(mockReporter)))
+				.with(user(new CustomUserDetails("test@email.com", mockReporter.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -166,7 +167,7 @@ class CommentControllerV2Test {
 
 		// ServiceException 발생 모킹
 		Mockito.doThrow(new ServiceException("403", "본인의 댓글은 신고할 수 없습니다.")) // Service에서 던지는 예외와 일치시켜야 함
-			.when(commentService).reportComment(eq(commentId), any(Member.class), eq(request.reason()));
+			.when(commentService).reportComment(eq(commentId), any(UserDetails.class), eq(request.reason()));
 
 		// 인증된 사용자 모킹
 		Member mockReporter = mock(Member.class);
@@ -174,7 +175,7 @@ class CommentControllerV2Test {
 		when(mockReporter.getRole()).thenReturn(MemberRole.USER);
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v2/reports/comments/{commentId}", commentId)
-				.with(user(new CustomUserDetails(mockReporter)))
+				.with(user(new CustomUserDetails("test@email.com", mockReporter.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -193,7 +194,7 @@ class CommentControllerV2Test {
 
 		// ServiceException 발생 모킹
 		Mockito.doThrow(new ServiceException("400", "이미 신고한 댓글입니다."))
-			.when(commentService).reportComment(eq(commentId), any(Member.class), eq(request.reason()));
+			.when(commentService).reportComment(eq(commentId), any(UserDetails.class), eq(request.reason()));
 
 		// 인증된 사용자 모킹
 		Member mockReporter = mock(Member.class);
@@ -201,7 +202,7 @@ class CommentControllerV2Test {
 		when(mockReporter.getRole()).thenReturn(MemberRole.USER);
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v2/reports/comments/{commentId}", commentId)
-				.with(user(new CustomUserDetails(mockReporter)))
+				.with(user(new CustomUserDetails("test@email.com", mockReporter.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -225,7 +226,7 @@ class CommentControllerV2Test {
 		when(mockReporter.getRole()).thenReturn(MemberRole.USER);
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v2/reports/comments/{commentId}", commentId)
-				.with(user(new CustomUserDetails(mockReporter)))
+				.with(user(new CustomUserDetails("test@email.com", mockReporter.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(APPLICATION_JSON)
 				.content(invalidRequestBodyJson))
@@ -456,7 +457,7 @@ class CommentControllerV2Test {
 	@WithMockUser(roles = "ADMIN")
 	void test10_2() throws Exception {
 		/// given
-		List<Long> commentIdsToHide = Arrays.asList();
+		List<Long> commentIdsToHide = List.of();
 		ReportedCommentHideRequest requestBody = new ReportedCommentHideRequest(commentIdsToHide);
 
 		/// when & then
@@ -553,7 +554,7 @@ class CommentControllerV2Test {
 	@WithMockUser(roles = "ADMIN")
 	void test11_3() throws Exception {
 		/// given
-		List<Long> commentIdsToReject = Arrays.asList();
+		List<Long> commentIdsToReject = List.of();
 		ReportedCommentHideRequest requestBody = new ReportedCommentHideRequest(commentIdsToReject);
 
 		/// when & then

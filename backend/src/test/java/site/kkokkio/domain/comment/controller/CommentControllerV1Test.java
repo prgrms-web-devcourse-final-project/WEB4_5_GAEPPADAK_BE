@@ -22,6 +22,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -93,11 +94,11 @@ class CommentControllerV1Test {
 		Member member = mock(Member.class);
 		when(member.getRole()).thenReturn(MemberRole.USER);
 
-		Mockito.when(commentService.createComment(eq(1L), any(Member.class), any(CommentCreateRequest.class)))
+		Mockito.when(commentService.createComment(eq(1L), any(UserDetails.class), any(CommentCreateRequest.class)))
 			.thenReturn(commentDto);
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/posts/1/comments")
-				.with(user(new CustomUserDetails(member)))
+				.with(user(new CustomUserDetails("test@email.com", member.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -127,7 +128,7 @@ class CommentControllerV1Test {
 		when(member.getRole()).thenReturn(MemberRole.USER);
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/posts/1/comments")
-				.with(user(new CustomUserDetails(member)))
+				.with(user(new CustomUserDetails("test@email.com", member.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -153,7 +154,7 @@ class CommentControllerV1Test {
 			.thenReturn(commentDto);
 
 		mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/comments/1")
-				.with(user(new CustomUserDetails(member)))
+				.with(user(new CustomUserDetails(member.getEmail(), member.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -171,7 +172,7 @@ class CommentControllerV1Test {
 		when(member.getRole()).thenReturn(MemberRole.USER);
 
 		mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/comments/1")
-				.with(user(new CustomUserDetails(member)))
+				.with(user(new CustomUserDetails("test@email.com", member.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -193,7 +194,7 @@ class CommentControllerV1Test {
 			.thenReturn(commentDto);
 
 		mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/comments/1")
-				.with(user(new CustomUserDetails(member)))
+				.with(user(new CustomUserDetails(member.getEmail(), member.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
@@ -212,7 +213,7 @@ class CommentControllerV1Test {
 			.thenReturn(true);
 
 		mockMvc.perform(MockMvcRequestBuilders.delete("/api/v1/comments/1")
-				.with(user(new CustomUserDetails(member)))
+				.with(user(new CustomUserDetails("test@email.com", member.getRole().toString(), true)))
 				.with(csrf())
 				.accept(APPLICATION_JSON))
 			.andExpect(status().isOk())
@@ -228,11 +229,11 @@ class CommentControllerV1Test {
 		Member member = mock(Member.class);
 		when(member.getRole()).thenReturn(MemberRole.USER);
 
-		Mockito.when(commentService.likeComment(eq(1L), any(Member.class)))
+		Mockito.when(commentService.likeComment(eq(1L), any(UserDetails.class)))
 			.thenReturn(commentDto);
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/comments/1/like")
-				.with(user(new CustomUserDetails(member)))
+				.with(user(new CustomUserDetails("test@email.com", member.getRole().toString(), true)))
 				.with(csrf()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("200"))
@@ -247,12 +248,13 @@ class CommentControllerV1Test {
 
 		Member member = mock(Member.class);
 		when(member.getRole()).thenReturn(MemberRole.USER);
+		UserDetails userDetails = new CustomUserDetails("test@email.com", member.getRole().toString(), true);
 
-		Mockito.when(commentService.unlikeComment(eq(1L), eq(member)))
+		Mockito.when(commentService.unlikeComment(eq(1L), eq(userDetails)))
 			.thenReturn(commentDto);
 
 		mockMvc.perform(MockMvcRequestBuilders.delete("/api/v1/comments/1/like")
-				.with(user(new CustomUserDetails(member)))
+				.with(user(userDetails))
 				.with(csrf()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("200"))

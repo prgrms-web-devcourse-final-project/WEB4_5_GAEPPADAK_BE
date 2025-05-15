@@ -90,7 +90,7 @@ public class MemberControllerV1 {
 	@IsActiveMember
 	public RsData<Void> deleteMember(HttpServletRequest request, HttpServletResponse response,
 		@AuthenticationPrincipal CustomUserDetails userDetails) {
-		memberService.deleteMember(userDetails.getMember());
+		memberService.deleteMember(userDetails);
 		authService.logout(request, response);
 		return new RsData<>(
 			"200",

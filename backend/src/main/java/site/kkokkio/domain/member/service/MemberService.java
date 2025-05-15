@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +21,6 @@ import site.kkokkio.domain.member.repository.MemberRepository;
 import site.kkokkio.global.auth.CustomUserDetails;
 import site.kkokkio.global.enums.MemberRole;
 import site.kkokkio.global.exception.ServiceException;
-import site.kkokkio.global.util.JwtUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -28,9 +28,7 @@ public class MemberService {
 
 	private final MemberRepository memberRepository;
 	private final PasswordEncoder passwordEncoder;
-	private final JwtUtils jwtUtils;
 	private final RedisTemplate<String, String> redisTemplate;
-	private final MailService mailService;
 
 	// 회원 가입
 	@Transactional
@@ -83,7 +81,8 @@ public class MemberService {
 	// 회원 정보 수정
 	public MemberResponse modifyMemberInfo(CustomUserDetails userDetails, MemberUpdateRequest requestBody) {
 
-		Member member = userDetails.getMember();
+		Member member = memberRepository.findByEmail(userDetails.getUsername())
+			.orElseThrow(() -> new ServiceException("404", "사용자를 찾을 수 없습니다."));
 
 		// 회원 정보 수정
 		Member modifiedMember = Member.builder()
@@ -128,7 +127,9 @@ public class MemberService {
 	}
 
 	@Transactional
-	public void deleteMember(Member member) {
+	public void deleteMember(UserDetails userDetails) {
+		Member member = memberRepository.findByEmail(userDetails.getUsername())
+			.orElseThrow(() -> new ServiceException("404", "사용자를 찾을 수 없습니다."));
 		member.maskPersonalInfo();
 		member.softDelete();
 		memberRepository.save(member);

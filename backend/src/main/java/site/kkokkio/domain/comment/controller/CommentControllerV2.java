@@ -27,7 +27,6 @@ import site.kkokkio.domain.comment.controller.dto.ReportedCommentHideRequest;
 import site.kkokkio.domain.comment.controller.dto.ReportedCommentListResponse;
 import site.kkokkio.domain.comment.dto.ReportedCommentSummary;
 import site.kkokkio.domain.comment.service.CommentService;
-import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.global.auth.CustomUserDetails;
 import site.kkokkio.global.auth.annotations.IsActiveMember;
 import site.kkokkio.global.auth.annotations.IsAdmin;
@@ -62,11 +61,8 @@ public class CommentControllerV2 {
 		@AuthenticationPrincipal CustomUserDetails userDetails,
 		@Valid @RequestBody CommentReportRequest request
 	) {
-		// CustomUserDetails에서 Member 엔티티를 가져오는 로직
-		Member reporter = userDetails.getMember();
-
 		// Service 메서드 호출
-		commentService.reportComment(commentId, reporter, request.reason());
+		commentService.reportComment(commentId, userDetails, request.reason());
 
 		return new RsData<>(
 			"200",
@@ -88,7 +84,6 @@ public class CommentControllerV2 {
 	public RsData<ReportedCommentListResponse> getReportCommentsList(
 		@ParameterObject
 		@PageableDefault(
-			size = 10,
 			sort = "reportedAt",
 			direction = Sort.Direction.DESC
 		) Pageable pageable,

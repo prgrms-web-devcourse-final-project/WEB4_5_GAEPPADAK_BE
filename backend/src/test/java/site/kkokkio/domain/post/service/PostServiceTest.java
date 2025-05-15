@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -21,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,8 +34,8 @@ import site.kkokkio.domain.keyword.repository.KeywordMetricHourlyRepository;
 import site.kkokkio.domain.keyword.repository.KeywordRepository;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
 import site.kkokkio.domain.member.entity.Member;
+import site.kkokkio.domain.member.repository.MemberRepository;
 import site.kkokkio.domain.post.dto.PostDto;
-import site.kkokkio.domain.post.dto.PostReportRequestDto;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.entity.PostKeyword;
 import site.kkokkio.domain.post.entity.PostReport;
@@ -76,6 +76,10 @@ public class PostServiceTest {
 	private PostSourceRepository postSourceRepository;
 	@Mock
 	private PostReportRepository postReportRepository;
+
+	@Mock
+	private MemberRepository memberRepository;
+
 	@Mock
 	private StringRedisTemplate redisTemplate;
 	@Mock
@@ -136,7 +140,7 @@ public class PostServiceTest {
 
 	@Test
 	@DisplayName("top10 키워드 포스트 조회 성공")
-	void test3() throws IOException {
+	void test3() {
 		// given
 		LocalDateTime now = LocalDateTime.of(2025, 4, 29, 18, 0);
 
@@ -150,7 +154,8 @@ public class PostServiceTest {
 			.post(post)
 			.build();
 
-		given(keywordMetricHourlyRepository.findTop10HourlyMetricsClosestToNowNative(any())).willReturn(List.of(metric));
+		given(keywordMetricHourlyRepository.findTop10HourlyMetricsClosestToNowNative(any())).willReturn(
+			List.of(metric));
 
 		// when
 		List<PostDto> result = postService.getTopPostsWithKeyword();
@@ -162,7 +167,7 @@ public class PostServiceTest {
 
 	@Test
 	@DisplayName("top10 키워드 포스트 조회 - 포스트 없음")
-	void test4() throws IOException {
+	void test4() {
 		// given
 		given(keywordMetricHourlyRepository.findTop10HourlyMetricsClosestToNowNative(any()))
 			.willReturn(Collections.emptyList());
@@ -180,13 +185,13 @@ public class PostServiceTest {
 		// given
 		Long keywordId = 100L;
 		LocalDateTime bucketAt = LocalDateTime.now();
-		String KeywordText = "키워드";
+		String keywordText = "키워드";
 
-		KeywordMetricHourlyDto metric = new KeywordMetricHourlyDto(keywordId, KeywordText, Platform.GOOGLE_TREND,
+		KeywordMetricHourlyDto metric = new KeywordMetricHourlyDto(keywordId, keywordText, Platform.GOOGLE_TREND,
 			bucketAt, 0, 0, false, null);
 		given(keywordMetricHourlyService.findHourlyMetrics()).willReturn(List.of(metric));
 
-		Keyword keyword = Keyword.builder().id(keywordId).text(KeywordText).build();
+		Keyword keyword = Keyword.builder().id(keywordId).text(keywordText).build();
 		Source source1 = createSource("url1");
 		Source source2 = createSource("url2");
 
@@ -248,7 +253,8 @@ public class PostServiceTest {
 
 	@Test
 	@DisplayName("포스트 생성 - lowVariation=true인 경우 기존 포스트 연결")
-	void generatePosts_LowVariation() {// given
+	void generatePosts_LowVariation() {
+		// given
 		Long keywordId = 1L;
 		LocalDateTime bucketAt = LocalDateTime.now().withMinute(0).withSecond(0).withNano(0);
 		KeywordMetricHourlyDto metric = new KeywordMetricHourlyDto(keywordId, "chatgpt", Platform.GOOGLE_TREND,
@@ -277,9 +283,8 @@ public class PostServiceTest {
 		// then
 		then(postRepository).should(never()).save(any()); // 신규 포스트 저장 안됨
 		then(postSourceRepository).should().insertIgnoreAll(argThat(mappings ->
-			mappings.size() == 1 &&
-				mappings.getFirst().getPost().getId().equals(999L) &&
-				mappings.getFirst().getSource().getFingerprint().equals(source.getFingerprint())
+			mappings.size() == 1 && mappings.getFirst().getPost().getId().equals(999L)
+				&& mappings.getFirst().getSource().getFingerprint().equals(source.getFingerprint())
 		));
 	}
 
@@ -324,7 +329,6 @@ public class PostServiceTest {
 		Long postId = 1L;
 		UUID reporterId = UUID.randomUUID();
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		PostReportRequestDto request = new PostReportRequestDto(reportReason);
 
 		// 신고 대상 포스트 실제 객체 생성 및 필드 설정
 		Post post = Post.builder().build();
@@ -335,6 +339,9 @@ public class PostServiceTest {
 		// 신고하는 사용자 Member 실제 객체 생성
 		Member reporter = Member.builder().build();
 		ReflectionTestUtils.setField(reporter, "id", reporterId);
+		given(memberRepository.findByEmail(any())).willReturn(Optional.of(reporter));
+		UserDetails userDetails = mock(UserDetails.class);
+		given(userDetails.getUsername()).willReturn("test@email.com");
 
 		// postRepository.findById 호출 시 실제 post 객체 반환
 		given(postRepository.findById(postId)).willReturn(Optional.of(post));
@@ -344,7 +351,7 @@ public class PostServiceTest {
 
 		/// when
 		// Service 메소드 호출 시 ReportReason Enum 값을 직접 전달
-		postService.reportPost(postId, reporter, reportReason);
+		postService.reportPost(postId, userDetails, reportReason);
 
 		/// 검증
 		verify(postRepository).findById(postId);
@@ -369,7 +376,7 @@ public class PostServiceTest {
 
 		/// when & then
 		// ServiceException 발생 예상 및 검증
-		assertThatThrownBy(() -> postService.reportPost(postId, reporter, reportReason))
+		assertThatThrownBy(() -> postService.reportPost(postId, any(), reportReason))
 			.isInstanceOf(ServiceException.class)
 			.hasMessageContaining("존재하지 않는 포스트입니다.");
 
@@ -388,6 +395,9 @@ public class PostServiceTest {
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
 		Member reporter = Member.builder().build();
 		ReflectionTestUtils.setField(reporter, "id", reporterId);
+		given(memberRepository.findByEmail(any())).willReturn(Optional.of(reporter));
+		UserDetails userDetails = mock(UserDetails.class);
+		given(userDetails.getUsername()).willReturn("test@email.com");
 
 		// 신고 대상 포스트 실제 객체 생성 및 필드 설정
 		Post post = Post.builder().build();
@@ -399,7 +409,7 @@ public class PostServiceTest {
 		given(postRepository.findById(postId)).willReturn(Optional.of(post));
 
 		/// when & then
-		assertThatThrownBy(() -> postService.reportPost(postId, reporter, reportReason))
+		assertThatThrownBy(() -> postService.reportPost(postId, userDetails, reportReason))
 			.isInstanceOf(ServiceException.class)
 			.hasMessageContaining("삭제된 포스트는 신고할 수 없습니다.");
 
@@ -429,13 +439,16 @@ public class PostServiceTest {
 		// 신고하는 사용자 실제 Member 객체 생성
 		Member reporter = Member.builder().build();
 		ReflectionTestUtils.setField(reporter, "id", reporterId);
+		given(memberRepository.findByEmail(any())).willReturn(Optional.of(reporter));
+		UserDetails userDetails = mock(UserDetails.class);
+		given(userDetails.getUsername()).willReturn("test@email.com");
 
 		// postReportRepository.existsByPostAndReporter 호출 시 true 반환
 		given(postReportRepository.existsByPostAndReporter(post, reporter)).willReturn(true);
 
 		/// when & then
 		// ServiceException 발생 예상 및 검증
-		assertThatThrownBy(() -> postService.reportPost(postId, reporter, reportReason))
+		assertThatThrownBy(() -> postService.reportPost(postId, userDetails, reportReason))
 			.isInstanceOf(ServiceException.class)
 			.hasMessageContaining("이미 신고한 포스트입니다.");
 

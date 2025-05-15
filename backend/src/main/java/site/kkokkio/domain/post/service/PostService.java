@@ -1,6 +1,5 @@
 package site.kkokkio.domain.post.service;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -12,6 +11,7 @@ import java.util.concurrent.CompletableFuture;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +29,7 @@ import site.kkokkio.domain.keyword.repository.KeywordMetricHourlyRepository;
 import site.kkokkio.domain.keyword.repository.KeywordRepository;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
 import site.kkokkio.domain.member.entity.Member;
+import site.kkokkio.domain.member.repository.MemberRepository;
 import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.entity.PostKeyword;
@@ -65,6 +66,7 @@ public class PostService {
 	private final StringRedisTemplate redisTemplate;
 	private final ObjectMapper objectMapper;
 	private final AiSummaryPort aiSummaryPort;
+	private final MemberRepository memberRepository;
 
 	public Post getPostById(Long id) {
 		return postRepository.findById(id)
@@ -85,11 +87,10 @@ public class PostService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<PostDto> getTopPostsWithKeyword() throws IOException {
+	public List<PostDto> getTopPostsWithKeyword() {
 		LocalDateTime now = LocalDateTime.now(ZoneId.of("UTC"));
-		List<KeywordMetricHourly> topKeywordMetrics = keywordMetricHourlyRepository.findTop10HourlyMetricsClosestToNowNative(
-			now
-		);
+		List<KeywordMetricHourly> topKeywordMetrics =
+			keywordMetricHourlyRepository.findTop10HourlyMetricsClosestToNowNative(now);
 
 		return topKeywordMetrics.stream()
 			.peek(metric -> {
@@ -311,15 +312,18 @@ public class PostService {
 	/**
 	 * 포스트 신고 기능
 	 * @param postId 신고 대상 포스트 ID
-	 * @param reporter 신고하는 사용자
+	 * @param userDetails 신고하는 사용자
 	 * @param reason 신고 사유
 	 */
 	@Transactional
-	public void reportPost(Long postId, Member reporter, ReportReason reason) {
+	public void reportPost(Long postId, UserDetails userDetails, ReportReason reason) {
 
 		// 1. 신고 대상 포스트 조회
 		Post post = postRepository.findById(postId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 포스트입니다."));
+
+		Member reporter = memberRepository.findByEmail(userDetails.getUsername())
+			.orElseThrow(() -> new ServiceException("404", "사용자를 찾을 수 없습니다."));
 
 		// 2. 삭제된 포스트인지 확인
 		if (post.isDeleted()) {

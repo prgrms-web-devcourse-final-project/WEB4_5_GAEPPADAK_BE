@@ -57,12 +57,12 @@ class BatchJobControllerV1Test {
 
 	@Test
 	@DisplayName("배치 작업 성공 - Admin")
-	void BatchJobControllerV1Test1() throws Exception {
+	void batchJobControllerV1Test1() throws Exception {
 		Member member = mock(Member.class);
 		when(member.getRole()).thenReturn(MemberRole.ADMIN);
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/batch/run/trend")
-				.with(user(new CustomUserDetails(member)))
+				.with(user(new CustomUserDetails("test@email.com", member.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(APPLICATION_JSON))
 			.andExpect(status().isOk());
@@ -70,13 +70,13 @@ class BatchJobControllerV1Test {
 
 	@Test
 	@DisplayName("배치 작업 실패 - USER 403")
-	void BatchJobControllerV1Test2() throws Exception {
+	void batchJobControllerV1Test2() throws Exception {
 		Member member = Member.builder()
 			.email("user@test.com")
 			.role(MemberRole.USER)
 			.build();
 		mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/batch/run/trend")
-				.with(user(new CustomUserDetails(member)))
+				.with(user(new CustomUserDetails(member.getEmail(), member.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(APPLICATION_JSON))
 			.andExpect(authenticated().withRoles("USER"))

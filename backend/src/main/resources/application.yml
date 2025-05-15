@@ -180,7 +180,7 @@ ai:
     base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta/openai}
 
 mock:
-  enabled: false
+  enabled: true
   news-file: naver-news-search.json
   youtube-file: youtube-videos-search.json
   post-file: post-search.json

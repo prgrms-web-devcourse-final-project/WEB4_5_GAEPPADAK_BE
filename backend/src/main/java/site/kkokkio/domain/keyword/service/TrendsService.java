@@ -35,7 +35,8 @@ public class TrendsService {
 	private final KeywordService keywordService;
 	private final KeywordMetricHourlyService keywordMetricHourlyService;
 
-	private Platform platform = Platform.GOOGLE_TREND;
+	@Value("${trend.platform}")
+	private Platform platform;
 
 	@Value("${mock.enabled}")
 	private boolean mockEnabled;

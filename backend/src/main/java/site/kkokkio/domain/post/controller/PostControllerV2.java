@@ -33,7 +33,8 @@ public class PostControllerV2 {
 		ErrorCode.POST_NOT_FOUND_3,
 		ErrorCode.REPORT_POST_BAD_REQUEST,
 		ErrorCode.REPORT_REASON_BAD_REQUEST,
-		ErrorCode.REPORT_POST_DUPLICATE
+		ErrorCode.REPORT_POST_DUPLICATE,
+		ErrorCode.MEMBER_NOT_FOUND
 	})
 	@PostMapping("/reports/posts/{postId}")
 	@ResponseStatus(HttpStatus.OK)

@@ -57,8 +57,8 @@ public class CommentControllerV1 {
 	}
 
 	@Operation(summary = "댓글 작성")
-	@ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
-		ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH, ErrorCode.POST_NOT_FOUND_3})
+	@ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN, ErrorCode.MALFORMED_TOKEN,
+		ErrorCode.CREDENTIALS_MISMATCH, ErrorCode.POST_NOT_FOUND_3, ErrorCode.MEMBER_NOT_FOUND})
 	@PostMapping("/posts/{postId}/comments")
 	@IsActiveMember
 	public RsData<CommentDto> createComment(

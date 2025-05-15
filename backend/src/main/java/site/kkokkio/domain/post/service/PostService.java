@@ -19,6 +19,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.jsonwebtoken.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
@@ -271,7 +272,7 @@ public class PostService {
 					postSummary = "AI가 찾아낸 핵심\n\n" + rawSummary;
 				}
 
-			} catch (IOException e) {
+			} catch (IOException | JsonProcessingException e) {
 				log.error("AI 응답 파싱 실패, keyword={} → fallback 사용", keywordText, e);
 				postTitle = sources.get(0).getTitle();
 				postSummary = sources.get(0).getDescription();

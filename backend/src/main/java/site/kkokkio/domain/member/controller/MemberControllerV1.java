@@ -66,7 +66,8 @@ public class MemberControllerV1 {
 	// 회원 정보 수정
 	@Operation(summary = "회원수정")
 	@ApiErrorCodeExamples({ErrorCode.MISSING_TOKEN, ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
-		ErrorCode.UNSUPPORTED_TOKEN, ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH})
+		ErrorCode.UNSUPPORTED_TOKEN, ErrorCode.MALFORMED_TOKEN,
+		ErrorCode.CREDENTIALS_MISMATCH, ErrorCode.MEMBER_NOT_FOUND})
 	@PatchMapping("/me")
 	@IsSelf
 	public RsData<MemberResponse> modifyMember(
@@ -85,7 +86,7 @@ public class MemberControllerV1 {
 	@Operation(summary = "회원 탈퇴")
 	@ApiErrorCodeExamples({ErrorCode.LOGOUT_BAD_REQUEST, ErrorCode.MISSING_TOKEN, ErrorCode.TOKEN_EXPIRED,
 		ErrorCode.UNSUPPORTED_TOKEN, ErrorCode.UNSUPPORTED_TOKEN, ErrorCode.MALFORMED_TOKEN,
-		ErrorCode.CREDENTIALS_MISMATCH})
+		ErrorCode.CREDENTIALS_MISMATCH, ErrorCode.MEMBER_NOT_FOUND})
 	@DeleteMapping("me")
 	@IsActiveMember
 	public RsData<Void> deleteMember(HttpServletRequest request, HttpServletResponse response,

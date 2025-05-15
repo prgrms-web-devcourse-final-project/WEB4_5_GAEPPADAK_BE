@@ -22,6 +22,7 @@ import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
 import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.service.PostService;
 import site.kkokkio.domain.source.dto.NewsDto;
+import site.kkokkio.domain.source.dto.SearchStatsDto;
 import site.kkokkio.domain.source.dto.SourceDto;
 import site.kkokkio.domain.source.dto.TopSourceItemDto;
 import site.kkokkio.domain.source.dto.VideoDto;
@@ -41,10 +42,10 @@ import site.kkokkio.global.enums.Platform;
 public class SourceService {
 
 	private final PostSourceRepository postSourceRepository;
-    	private final SourceRepository sourceRepository;
+	private final SourceRepository sourceRepository;
 	private final PostService postService;
 	private final KeywordMetricHourlyService keywordMetricHourlyService;
-    	private final OpenGraphService openGraphService;
+	private final OpenGraphService openGraphService;
 	private final NewsApiPort newsApi;
 	private final VideoApiPort videoApi;
 
@@ -96,58 +97,65 @@ public class SourceService {
 	 * Naver News API를 호출하여 현재 실시간 키워드 Top10에 대한 뉴스 소스를 검색하고, DB에 저장합니다.
 	 */
 	@Transactional
-	public void searchNews() {
-        // 1. 최신 Top10 키워드 조회
-        List<KeywordMetricHourlyDto> topKeywords = keywordMetricHourlyService.findHourlyMetrics();
-        List<Source> sources = new ArrayList<>();
-        List<KeywordSource> keywordSources = new ArrayList<>();
+	public SearchStatsDto searchNews() {
+		// 1. 최신 Top10 키워드 조회
+		List<KeywordMetricHourlyDto> topKeywords = keywordMetricHourlyService.findHourlyMetrics();
 
-        // 2. 키워드별 뉴스 검색 및 Entity 변환
-        for (KeywordMetricHourlyDto metric : topKeywords) {
-            String text = metric.text();
-            Keyword keywordRef = Keyword.builder().id(metric.keywordId()).build();
+		int totalFetched = 0;
+		int totalFailed = 0;
 
-            List<NewsDto> newsList = Optional.ofNullable(
-                newsApi.fetchNews(text, MAX_SOURCE_COUNT_PER_POST, 1, "sim")
-                    .onErrorResume(e -> {
-                        log.error("Naver API 실패. keyword={}, error={}", text, e.toString());
-                        return Mono.just(Collections.emptyList());
-                    })
-                    .block()
-            ).orElseGet(Collections::emptyList);
+		List<Source> sources = new ArrayList<>();
+		List<KeywordSource> keywordSources = new ArrayList<>();
 
-            if (newsList.isEmpty()) {
-                log.warn("Naver API 응답이 비어있음. keyword={}", text);
-                continue;
-            }
+		// 2. 키워드별 뉴스 검색 및 Entity 변환
+		for (KeywordMetricHourlyDto metric : topKeywords) {
+			String text = metric.text();
+			Keyword keywordRef = Keyword.builder().id(metric.keywordId()).build();
 
-            // Source <-> Keyword 매핑
-            for (NewsDto dto : newsList) {
-                Source src = dto.toEntity(NEWS_PLATFORM);
-                sources.add(src);
-                keywordSources.add(KeywordSource.builder()
-                    .keyword(keywordRef)
-                    .source(src)
-                    .build());
-            }
-        }
+			List<NewsDto> newsList;
+			try {
+				newsList = Optional.ofNullable(
+					newsApi.fetchNews(text, MAX_SOURCE_COUNT_PER_POST, 1, "sim")
+						.block()
+				).orElseGet(Collections::emptyList);
+			} catch (Exception e) {
+				log.error("Naver API 실패. keyword={}, error={}", text, e.toString(), e);
+				totalFailed++;
+				continue;
+			}
 
-        if (sources.isEmpty()) {
-            log.info("저장할 Source가 없습니다.");
-            return;
-        }
+			if (newsList.isEmpty()) {
+				log.warn("Naver API 응답이 비어있음. keyword={}", text);
+				totalFailed++;
+				continue;
+			}
 
-		sources = sources.stream().distinct().toList();
+			totalFetched += newsList.size();
 
-        // 3. Source 저장
-        sourceRepository.insertIgnoreAll(sources);
+			// Source <-> Keyword 매핑
+			for (NewsDto dto : newsList) {
+				Source src = dto.toEntity(NEWS_PLATFORM);
+				sources.add(src);
+				keywordSources.add(KeywordSource.builder()
+					.keyword(keywordRef)
+					.source(src)
+					.build());
+			}
+		}
 
-        // 4. KeywordSource 저장
-        keywordSourceRepository.insertIgnoreAll(keywordSources);
-
-		// 5. 비동기로 OpenGraph 정보 보강
-        sources.forEach(openGraphService::enrichAsync);
-    }
+		if (!sources.isEmpty()) {
+			sources = sources.stream().distinct().toList();
+			// 3. Source 저장
+			sourceRepository.insertIgnoreAll(sources);
+			// 4. KeywordSource 저장
+			keywordSourceRepository.insertIgnoreAll(keywordSources);
+			// 5. OpenGraph 비동기 보강
+			sources.forEach(openGraphService::enrichAsync);
+		} else {
+			log.info("저장할 Source가 없습니다.");
+		}
+		return new SearchStatsDto(totalFetched, totalFailed);
+	}
 
 	/**
 	 * Youtube API를 호출하여 현재 실시간 키워드 Top10에 대한 영상 소스를 검색하고, DB에 저장합니다.
@@ -166,12 +174,12 @@ public class SourceService {
 
 			// Youtube API 호출 및 Reactive 결과 처리
 			List<VideoDto> videoList = Optional.ofNullable(
-					videoApi.fetchVideos(text, MAX_SOURCE_COUNT_PER_POST)
-							.onErrorResume(e -> {
-								// API 호출 실패 시 로그 기록 및 빈 목록 반환하여 전체 중단 방지
-								log.error("Youtube API 실패. keyword={}, error={}", text, e.toString());
-								return Mono.just(Collections.emptyList());
-							}).block()
+				videoApi.fetchVideos(text, MAX_SOURCE_COUNT_PER_POST)
+					.onErrorResume(e -> {
+						// API 호출 실패 시 로그 기록 및 빈 목록 반환하여 전체 중단 방지
+						log.error("Youtube API 실패. keyword={}, error={}", text, e.toString());
+						return Mono.just(Collections.emptyList());
+					}).block()
 			).orElseGet(Collections::emptyList);
 
 			if (videoList.isEmpty()) {
@@ -187,9 +195,9 @@ public class SourceService {
 
 				// Keyword와 Source 연결하는 KeywordSource 엔티티 생성
 				keywordSources.add(KeywordSource.builder()
-						.keyword(keywordRef)
-						.source(src)
-						.build()
+					.keyword(keywordRef)
+					.source(src)
+					.build()
 				);
 			}
 		}
@@ -227,9 +235,9 @@ public class SourceService {
 		// 현재 시스템의 실시간 인기 키워드 목록(ID)을 가져옵니다. (데이터 파이프라인의 Task 2 결과물)
 		List<KeywordMetricHourlyDto> topKeywords = keywordMetricHourlyService.findHourlyMetrics();
 		List<Long> postIds = topKeywords.stream()
-				.map(KeywordMetricHourlyDto::postId)
-    			.filter(Objects::nonNull)
-				.toList();
+			.map(KeywordMetricHourlyDto::postId)
+			.filter(Objects::nonNull)
+			.toList();
 
 		// 연관 포스트가 없으면 빈 페이지 반환
 		if (postIds.isEmpty()) {
@@ -240,10 +248,10 @@ public class SourceService {
 		// ORDER BY MAX(kmh.score) DESC 정상 동작을 위해 Pageable 변환
 		Pageable pg = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.unsorted());
 		return postSourceRepository
-				.findTopSourcesByPostIdsAndPlatformOrderedByScore(
-						postIds,
-						platform,
-						pg
-				);
+			.findTopSourcesByPostIdsAndPlatformOrderedByScore(
+				postIds,
+				platform,
+				pg
+			);
 	}
 }

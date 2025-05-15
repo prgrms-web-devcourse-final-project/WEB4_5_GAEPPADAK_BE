@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Mono;
 import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.entity.Keyword;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
@@ -161,9 +160,13 @@ public class SourceService {
 	 * Youtube API를 호출하여 현재 실시간 키워드 Top10에 대한 영상 소스를 검색하고, DB에 저장합니다.
 	 */
 	@Transactional
-	public void searchYoutube() {
+	public SearchStatsDto searchYoutube() {
 		// 1. 최신 Top10 키워드 조회
 		List<KeywordMetricHourlyDto> topKeywords = keywordMetricHourlyService.findHourlyMetrics();
+
+		int totalFetched = 0;
+		int totalFailed = 0;
+
 		List<Source> sources = new ArrayList<>();
 		List<KeywordSource> keywordSources = new ArrayList<>();
 
@@ -173,19 +176,24 @@ public class SourceService {
 			Keyword keywordRef = Keyword.builder().id(metric.keywordId()).build();
 
 			// Youtube API 호출 및 Reactive 결과 처리
-			List<VideoDto> videoList = Optional.ofNullable(
-				videoApi.fetchVideos(text, MAX_SOURCE_COUNT_PER_POST)
-					.onErrorResume(e -> {
-						// API 호출 실패 시 로그 기록 및 빈 목록 반환하여 전체 중단 방지
-						log.error("Youtube API 실패. keyword={}, error={}", text, e.toString());
-						return Mono.just(Collections.emptyList());
-					}).block()
-			).orElseGet(Collections::emptyList);
+			List<VideoDto> videoList;
+			try {
+				videoList = Optional.ofNullable(
+					videoApi.fetchVideos(text, MAX_SOURCE_COUNT_PER_POST)
+						.block()
+				).orElseGet(Collections::emptyList);
+			} catch (Exception e) {
+				log.error("Youtube API 실패. keyword={}, error={}", text, e.toString());
+				totalFailed++;
+				continue;
+			}
 
 			if (videoList.isEmpty()) {
 				log.warn("Youtube API 응답이 비어있음. keyword={}", text);
 				continue; // 다음 키워드로 넘어감
 			}
+
+			totalFetched += videoList.size();
 
 			// Source <-> Keyword 매핑 및 Entity 변환
 			for (VideoDto video : videoList) {
@@ -203,24 +211,21 @@ public class SourceService {
 		}
 
 		// 3. 저장할 데이터가 있는지 확인
-		if (sources.isEmpty()) {
+		if (!sources.isEmpty()) {
+			// 4. Source 리스트에서 중복 제거 (Optional)
+			List<Source> distinctSources = sources.stream().distinct().toList();
+			// 5. Source 데이터 저장 (INSERT IGNORE 사용)
+			// sourceRepositoryCustom는 @Autowired 필요
+			sourceRepository.insertIgnoreAll(distinctSources);
+			// 6. KeywordSource 데이터 저장 (INSERT IGNORE 사용)
+			// keywordSourceRepository는 @Autowired 필요
+			keywordSourceRepository.insertIgnoreAll(keywordSources);
+			// 7. OpenGraph 정보 비동기 보강 (Source 엔티티에 URL 필드 필요)
+			distinctSources.forEach(openGraphService::enrichAsync);
+		} else {
 			log.info("저장할 Youtube Source가 없습니다.");
-			return; // 저장할 데이터 없으면 종료
 		}
-
-		// 4. Source 리스트에서 중복 제거 (Optional)
-		List<Source> distinctSources = sources.stream().distinct().toList();
-
-		// 5. Source 데이터 저장 (INSERT IGNORE 사용)
-		// sourceRepositoryCustom는 @Autowired 필요
-		sourceRepository.insertIgnoreAll(distinctSources);
-
-		// 6. KeywordSource 데이터 저장 (INSERT IGNORE 사용)
-		// keywordSourceRepository는 @Autowired 필요
-		keywordSourceRepository.insertIgnoreAll(keywordSources);
-
-		// 7. OpenGraph 정보 비동기 보강 (Source 엔티티에 URL 필드 필요)
-		distinctSources.forEach(openGraphService::enrichAsync);
+		return new SearchStatsDto(totalFetched, totalFailed);
 	}
 
 	/**

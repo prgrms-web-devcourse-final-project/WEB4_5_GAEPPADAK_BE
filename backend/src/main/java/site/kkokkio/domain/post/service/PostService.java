@@ -410,12 +410,19 @@ public class PostService {
 			repositorySort = Sort.by(defaultDirection, defaultRepositoryProperty);
 		}
 
-		// Repository에 전달한 최종 Pageable 객체 생성
-		Pageable repositoryPageable = PageRequest.of(
-			pageable.getPageNumber(),
-			pageable.getPageSize(),
-			repositorySort
-		);
+		// Repository에 전달할 최종 Pageable 객체 생성 시 Unpaged Pageable 처리
+		Pageable repositoryPageable;
+
+		if (pageable.isPaged()) {
+			repositoryPageable = PageRequest.of(
+				pageable.getPageNumber(),
+				pageable.getPageSize(),
+				repositorySort
+			);
+		} else {
+			// 입력 Pageable이 페이징 정보를 가지고 있지 않다면 (Unpaged)
+			repositoryPageable = PageRequest.of(0, Integer.MAX_VALUE, repositorySort);
+		}
 
 		// 2. 검색 조건 검증 및 Repository 쿼리 파라미터에 맞게 매핑
 		String searchTitle = null;

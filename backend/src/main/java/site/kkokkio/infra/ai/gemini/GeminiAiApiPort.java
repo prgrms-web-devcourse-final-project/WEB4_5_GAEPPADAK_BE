@@ -21,8 +21,8 @@ import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
+import site.kkokkio.domain.post.port.out.AiSummaryPort;
 import site.kkokkio.infra.ai.AiType;
-import site.kkokkio.infra.ai.adapter.AiSummaryAdapter;
 import site.kkokkio.infra.ai.gemini.dto.GeminiError;
 import site.kkokkio.infra.ai.gemini.dto.GeminiErrorDetail;
 import site.kkokkio.infra.ai.gemini.dto.GeminiErrorResponse;
@@ -33,7 +33,7 @@ import site.kkokkio.infra.common.exception.ExternalApiErrorUtil;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class GeminiAiApiAdapter implements AiSummaryAdapter {
+public class GeminiAiApiPort implements AiSummaryPort {
 
 	@Qualifier("geminiWebClient")
 	private final WebClient geminiWebClient;

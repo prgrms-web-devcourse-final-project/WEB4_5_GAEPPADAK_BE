@@ -17,7 +17,7 @@ import site.kkokkio.infra.ai.AiType;
 class GeminiAiAdapterMockTest {
 
 	@Autowired
-	private GeminiAiApiAdapter geminiAiApiAdapter;
+	private GeminiAiApiPort geminiAiApiAdapter;
 
 	@Test
 	@DisplayName("Mock 모드에서 Gemini 요약 요청 - 성공")

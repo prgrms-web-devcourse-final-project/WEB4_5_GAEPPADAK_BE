@@ -1,7 +1,6 @@
 package site.kkokkio.domain.post.service;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -35,6 +34,7 @@ import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.entity.PostKeyword;
 import site.kkokkio.domain.post.entity.PostMetricHourly;
 import site.kkokkio.domain.post.entity.PostReport;
+import site.kkokkio.domain.post.port.out.AiSummaryPort;
 import site.kkokkio.domain.post.repository.PostKeywordRepository;
 import site.kkokkio.domain.post.repository.PostMetricHourlyRepository;
 import site.kkokkio.domain.post.repository.PostReportRepository;
@@ -48,9 +48,6 @@ import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.infra.ai.AiType;
-import site.kkokkio.infra.ai.adapter.AiSummaryAdapter;
-import site.kkokkio.infra.ai.adapter.AiSummaryAdapterRouter;
-import site.kkokkio.infra.ai.gemini.GeminiApiProperties;
 
 @Slf4j
 @Service
@@ -67,7 +64,7 @@ public class PostService {
 	private final PostSourceRepository postSourceRepository;
 	private final StringRedisTemplate redisTemplate;
 	private final ObjectMapper objectMapper;
-	private final AiSummaryAdapterRouter aiSummaryAdapterRouter;
+	private final AiSummaryPort aiSummaryPort;
 
 	public Post getPostById(Long id) {
 		return postRepository.findById(id)
@@ -109,7 +106,7 @@ public class PostService {
 	 */
 	@Async
 	public CompletableFuture<String> summarizeAsync(String content) {
-		return aiSummaryAdapterRouter.summarize(AiType.GEMINI, content);
+		return aiSummaryPort.summarize(AiType.GEMINI, content);
 	}
 
 	/**
@@ -137,7 +134,8 @@ public class PostService {
 	/**
 	 * 요약에서 오류 발생 시 Fallback 처리
 	 */
-	private void createPostAndRelations(String title, String summary, List<Source> sources, LocalDateTime bucketAt, Long keywordId, String keywordText) {
+	private void createPostAndRelations(String title, String summary, List<Source> sources, LocalDateTime bucketAt,
+		Long keywordId, String keywordText) {
 
 		// 1) Post 엔티티 생성
 		Post post = savePost(title, summary, sources, bucketAt);
@@ -223,7 +221,6 @@ public class PostService {
 
 			// Step 3B. low_variation=false → 신규 Post 생성
 
-
 			// 1) 여러 소스 내용을 하나의 userContent로 합치기
 			StringBuilder sb = new StringBuilder();
 			for (Source src : sources) {
@@ -260,22 +257,22 @@ public class PostService {
 			try {
 				JsonNode root = objectMapper.readTree(jsonResponse);
 
-				String rawTitle   = root.path("title").asText(null);
+				String rawTitle = root.path("title").asText(null);
 				String rawSummary = root.path("summary").asText(null);
 
 				if (rawTitle == null || rawSummary == null) {
 					//키 누락 시 폴백 처리 - 첫 소스의 제목과 요약을 사용
 					log.info("AI 응답 누락, 포스트 작성에 첫 번째 소스 사용");
-					postTitle   = sources.get(0).getTitle();
+					postTitle = sources.get(0).getTitle();
 					postSummary = sources.get(0).getDescription();
 				} else {
-					postTitle   = rawTitle;
+					postTitle = rawTitle;
 					postSummary = "AI가 찾아낸 핵심\n\n" + rawSummary;
 				}
 
 			} catch (IOException e) {
 				log.error("AI 응답 파싱 실패, keyword={} → fallback 사용", keywordText, e);
-				postTitle   = sources.get(0).getTitle();
+				postTitle = sources.get(0).getTitle();
 				postSummary = sources.get(0).getDescription();
 			}
 			// 4) 포스트 생성 및 관련 링크 생성

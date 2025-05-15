@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -51,7 +51,7 @@ import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.infra.ai.AiType;
-import site.kkokkio.infra.ai.adapter.AiSummaryAdapterRouter;
+import site.kkokkio.infra.ai.adapter.AiSummaryPortRouter;
 
 @ExtendWith(MockitoExtension.class)
 public class PostServiceTest {
@@ -83,7 +83,7 @@ public class PostServiceTest {
 	@Mock
 	private ValueOperations<String, String> valueOps;
 	@Mock
-	private AiSummaryAdapterRouter aiSummaryAdapterRouter;
+	private AiSummaryPortRouter aiSummaryAdapterRouter;
 
 	@Test
 	@DisplayName("postId로 포스트 단건 조회 성공")

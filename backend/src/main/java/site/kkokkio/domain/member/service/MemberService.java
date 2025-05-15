@@ -81,8 +81,7 @@ public class MemberService {
 	// 회원 정보 수정
 	public MemberResponse modifyMemberInfo(CustomUserDetails userDetails, MemberUpdateRequest requestBody) {
 
-		Member member = memberRepository.findByEmail(userDetails.getUsername())
-			.orElseThrow(() -> new ServiceException("404", "사용자를 찾을 수 없습니다."));
+		Member member = findByEmail(userDetails.getUsername());
 
 		// 회원 정보 수정
 		Member modifiedMember = Member.builder()
@@ -114,8 +113,7 @@ public class MemberService {
 		}
 
 		// 회원 조회
-		Member member = memberRepository.findByEmail(request.email())
-			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 이메일입니다."));
+		Member member = findByEmail(request.email());
 
 		// 비밀번호 암호화 및 저장
 		String encryptedPassword = passwordEncoder.encode(request.newPassword());
@@ -128,8 +126,7 @@ public class MemberService {
 
 	@Transactional
 	public void deleteMember(UserDetails userDetails) {
-		Member member = memberRepository.findByEmail(userDetails.getUsername())
-			.orElseThrow(() -> new ServiceException("404", "사용자를 찾을 수 없습니다."));
+		Member member = findByEmail(userDetails.getUsername());
 		member.maskPersonalInfo();
 		member.softDelete();
 		memberRepository.save(member);

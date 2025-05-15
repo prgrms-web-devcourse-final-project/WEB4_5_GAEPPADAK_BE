@@ -52,7 +52,7 @@ public class CommentControllerV2 {
 		ErrorCode.REPORT_COMMENT_FORBIDDEN,
 		ErrorCode.REPORT_REASON_BAD_REQUEST,
 		ErrorCode.REPORT_COMMENT_DUPLICATE,
-		ErrorCode.MEMBER_NOT_FOUND
+		ErrorCode.EMAIL_NOT_FOUND
 	})
 	@PostMapping("/reports/comments/{commentId}")
 	@ResponseStatus(HttpStatus.OK)

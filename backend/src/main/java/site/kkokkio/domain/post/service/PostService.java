@@ -30,7 +30,7 @@ import site.kkokkio.domain.keyword.repository.KeywordMetricHourlyRepository;
 import site.kkokkio.domain.keyword.repository.KeywordRepository;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
 import site.kkokkio.domain.member.entity.Member;
-import site.kkokkio.domain.member.repository.MemberRepository;
+import site.kkokkio.domain.member.service.MemberService;
 import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.entity.PostKeyword;
@@ -67,7 +67,7 @@ public class PostService {
 	private final StringRedisTemplate redisTemplate;
 	private final ObjectMapper objectMapper;
 	private final AiSummaryPort aiSummaryPort;
-	private final MemberRepository memberRepository;
+	private final MemberService memberService;
 
 	public Post getPostById(Long id) {
 		return postRepository.findById(id)
@@ -323,8 +323,7 @@ public class PostService {
 		Post post = postRepository.findById(postId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 포스트입니다."));
 
-		Member reporter = memberRepository.findByEmail(userDetails.getUsername())
-			.orElseThrow(() -> new ServiceException("404", "사용자를 찾을 수 없습니다."));
+		Member reporter = memberService.findByEmail(userDetails.getUsername());
 
 		// 2. 삭제된 포스트인지 확인
 		if (post.isDeleted()) {

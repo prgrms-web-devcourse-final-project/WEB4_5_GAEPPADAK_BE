@@ -22,7 +22,7 @@ import site.kkokkio.domain.comment.repository.CommentLikeRepository;
 import site.kkokkio.domain.comment.repository.CommentReportRepository;
 import site.kkokkio.domain.comment.repository.CommentRepository;
 import site.kkokkio.domain.member.entity.Member;
-import site.kkokkio.domain.member.repository.MemberRepository;
+import site.kkokkio.domain.member.service.MemberService;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.repository.PostRepository;
 import site.kkokkio.global.enums.ReportProcessingStatus;
@@ -37,7 +37,7 @@ public class CommentService {
 	private final PostRepository postRepository;
 	private final CommentLikeRepository commentLikeRepository;
 	private final CommentReportRepository commentReportRepository;
-	private final MemberRepository memberRepository;
+	private final MemberService memberService;
 
 	public Page<CommentDto> getCommentListByPostId(Long postId, Pageable pageable) {
 		Post post = postRepository.findById(postId)
@@ -52,8 +52,7 @@ public class CommentService {
 		Post post = postRepository.findById(postId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 포스트입니다."));
 
-		Member member = memberRepository.findByEmail(userDetails.getUsername())
-			.orElseThrow(() -> new ServiceException("404", "사용자를 찾을 수 없습니다."));
+		Member member = memberService.findByEmail(userDetails.getUsername());
 
 		Comment comment = Comment.builder()
 			.post(post)
@@ -89,8 +88,7 @@ public class CommentService {
 		Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
 
-		Member member = memberRepository.findByEmail(userDetails.getUsername())
-			.orElseThrow(() -> new ServiceException("404", "사용자를 찾을 수 없습니다."));
+		Member member = memberService.findByEmail(userDetails.getUsername());
 
 		if (comment.getMember().getEmail().equals(userDetails.getUsername())) {
 			throw new ServiceException("403", "본인 댓글은 좋아요 할 수 없습니다.");
@@ -144,8 +142,7 @@ public class CommentService {
 		Comment comment = commentRepository.findById(commentId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
 
-		Member reporter = memberRepository.findByEmail(userDetails.getUsername())
-			.orElseThrow(() -> new ServiceException("404", "사용자를 찾을 수 없습니다."));
+		Member reporter = memberService.findByEmail(userDetails.getUsername());
 
 		// 2. 삭제된 댓글인지 확인
 		if (comment.isDeleted()) {

@@ -179,6 +179,9 @@ ai:
     model: ${GEMINI_MODEL:gemini-2.0-flash}
     base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta/openai}
 
+trend:
+  platform: ${TREND_PLATFORM:GOOGLE_TREND}
+
 mock:
   enabled: true
   news-file: naver-news-search.json

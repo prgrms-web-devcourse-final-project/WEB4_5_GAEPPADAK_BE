@@ -16,8 +16,8 @@ import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import lombok.RequiredArgsConstructor;
-import site.kkokkio.domain.keyword.service.GoogleTrendsRssService;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
+import site.kkokkio.domain.keyword.service.TrendsService;
 import site.kkokkio.domain.post.service.PostService;
 import site.kkokkio.domain.source.service.SourceService;
 
@@ -28,7 +28,7 @@ public class BatchConfig {
 	private final JobRepository jobRepository;
 	private final PlatformTransactionManager transactionManager;
 
-	private final GoogleTrendsRssService googleTrendsRssService;
+	private final TrendsService trendsService;
 	private final SourceService sourceService;
 	private final KeywordMetricHourlyService keywordMetricHourlyService;
 	private final PostService postService;
@@ -39,7 +39,7 @@ public class BatchConfig {
 	@Bean
 	public MethodInvokingTaskletAdapter fetchTrendingKeywordsTasklet() {
 		MethodInvokingTaskletAdapter adapter = new MethodInvokingTaskletAdapter();
-		adapter.setTargetObject(googleTrendsRssService);
+		adapter.setTargetObject(trendsService);
 		adapter.setTargetMethod("getTrendingKeywordsFromRss"); // 내부에서 Top10(KeywordMetricHourly)까지 DB 저장
 		return adapter;
 	}

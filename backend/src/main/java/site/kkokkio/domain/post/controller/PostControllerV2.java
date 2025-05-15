@@ -22,7 +22,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.post.controller.dto.PostReportRequest;
 import site.kkokkio.domain.post.controller.dto.ReportedPostHideRequest;
 import site.kkokkio.domain.post.controller.dto.ReportedPostListResponse;
@@ -60,11 +59,8 @@ public class PostControllerV2 {
 		@AuthenticationPrincipal CustomUserDetails userDetails,
 		@Valid @RequestBody PostReportRequest request
 	) {
-		// CustomUserDetails에서 Member 엔티티를 가져오는 로직
-		Member reporter = userDetails.getMember();
-
 		// Service 메서드 호출
-		postService.reportPost(postId, reporter, request.reason());
+		postService.reportPost(postId, userDetails, request.reason());
 
 		return new RsData<>(
 			"200",

@@ -242,6 +242,11 @@ resource "aws_iam_instance_profile" "instance_profile_1" {
 locals {
   ec2_user_data_base = <<-END_OF_FILE
 #!/bin/bash
+
+# EC2 인스턴스 OS 타임존을 UTC로 설정
+ln -sf /usr/share/zoneinfo/UTC /etc/localtime
+echo "UTC" > /etc/timezone
+
 # 가상 메모리 4GB 설정
 sudo dd if=/dev/zero of=/swapfile bs=128M count=32
 sudo chmod 600 /swapfile
@@ -271,7 +276,7 @@ docker run -d \
   -p 80:80 \
   -p 443:443 \
   -p 81:81 \
-  -e TZ=Asia/Seoul \
+  -e TZ=UTC \
   -v /dockerProjects/npm_1/volumes/data:/data \
   -v /dockerProjects/npm_1/volumes/etc/letsencrypt:/etc/letsencrypt \
   jc21/nginx-proxy-manager:latest
@@ -283,7 +288,7 @@ docker run -d \
   --network common \
   -p 6379:6379 \
   -v /dockerProjects/redis_data:/data \
-  -e TZ=Asia/Seoul \
+  -e TZ=UTC \
   redis:alpine \
   redis-server --notify-keyspace-events Ex --dir /data
 
@@ -299,7 +304,7 @@ docker run -d \
   -e MYSQL_DATABASE=${var.DB_NAME} \
   -e MYSQL_USER=${var.DB_USERNAME} \
   -e MYSQL_PASSWORD=${var.DB_PASSWORD} \
-  -e TZ=Asia/Seoul \
+  -e TZ=UTC \
   mysql:8.0 --general-log=1 --general-log-file=/var/lib/mysql/general.log
 
 # MySQL 컨테이너가 준비될 때까지 대기

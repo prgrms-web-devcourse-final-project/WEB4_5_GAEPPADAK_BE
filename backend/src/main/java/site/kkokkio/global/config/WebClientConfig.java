@@ -92,7 +92,7 @@ public class WebClientConfig {
 		GptApiProperties props
 	){
 		// WebClient 전용 ObjectMapper
-		ObjectMapper geminiMapper = new ObjectMapper()
+		ObjectMapper gptMapper = new ObjectMapper()
 			// unquoted control chars 허용
 			.configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true)
 			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -108,10 +108,10 @@ public class WebClientConfig {
 			.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + props.getKey())
 			.codecs(spec -> {
 				spec.defaultCodecs().jackson2JsonDecoder(
-					new Jackson2JsonDecoder(geminiMapper, jsonUtf8)
+					new Jackson2JsonDecoder(gptMapper, jsonUtf8)
 				);
 				spec.defaultCodecs().jackson2JsonEncoder(
-					new Jackson2JsonEncoder(geminiMapper, jsonUtf8)
+					new Jackson2JsonEncoder(gptMapper, jsonUtf8)
 				);
 			})
 			.clientConnector(new ReactorClientHttpConnector(

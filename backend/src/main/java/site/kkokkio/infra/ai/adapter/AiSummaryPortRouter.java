@@ -40,7 +40,7 @@ public class AiSummaryPortRouter implements AiSummaryPort {
 	@Override
 	public CompletableFuture<String> summarize(AiType requestedAiType, String content) {
 		// requestedAiType가 명시 되면 requestedAiType 우선. 아니라면 환경 변수에서 받아오기
-		// Test 환경을 위해서 작성
+		// Test 환경이나, 환경변수 외 따로 AI 선택 필요 시 사용
 		AiType primaryAi = requestedAiType != null ? requestedAiType : currentAiType;
 		AiType secondaryAi;
 
@@ -58,6 +58,7 @@ public class AiSummaryPortRouter implements AiSummaryPort {
 			throw new IllegalArgumentException("지원하지 않는 AI 타입입니다: " + primaryAi);
 		}
 
+		// 메인 AI 오류 시 백업 AI가 폴백하여 요약
 		return Mono.fromFuture(primaryAdapter.summarize(primaryAi, content))
 			.onErrorResume(throwable -> {
 				if (secondaryAdapter != null && !primaryAi.equals(secondaryAi) && delegateMap.containsKey(secondaryAi)) {

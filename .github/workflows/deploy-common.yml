@@ -1,4 +1,4 @@
-name: "Deploy Common"
+name: "deploy-common"
 
 on:
   workflow_call:
@@ -6,8 +6,6 @@ on:
       branch:
         type: string
       branch_upper:
-        type: string
-      doppler_token:
         type: string
       doppler_config:
         type: string
@@ -25,11 +23,13 @@ on:
         required: true
       AWS_SECRET_ACCESS_KEY:
         required: true
-      GITHUB_TOKEN:
-        required: true
       TK_GITHUB_ACCESS_TOKEN:
         required: true
       TK_GITHUB_ACCESS_TOKEN_OWNER:
+        required: true
+      DOPPLER_SERVICE_TOKEN:
+        required: true
+      BASTION_SSH_KEY:
         required: true
 
 jobs:
@@ -64,45 +64,56 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: AWS Credentials 설정 (GitHub secrets 사용)
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: SSH Agent 설정
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          aws-region: ${{ secrets.AWS_REGION }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          ssh-private-key: ${{ secrets.BASTION_SSH_KEY }}
 
       - name: Setup Doppler (${{ inputs.branch }})
-        uses: dopplerhq/cli-action@v3
+        uses: dopplerhq/secrets-fetch-action@v1.3.0
+        id: fetch_doppler
         with:
-          token: ${{ inputs.doppler_token }}
-          project: kkokkio-backend
-          config: ${{ inputs.doppler_config }}
+          doppler-token: ${{ secrets.DOPPLER_SERVICE_TOKEN }}
+          doppler-project: kkokkio-backend
+          doppler-config: ${{ inputs.doppler_config }}
 
-      - name: SSM 포트 포워딩 시작
+      - name: SSH 터널링 시작
         run: |
-          aws ssm start-session \
-            --target "${{ needs.get-instance-id.outputs.instance_id }}" \
-            --document-name AWS-StartPortForwardingSession \
-            --parameters '{"portNumber":["3306"],"localPortNumber":["3306"]}' \
-            --region "${{ secrets.AWS_REGION }}" &
+          HOST=${{ needs.get-instance-id.outputs.instance_id }}
+          PORT=${{ steps.fetch_doppler.outputs.DB_PORT }}
+          ssh -o StrictHostKeyChecking=no \
+              -N -L ${{ steps.fetch_doppler.outputs.DB_PORT }}:localhost:${{ steps.fetch_doppler.outputs.DB_PORT }} ${{ steps.fetch_doppler.outputs.BASTION_USER }}@${{ steps.fetch_doppler.outputs.BASTION_HOST }} &
+          echo $! > tunnel.pid
+          sleep 5
 
       - name: Flyway Validate & Info
+        env:
+          DB_HOST: ${{ steps.fetch_doppler.outputs.DB_HOST }}
+          DB_PORT: ${{ steps.fetch_doppler.outputs.DB_PORT }}
+          DB_NAME: ${{ steps.fetch_doppler.outputs.DB_NAME }}
+          DB_USERNAME: ${{ steps.fetch_doppler.outputs.DB_USERNAME }}
+          DB_PASSWORD: ${{ steps.fetch_doppler.outputs.DB_PASSWORD }}
         run: |
-          doppler run -- docker run --rm \
+          docker run --rm --network host \
             -v "${{ github.workspace }}/backend/src/main/resources/db/migration:/flyway/sql:ro" \
             redgate/flyway:11 \
             -url="jdbc:mysql://127.0.0.1:${DB_PORT}/${DB_NAME}?serverTimezone=UTC&characterEncoding=UTF-8" \
             -user="${DB_USERNAME}" \
             -password="${DB_PASSWORD}" \
-            validate -schemas="public" && \
-          doppler run -- docker run --rm \
+            validate && \
+          docker run --rm --network host \
             -v "${{ github.workspace }}/backend/src/main/resources/db/migration:/flyway/sql:ro" \
             redgate/flyway:11 \
             -url="jdbc:mysql://127.0.0.1:${DB_PORT}/${DB_NAME}?serverTimezone=UTC&characterEncoding=UTF-8" \
             -user="${DB_USERNAME}" \
             -password="${DB_PASSWORD}" \
-            info -schemas="public"
+            info
 
+      - name: SSH 터널 종료
+        if: always()
+        run: |
+          kill $(cat tunnel.pid) || true
+          
   makeTagAndRelease:
     name: Create Tag & Release (${{ inputs.branch }})
     needs: flyway-validate
@@ -202,7 +213,7 @@ jobs:
             docker rm app1 2>/dev/null || true && \
             docker run --restart always \
               -e TZ=UTC \
-              -e DOPPLER_TOKEN=${{ inputs.doppler_token }} \
+              -e DOPPLER_TOKEN=${{ secrets.DOPPLER_SERVICE_TOKEN }} \
               -d --name app1 -p 8080:8080 --network common \
               ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest && \
             docker rmi $(docker images -f "dangling=true" -q) || true

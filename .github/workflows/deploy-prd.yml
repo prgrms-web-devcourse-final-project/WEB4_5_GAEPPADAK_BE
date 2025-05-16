@@ -17,7 +17,6 @@ jobs:
     with:
       branch: prd
       branch_upper: PRD
-      doppler_token: ${{ secrets.DOPPLER_PRD_SERVICE_TOKEN }}
       doppler_config: prd
       tag_prefix: v-prd-
       dockerfile: Dockerfile.prd
@@ -26,6 +25,7 @@ jobs:
       AWS_REGION: ${{ secrets.AWS_REGION }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       TK_GITHUB_ACCESS_TOKEN: ${{ secrets.TK_GITHUB_ACCESS_TOKEN }}
       TK_GITHUB_ACCESS_TOKEN_OWNER: ${{ secrets.TK_GITHUB_ACCESS_TOKEN_OWNER }}
+      DOPPLER_SERVICE_TOKEN: ${{ secrets.DOPPLER_PRD_SERVICE_TOKEN }}
+      BASTION_SSH_KEY: ${{secrets.BASTION_SSH_KEY}}

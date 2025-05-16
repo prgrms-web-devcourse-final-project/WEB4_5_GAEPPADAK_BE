@@ -107,4 +107,11 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(Integer.parseInt(status)).body(body);
 	}
 
+	@ExceptionHandler(ExternalApiException.class)
+	public ResponseEntity<RsData<Void>> handleExternalApiException(ExternalApiException ex) {
+		return ResponseEntity
+			.status(ex.getStatusCode())
+			.body(new RsData<>(ex.getCode(), ex.getMessage()));
+	}
+
 }

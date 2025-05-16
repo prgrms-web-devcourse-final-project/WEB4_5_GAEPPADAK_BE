@@ -4,9 +4,12 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.springframework.data.domain.Page;
@@ -143,8 +146,8 @@ public class PostService {
 	/**
 	 * 요약에서 오류 발생 시 Fallback 처리
 	 */
-	private void createPostAndRelations(String title, String summary, List<Source> sources, LocalDateTime bucketAt,
-		Long keywordId, String keywordText) {
+	private Long createPostAndRelations(String title, String summary, List<Source> sources, LocalDateTime bucketAt,
+		Long keywordId) {
 
 		// 1) Post 엔티티 생성
 		Post post = savePost(title, summary, sources, bucketAt);
@@ -175,34 +178,34 @@ public class PostService {
 			.build();
 		postMetricHourlyRepository.save(postMetricHourly);
 
-		// 5) Redis 캐싱 (TTL 24시간)
-		cachePostCardView(post, keywordText, Duration.ofHours(24));
-
-		log.info("신규 포스트 생성 완료 - postId={}, keyword={}", post.getId(), keywordText);
+		log.info("신규 포스트 생성 완료 - postId={}, keyword={}", post.getId(), keywordId);
+		return post.getId();
 	}
 
 	/**
 	 * 신규 키워드에 대해서 포스트를 생성한다.
 	 */
 	@Transactional
-	public void generatePosts() {
+	public List<Long> generatePosts(List<Long> keywordIds) {
 		// Step 1. 현재 Top10 키워드 전체 조회
 		List<KeywordMetricHourlyDto> allTopKeywords = keywordMetricHourlyService.findHourlyMetrics();
-		List<Long> keywordIds = allTopKeywords.stream().map(KeywordMetricHourlyDto::keywordId).toList();
+		// List<Long> keywordIds = allTopKeywords.stream().map(KeywordMetricHourlyDto::keywordId).toList();
 
 		// Step 2. Top10 keywords → sources 맵 조회
 		// TODO: executionContext로 수집한 new Source Url 리스트로 대체
 		List<KeywordSource> keywordSources = keywordSourceRepository.findTopSourcesByKeywordIdsLimited(keywordIds, 10);
 		Map<Long, List<Source>> keywordToSources = KeywordSource.groupByKeywordId(keywordSources);
 
+		List<Long> newPostIds = new ArrayList<>();
+
 		for (KeywordMetricHourlyDto metric : allTopKeywords) {
 			Long keywordId = metric.keywordId();
-			String keywordText = metric.text();
+			// String keywordText = metric.text();
 			LocalDateTime bucketAt = metric.bucketAt();
 
 			List<Source> sources = keywordToSources.getOrDefault(keywordId, List.of());
 			if (sources.isEmpty()) {
-				log.warn("Source 없음 → keyword={} 스킵", keywordText);
+				log.warn("Source 없음 → keyword={} 스킵", keywordId);
 				continue;
 			}
 
@@ -210,7 +213,7 @@ public class PostService {
 			if (metric.lowVariation()) {
 				Post existingPost = getMostRecentPostByKeyword(keywordId);
 				if (existingPost == null) {
-					log.warn("기존 포스트 없음 → keyword={} 스킵", keywordText);
+					log.warn("기존 포스트 없음 → keyword={} 스킵", keywordId);
 					continue;
 				}
 
@@ -248,11 +251,12 @@ public class PostService {
 				aiResponse = summarizeAsync(userContent).get();
 				log.info("[AI 응답(raw)] {}", aiResponse);
 			} catch (Exception e) {
-				log.error("AI 요약 실패, keyword={} → fallback 사용", keywordText, e);
-				postTitle = sources.get(0).getTitle();
-				postSummary = sources.get(0).getDescription();
+				log.error("AI 요약 실패, keyword={} → fallback 사용", keywordId, e);
+				postTitle = sources.getFirst().getTitle();
+				postSummary = sources.getFirst().getDescription();
 				// 포스트 생성 및 관련 링크 생성
-				createPostAndRelations(postTitle, postSummary, sources, bucketAt, keywordId, keywordText); // ★
+				Long postId = createPostAndRelations(postTitle, postSummary, sources, bucketAt, keywordId);
+				newPostIds.add(postId);
 				continue;
 			}
 
@@ -280,13 +284,15 @@ public class PostService {
 				}
 
 			} catch (IOException | JsonProcessingException e) {
-				log.error("AI 응답 파싱 실패, keyword={} → fallback 사용", keywordText, e);
+				log.error("AI 응답 파싱 실패, keyword={} → fallback 사용", keywordId, e);
 				postTitle = sources.get(0).getTitle();
 				postSummary = sources.get(0).getDescription();
 			}
 			// 4) 포스트 생성 및 관련 링크 생성
-			createPostAndRelations(postTitle, postSummary, sources, bucketAt, keywordId, keywordText); // ★
+			Long postId = createPostAndRelations(postTitle, postSummary, sources, bucketAt, keywordId);
+			newPostIds.add(postId);
 		}
+		return newPostIds;
 	}
 
 	// 가장 최근 생성된 포스트 반환
@@ -304,16 +310,41 @@ public class PostService {
 		postSourceRepository.insertIgnoreAll(mappings);
 	}
 
-	public void cachePostCardView(Post post, String keyword, Duration ttl) {
+	public int cacheCardViews(List<Long> postIds, List<Long> keywordIds, Duration ttl) {
+		Set<Long> keywordIdSet = new HashSet<>(keywordIds); // 빠른 조회용
+
+		List<PostKeyword> postKeywords = postKeywordRepository.findAllByPostIdIn(postIds);
+
+		int cached = 0;
+
+		for (PostKeyword pk : postKeywords) {
+			Long keywordId = pk.getKeyword().getId();
+
+			if (!keywordIdSet.contains(keywordId)) {
+				continue;
+			}
+
+			boolean isCached = cachePostCardView(pk.getPost(), pk.getKeyword().getText(), ttl);
+			if (isCached) {
+				cached++;
+			}
+		}
+
+		return cached;
+	}
+
+	public boolean cachePostCardView(Post post, String keyword, Duration ttl) {
 		ValueOperations<String, String> values = redisTemplate.opsForValue();
 		String key = "POST_CARD:" + post.getId();
 
-		PostDto dto = PostDto.from(post, keyword);
 		try {
+			PostDto dto = PostDto.from(post, keyword);
 			String json = objectMapper.writeValueAsString(dto);
 			values.set(key, json, ttl);
+			return true;
 		} catch (JsonProcessingException e) {
 			log.error("Redis 캐싱 직렬화 실패. postId={}", post.getId(), e);
+			return false;
 		}
 	}
 

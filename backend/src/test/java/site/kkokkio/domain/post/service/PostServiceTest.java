@@ -246,7 +246,7 @@ public class PostServiceTest {
 		// then
 		then(postRepository).should().save(argThat(p ->
 			p.getTitle().equals("테스트제목") && p.getSummary().startsWith("AI가 찾아낸 핵심")
-				&& p.getSummary().contains("이것은 테스트 요약입니다.")
+			&& p.getSummary().contains("이것은 테스트 요약입니다.")
 		));
 		// then(postRepository).should().save(any());
 		then(postSourceRepository).should().insertIgnoreAll(any());
@@ -289,7 +289,7 @@ public class PostServiceTest {
 		then(postRepository).should(never()).save(any()); // 신규 포스트 저장 안됨
 		then(postSourceRepository).should().insertIgnoreAll(argThat(mappings ->
 			mappings.size() == 1 && mappings.getFirst().getPost().getId().equals(999L)
-				&& mappings.getFirst().getSource().getFingerprint().equals(source.getFingerprint())
+			&& mappings.getFirst().getSource().getFingerprint().equals(source.getFingerprint())
 		));
 	}
 
@@ -503,7 +503,7 @@ public class PostServiceTest {
 	void getReportedPostsList_Success_Search() {
 		/// given
 		Pageable pageable = Pageable.unpaged();
-		String searchTarget = "post title";
+		String searchTarget = "post_title";
 		String searchValue = "테스트";
 
 		// Service의 검색 매핑 로직에 따라 Repository에 전달될 예상 검색 파라미터 값

@@ -266,7 +266,7 @@ public class PostControllerV2Test {
 	@WithMockUser(roles = "ADMIN")
 	void getReportedPosts_Success_SearchAndSort() throws Exception {
 		/// given
-		String searchTarget = "post title";
+		String searchTarget = "post_title";
 		String searchValue = "테스트";
 		String sortParam = "reportCount,asc";
 

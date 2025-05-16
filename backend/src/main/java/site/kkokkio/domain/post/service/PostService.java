@@ -437,10 +437,10 @@ public class PostService {
 
 			// 검색 대상 문자열을 Repository 메서드의 인자로 매핑
 			switch (trimmedSearchTarget) {
-				case "post title" -> searchTitle = trimmedSearchValue;
-				case "post summary" -> searchSummary = trimmedSearchValue;
+				case "post_title" -> searchTitle = trimmedSearchValue;
+				case "post_summary" -> searchSummary = trimmedSearchValue;
 				case "keyword" -> searchKeyword = trimmedSearchValue;
-				case "report reason" -> searchReportReason = trimmedSearchValue;
+				case "report_reason" -> searchReportReason = trimmedSearchValue;
 				default -> {
 					throw new ServiceException("400", "부적절한 검색 옵션입니다.");
 				}

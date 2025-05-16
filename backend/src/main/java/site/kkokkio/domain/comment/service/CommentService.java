@@ -231,9 +231,9 @@ public class CommentService {
 			// 검색 대상 문자열을 Repository 메서드의 인자로 매핑
 			switch (trimmedSearchTarget) {
 				case "nickname" -> searchNickname = trimmedSearchValue;
-				case "post title" -> searchPostTitle = trimmedSearchValue;
-				case "comment body" -> searchCommentBody = trimmedSearchValue;
-				case "report reason" -> searchReportReason = trimmedSearchValue;
+				case "post_title" -> searchPostTitle = trimmedSearchValue;
+				case "comment_body" -> searchCommentBody = trimmedSearchValue;
+				case "report_reason" -> searchReportReason = trimmedSearchValue;
 				default -> throw new ServiceException("400", "부적절한 검색 옵션입니다.");
 			}
 		}

@@ -6,6 +6,7 @@ import static org.mockito.BDDMockito.*;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -18,6 +19,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -36,6 +42,7 @@ import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.service.MemberService;
 import site.kkokkio.domain.post.dto.PostDto;
+import site.kkokkio.domain.post.dto.ReportedPostSummary;
 import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.domain.post.entity.PostKeyword;
 import site.kkokkio.domain.post.entity.PostReport;
@@ -48,6 +55,7 @@ import site.kkokkio.domain.source.entity.Source;
 import site.kkokkio.domain.source.repository.KeywordSourceRepository;
 import site.kkokkio.domain.source.repository.PostSourceRepository;
 import site.kkokkio.global.enums.Platform;
+import site.kkokkio.global.enums.ReportProcessingStatus;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.infra.ai.AiType;
@@ -238,7 +246,7 @@ public class PostServiceTest {
 		// then
 		then(postRepository).should().save(argThat(p ->
 			p.getTitle().equals("테스트제목") && p.getSummary().startsWith("AI가 찾아낸 핵심")
-				&& p.getSummary().contains("이것은 테스트 요약입니다.")
+			&& p.getSummary().contains("이것은 테스트 요약입니다.")
 		));
 		// then(postRepository).should().save(any());
 		then(postSourceRepository).should().insertIgnoreAll(any());
@@ -281,7 +289,7 @@ public class PostServiceTest {
 		then(postRepository).should(never()).save(any()); // 신규 포스트 저장 안됨
 		then(postSourceRepository).should().insertIgnoreAll(argThat(mappings ->
 			mappings.size() == 1 && mappings.getFirst().getPost().getId().equals(999L)
-				&& mappings.getFirst().getSource().getFingerprint().equals(source.getFingerprint())
+			&& mappings.getFirst().getSource().getFingerprint().equals(source.getFingerprint())
 		));
 	}
 
@@ -454,5 +462,296 @@ public class PostServiceTest {
 		verify(postReportRepository).existsByPostAndReporter(post, reporter);
 		verify(postReportRepository, never()).save(any());
 		verify(postRepository, never()).save(any());
+	}
+
+	@Test
+	@DisplayName("신고된 포스트 목록 조회 - 성공 (기본 페이징)")
+	void getReportedPostsList_Success_Basic() {
+		/// given
+		Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Order.desc("reportedAt")));
+
+		// Service 메서드는 Repository 호출 시 Repository 별칭 기준의 Pageable을 생성하여 전달
+		Pageable expectedRepoPageable = PageRequest.of(0, 10, Sort.by(Sort.Order.desc("latestReportedAt")));
+
+		// Repository가 반환할 ReportedPostSummary 데이터 및 Page 객체 Mocking
+		ReportedPostSummary summary1 = new ReportedPostSummary(
+			1L, "제목1", "요약1", 10L, "키워드A",
+			"BAD_CONTENT", LocalDateTime.now(), 3, ReportProcessingStatus.PENDING
+		);
+		List<ReportedPostSummary> summaryList = List.of(summary1);
+		Page<ReportedPostSummary> mockRepoPage = new PageImpl<>(summaryList, expectedRepoPageable, summaryList.size());
+
+		// PostReportRepository의 findReportedPostSummary 메서드 Mocking
+		when(postReportRepository.findReportedPostSummary(eq(null), eq(null), eq(null), eq(null),
+			eq(expectedRepoPageable)))
+			.thenReturn(mockRepoPage);
+
+		/// when
+		Page<ReportedPostSummary> resultPage = postService.getReportedPostsList(pageable, null, null);
+
+		/// then
+		verify(postReportRepository)
+			.findReportedPostSummary(eq(null), eq(null), eq(null), eq(null), eq(expectedRepoPageable));
+
+		assertThat(resultPage).isEqualTo(mockRepoPage);
+		assertThat(resultPage.getContent()).isEqualTo(mockRepoPage.getContent());
+		assertThat(resultPage.getTotalElements()).isEqualTo(mockRepoPage.getTotalElements());
+	}
+
+	@Test
+	@DisplayName("신고된 포스트 목록 조회 - 성공 (검색 적용)")
+	void getReportedPostsList_Success_Search() {
+		/// given
+		Pageable pageable = Pageable.unpaged();
+		String searchTarget = "post_title";
+		String searchValue = "테스트";
+
+		// Service의 검색 매핑 로직에 따라 Repository에 전달될 예상 검색 파라미터 값
+		String expectedSearchTitle = "테스트";
+
+		// Service 메서드가 Unpaged Pageable을 받아 Repository에 전달할 예상 Pageable 객체
+		Pageable expectedRepoPageable = PageRequest.of(0, Integer.MAX_VALUE,
+			Sort.by(Sort.Order.desc("latestReportedAt")));
+
+		// Repository가 반환할 Page 객체 Mocking
+		Page<ReportedPostSummary> mockRepoPage = new PageImpl<>(List.of(), pageable, 0);
+
+		// PostReportRepository의 findReportedPostSummary 메서드 Mocking
+		when(postReportRepository.findReportedPostSummary(eq(expectedSearchTitle), eq(null), eq(null), eq(null),
+			eq(expectedRepoPageable)))
+			.thenReturn(mockRepoPage);
+
+		/// when
+		Page<ReportedPostSummary> resultPage = postService.getReportedPostsList(pageable, searchTarget, searchValue);
+
+		/// then
+		verify(postReportRepository).findReportedPostSummary(eq(expectedSearchTitle), eq(null), eq(null), eq(null),
+			eq(expectedRepoPageable));
+
+		assertThat(resultPage).isEqualTo(mockRepoPage);
+	}
+
+	@Test
+	@DisplayName("신고된 포스트 목록 조회 - 성공 (정렬 적용)")
+	void getReportedPostsList_Success_Sort() {
+		/// given
+		Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Order.asc("reportCount")));
+
+		// Service 메서드는 Repository 호출 시 Repository 별칭 기준의 Pageable을 생성하여 전달
+		Pageable expectedRepoPageable = PageRequest.of(0, 10, Sort.by(Sort.Order.asc("reportCount")));
+
+		// Repository가 반환할 Page 객체 Mocking
+		Page<ReportedPostSummary> mockRepoPage = new PageImpl<>(List.of(), expectedRepoPageable, 0);
+
+		// PostReportRepository의 findReportedPostSummary 메서드 Mocking
+		when(postReportRepository.findReportedPostSummary(eq(null), eq(null), eq(null), eq(null),
+			eq(expectedRepoPageable)))
+			.thenReturn(mockRepoPage);
+
+		/// when
+		Page<ReportedPostSummary> resultPage = postService.getReportedPostsList(pageable, null, null);
+
+		/// then
+		verify(postReportRepository).findReportedPostSummary(eq(null), eq(null), eq(null), eq(null),
+			eq(expectedRepoPageable));
+
+		assertThat(resultPage).isEqualTo(mockRepoPage);
+	}
+
+	@Test
+	@DisplayName("신고된 포스트 목록 조회 - 실패 (부적절한 검색 대상)")
+	void getReportedPostsList_Fail_InvalidSearchTarget() {
+		/// given
+		Pageable pageable = Pageable.unpaged();
+		String invalidSearchTarget = "invalidSearchTarget";
+		String searchValue = "test";
+
+		assertThatThrownBy(() -> postService.getReportedPostsList(pageable, invalidSearchTarget, searchValue))
+			.isInstanceOf(ServiceException.class)
+			.hasMessageContaining("부적절한 검색 옵션입니다.");
+
+		/// when & then
+		verify(postReportRepository, never()).findReportedPostSummary(any(), any(), any(), any(), any());
+	}
+
+	@Test
+	@DisplayName("신고된 포스트 목록 조회 - 실패 (부적절한 정렬 속성)")
+	void getReportedPostsList_Fail_InvalidSortProperty() {
+		/// given
+		Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Order.asc("invalid_sort")));
+
+		/// when & then
+		assertThatThrownBy(() -> postService.getReportedPostsList(pageable, null, null))
+			.isInstanceOf(ServiceException.class)
+			.hasMessageContaining("부적절한 정렬 옵션입니다.");
+
+		verify(postReportRepository, never()).findReportedPostSummary(any(), any(), any(), any(), any());
+	}
+
+	@Test
+	@DisplayName("신고된 포스트 숨김 처리 - 성공")
+	void hideReportedPost_Success() {
+		/// given
+		List<Long> postIdsToHide = Arrays.asList(1L, 2L);
+
+		// 숨김 처리될 Post 엔티티 Mocking
+		Post post1 = Post.builder().build();
+		ReflectionTestUtils.setField(post1, "id", 1L);
+		ReflectionTestUtils.setField(post1, "deletedAt", null);
+
+		Post post2 = Post.builder().build();
+		ReflectionTestUtils.setField(post2, "id", 2L);
+		ReflectionTestUtils.setField(post2, "deletedAt", null);
+
+		when(postRepository.findById(1L)).thenReturn(Optional.of(post1));
+		when(postRepository.findById(2L)).thenReturn(Optional.of(post2));
+
+		when(postRepository.save(any(Post.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		// PostReportRepository의 updateStatusByPostIdIn 메서드 Mocking
+		doNothing().when(postReportRepository)
+			.updateStatusByPostIdIn(eq(postIdsToHide), eq(ReportProcessingStatus.ACCEPTED));
+
+		/// when
+		postService.hideReportedPost(postIdsToHide);
+
+		/// then
+		verify(postRepository).findById(1L);
+		verify(postRepository).findById(2L);
+
+		assertThat(post1.isDeleted()).isTrue();
+		assertThat(post2.isDeleted()).isTrue();
+
+		verify(postRepository).save(eq(post1));
+		verify(postRepository).save(eq(post2));
+
+		verify(postReportRepository).updateStatusByPostIdIn(eq(postIdsToHide), eq(ReportProcessingStatus.ACCEPTED));
+	}
+
+	@Test
+	@DisplayName("신고된 포스트 숨김 처리 - 실패 (포스트 찾을 수 없음)")
+	void hideReportedPost_Fail_NotFound() {
+		/// given
+		List<Long> postIdsToHide = Arrays.asList(1L, 999L, 3L);
+
+		// PostRepository의 findById 메서드 Mocking
+		Post post1 = Post.builder().build();
+		ReflectionTestUtils.setField(post1, "id", 1L);
+		ReflectionTestUtils.setField(post1, "deletedAt", null);
+
+		Post post3 = Post.builder().build();
+		ReflectionTestUtils.setField(post3, "id", 3L);
+		ReflectionTestUtils.setField(post3, "deletedAt", null);
+
+		when(postRepository.findById(1L)).thenReturn(Optional.of(post1));
+
+		// 존재하지 않는 ID (999L)에 대해서는 Optional.empty() 반환
+		when(postRepository.findById(999L)).thenReturn(Optional.empty());
+
+		// PostRepository의 save 메서드 Mocking
+		when(postRepository.save(any(Post.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		/// when & then
+		assertThatThrownBy(() -> postService.hideReportedPost(postIdsToHide))
+			.isInstanceOf(ServiceException.class)
+			.hasMessageContaining("존재하지 않는 포스트가 포함되어 있습니다.");
+
+		// PostRepository의 findById 메서드가 예외가 발생하기 전까지 호출되었는지 검증
+		verify(postRepository).findById(1L);
+		verify(postRepository).findById(999L);
+		verify(postRepository, never()).findById(3L);
+
+		verify(postRepository).save(eq(post1));
+		verify(postRepository, never()).save(eq(post3));
+		verify(postReportRepository, never()).updateStatusByPostIdIn(anyList(), any(ReportProcessingStatus.class));
+		assertThat(post1.isDeleted()).isTrue();
+		assertThat(post3.isDeleted()).isFalse();
+	}
+
+	@Test
+	@DisplayName("신고된 포스트 숨김 처리 - 실패 (이미 삭제된 포스트 포함)")
+	void hideReportedPost_Fail_AlreadyDeleted() {
+		/// given
+		List<Long> postIdsToHide = Arrays.asList(1L, 2L);
+		Long deletedPostId = 2L;
+
+		// 숨김 처리될 Post 엔티티 Mocking
+		Post post1 = Post.builder().build();
+		ReflectionTestUtils.setField(post1, "id", 1L);
+		ReflectionTestUtils.setField(post1, "deletedAt", null);
+
+		Post post2 = Post.builder().build();
+		ReflectionTestUtils.setField(post2, "id", 2L);
+		ReflectionTestUtils.setField(post2, "deletedAt", LocalDateTime.now());
+
+		when(postRepository.findById(1L)).thenReturn(Optional.of(post1));
+		when(postRepository.findById(deletedPostId)).thenReturn(Optional.of(post2));
+
+		/// when & then
+		assertThatThrownBy(() -> postService.hideReportedPost(postIdsToHide))
+			.isInstanceOf(ServiceException.class)
+			.hasMessageContaining("ID [" + deletedPostId + "]포스트는 이미 삭제되었습니다.");
+
+		verify(postRepository).findById(1L);
+		verify(postRepository).findById(deletedPostId);
+		assertThat(post1.isDeleted()).isTrue();
+		verify(postRepository).save(eq(post1));
+		verify(postRepository, never()).save(eq(post2));
+		verify(postReportRepository, never()).updateStatusByPostIdIn(anyList(), any(ReportProcessingStatus.class));
+	}
+
+	@Test
+	@DisplayName("신고된 포스트 신고 거부 처리 - 성공")
+	void rejectReportedPost_Success() {
+		/// given
+		List<Long> postIdsToReject = Arrays.asList(4L, 5L);
+
+		// 신고 거부될 Post 엔티티 Mocking
+		Post post1 = Post.builder().build();
+		ReflectionTestUtils.setField(post1, "id", 1L);
+
+		Post post2 = Post.builder().build();
+		ReflectionTestUtils.setField(post2, "id", 2L);
+
+		List<Post> foundPosts = Arrays.asList(post1, post2);
+
+		// PostRepository의 findAllById 메서드 Mocking
+		when(postRepository.findAllById(eq(postIdsToReject))).thenReturn(foundPosts);
+
+		// PostReportRepository의 updateStatusByPostIdIn 메서드 Mocking
+		doNothing().when(postReportRepository)
+			.updateStatusByPostIdIn(eq(postIdsToReject), eq(ReportProcessingStatus.REJECTED));
+
+		/// when
+		postService.rejectReportedPost(postIdsToReject);
+
+		/// then
+		verify(postRepository).findAllById(eq(postIdsToReject));
+		verify(postReportRepository).updateStatusByPostIdIn(eq(postIdsToReject), eq(ReportProcessingStatus.REJECTED));
+		verify(postRepository, never()).save(any(Post.class));
+	}
+
+	@Test
+	@DisplayName("신고된 포스트 신고 거부 처리 - 실패 (포스트 찾을 수 없음)")
+	void rejectReportedPost_Fail_NotFound() {
+		/// given
+		List<Long> postIdsToReject = Arrays.asList(1L, 999L, 2L);
+
+		// PostRepository의 findAllById 메서드 Mocking
+		Post post1 = Post.builder().build();
+		ReflectionTestUtils.setField(post1, "id", 1L);
+
+		Post post2 = Post.builder().build();
+		ReflectionTestUtils.setField(post2, "id", 2L);
+		List<Post> foundPosts = Arrays.asList(post1, post2);
+
+		/// when & then
+		assertThatThrownBy(() -> postService.rejectReportedPost(postIdsToReject))
+			.isInstanceOf(ServiceException.class)
+			.hasMessageContaining("존재하지 않는 포스트가 포함되어 있습니다.");
+
+		verify(postRepository).findAllById(eq(postIdsToReject));
+		verify(postReportRepository, never()).updateStatusByPostIdIn(anyList(), any(ReportProcessingStatus.class));
+		verify(postRepository, never()).save(any(Post.class));
 	}
 }

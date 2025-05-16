@@ -231,9 +231,9 @@ public class CommentService {
 			// 검색 대상 문자열을 Repository 메서드의 인자로 매핑
 			switch (trimmedSearchTarget) {
 				case "nickname" -> searchNickname = trimmedSearchValue;
-				case "post title" -> searchPostTitle = trimmedSearchValue;
-				case "comment body" -> searchCommentBody = trimmedSearchValue;
-				case "report reason" -> searchReportReason = trimmedSearchValue;
+				case "post_title" -> searchPostTitle = trimmedSearchValue;
+				case "comment_body" -> searchCommentBody = trimmedSearchValue;
+				case "report_reason" -> searchReportReason = trimmedSearchValue;
 				default -> throw new ServiceException("400", "부적절한 검색 옵션입니다.");
 			}
 		}
@@ -262,14 +262,19 @@ public class CommentService {
 			Comment comment = commentRepository.findById(commentId)
 				.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글이 포함되어 있습니다."));
 
-			// 2. 댓글을 숨김 처리
+			// 2. 이미 삭제(숨김)된 댓글인지 확인
+			if (comment.isDeleted()) {
+				throw new ServiceException("400", "ID [" + commentId + "] 댓글은 이미 삭제되었습니다.");
+			}
+
+			// 3. 댓글을 숨김 처리
 			comment.softDelete();
 
-			// 3. 변경사항 저장
+			// 4. 변경사항 저장
 			commentRepository.save(comment);
 		}
 
-		// 4. 요청된 댓글 ID들에 해당하는 모든 신고 엔티티의 상태를 ACCEPTED로 업데이트
+		// 5. 요청된 댓글 ID들에 해당하는 모든 신고 엔티티의 상태를 ACCEPTED로 업데이트
 		commentReportRepository.updateStatusByCommentIdIn(commentIds, ReportProcessingStatus.ACCEPTED);
 	}
 

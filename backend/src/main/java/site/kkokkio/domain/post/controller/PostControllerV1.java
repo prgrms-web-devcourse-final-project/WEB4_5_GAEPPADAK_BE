@@ -18,12 +18,12 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import site.kkokkio.domain.post.controller.dto.PostSearchSourceListResponse;
 import site.kkokkio.domain.keyword.service.KeywordService;
 import site.kkokkio.domain.post.controller.dto.PostDetailResponse;
+import site.kkokkio.domain.post.controller.dto.PostListResponse;
+import site.kkokkio.domain.post.controller.dto.PostSearchSourceListResponse;
 import site.kkokkio.domain.post.controller.dto.TopPostResponse;
 import site.kkokkio.domain.post.dto.PostDto;
-import site.kkokkio.domain.post.dto.PostListResponse;
 import site.kkokkio.domain.post.service.PostService;
 import site.kkokkio.domain.source.dto.SourceDto;
 import site.kkokkio.domain.source.service.SourceService;
@@ -66,11 +66,12 @@ public class PostControllerV1 {
 	public RsData<PostListResponse> getPostListByKeyword(
 		@RequestParam String keyword,
 		@RequestParam(value = "sort", required = false, defaultValue = "createdAt") String sortField, // 정렬할 필드
-		@RequestParam(value = "order", required = false, defaultValue = "DESC") Sort.Direction orderDirection, // 정렬 방향 필드 추가
+		@RequestParam(value = "order", required = false, defaultValue = "DESC") Sort.Direction orderDirection,
+		// 정렬 방향 필드 추가
 		@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable defaultPageable
 	) {
 		// 제목 정렬 시 PostKeyword 엔티티에 title이 없으므로 post.title로 접근
-		if(sortField.equals("title"))
+		if (sortField.equals("title"))
 			sortField = "post.title";
 
 		Sort sort = Sort.by(orderDirection, sortField);
@@ -98,12 +99,13 @@ public class PostControllerV1 {
 	public RsData<PostSearchSourceListResponse> getKeywordSearchSources(
 		@RequestParam String keyword,
 		@RequestParam(value = "sort", required = false, defaultValue = "createdAt") String sortField, // 정렬할 필드
-		@RequestParam(value = "order", required = false, defaultValue = "DESC") Sort.Direction orderDirection, // 정렬 방향 필드 추가
+		@RequestParam(value = "order", required = false, defaultValue = "DESC") Sort.Direction orderDirection,
+		// 정렬 방향 필드 추가
 		@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable defaultPageable
 	) {
-		if(sortField.equals("title"))
-		sortField = "post.title";
-		
+		if (sortField.equals("title"))
+			sortField = "post.title";
+
 		Sort sort = Sort.by(orderDirection, sortField);
 		Pageable customPaging = PageRequest.of(
 			defaultPageable.getPageNumber(),

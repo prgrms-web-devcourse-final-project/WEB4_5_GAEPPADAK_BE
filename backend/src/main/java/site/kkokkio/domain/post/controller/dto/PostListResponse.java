@@ -1,10 +1,11 @@
-package site.kkokkio.domain.post.dto;
+package site.kkokkio.domain.post.controller.dto;
 
 import java.util.List;
 
 import org.springframework.data.domain.Page;
 
 import lombok.Builder;
+import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.global.dto.PaginationMeta;
 
 @Builder

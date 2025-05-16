@@ -16,6 +16,7 @@ jobs:
     uses: ./.github/workflows/deploy-common.yml
     with:
       branch: prd
+      branch_upper: PRD
       doppler_token: ${{ secrets.DOPPLER_PRD_SERVICE_TOKEN }}
       doppler_config: prd
       tag_prefix: v-prd-

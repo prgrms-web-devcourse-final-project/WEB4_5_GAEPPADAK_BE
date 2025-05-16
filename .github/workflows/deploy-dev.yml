@@ -16,6 +16,7 @@ jobs:
     uses: ./.github/workflows/deploy-common.yml
     with:
       branch: dev
+      branch_upper: DEV
       doppler_token: ${{ secrets.DOPPLER_DEV_SERVICE_TOKEN }}
       doppler_config: dev
       tag_prefix: v-dev-

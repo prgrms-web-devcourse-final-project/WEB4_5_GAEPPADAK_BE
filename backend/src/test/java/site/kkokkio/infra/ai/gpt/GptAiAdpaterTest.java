@@ -1,7 +1,7 @@
-package site.kkokkio.infra.ai.gemini;
+package site.kkokkio.infra.ai.gpt;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import java.util.concurrent.CompletableFuture;
@@ -37,28 +37,25 @@ import site.kkokkio.infra.common.exception.RetryableExternalApiException;
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
 	"mock.enabled=false",
-	"ai.type.current=GEMINI",
-	"ai.type.backup=GEMINI" // 폴백 방지
+	"ai.type.current=GPT",
+	"ai.type.backup=GPT" // 폴백 방지
 })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-public class GeminiAiAdapterTest {
-
-
-
+public class GptAiAdpaterTest {
 	@TestConfiguration
 	static class Config {
 		@Bean
 		ExchangeFunction ef() { return Mockito.mock(ExchangeFunction.class); }
 		@Bean
-		@Qualifier("geminiWebClient")
-		WebClient geminiWebClient(ExchangeFunction ef) {
+		@Qualifier("gptWebClient")
+		WebClient gptWebClient(ExchangeFunction ef) {
 			return WebClient.builder()
 				.exchangeFunction(ef)
 				.build();
 		}
 		@Bean
-		GeminiApiProperties props() {
-			var p = new GeminiApiProperties();
+		GptApiProperties props() {
+			var p = new GptApiProperties();
 			p.setBaseUrl("https://fake");
 			p.setKey("fake-key");
 			return p;
@@ -81,9 +78,9 @@ public class GeminiAiAdapterTest {
 	}
 
 	@Test
-	@DisplayName("Gemini 요약 호출 - 성공 (Async)")
+	@DisplayName("Gpt 요약 호출 - 성공 (Async)")
 	void summary_success_async() throws Exception {
-		String geminiResponseJson = """
+		String gptResponseJson = """
   {
     "choices": [
       {
@@ -96,14 +93,14 @@ public class GeminiAiAdapterTest {
   """;
 
 		when(ef.exchange(any()))
-			.thenReturn(Mono.just(resp(geminiResponseJson, HttpStatus.OK)));
-		CompletableFuture<String> result = aiSummaryPortRouter.summarize(AiType.GEMINI, "user");
+			.thenReturn(Mono.just(resp(gptResponseJson, HttpStatus.OK)));
+		CompletableFuture<String> result = aiSummaryPortRouter.summarize(AiType.GPT, "user");
 		assertThat(result).isNotNull();
 		assertThat(result.get()).isEqualTo("{\"title\":\"T\",\"summary\":\"S\"}");
 	}
 
 	@Test
-	@DisplayName("Gemini 요약 호출 - 실패 후 circuit breaker 작동")
+	@DisplayName("Gpt 요약 호출 - 실패 후 circuit breaker 작동")
 	void summary_retry_and_cb_async() throws Exception {
 		String errBody = """
 	{
@@ -125,17 +122,17 @@ public class GeminiAiAdapterTest {
 			.thenReturn(Mono.just(resp(errBody, HttpStatus.SERVICE_UNAVAILABLE)));
 
 		// 첫 번째 요청 → RetryableExternalApiException 발생 기대
-		CompletableFuture<String> future = aiSummaryPortRouter.summarize(AiType.GEMINI,"y");
+		CompletableFuture<String> future = aiSummaryPortRouter.summarize(AiType.GPT,"y");
 
 		assertThatThrownBy(future::get)
 			.hasCauseInstanceOf(RetryableExternalApiException.class);
 
 		// circuit breaker registry에서 같은 이름으로 직접 얻어올 수 있도록 보장
-		CircuitBreaker cb = cbRegistry.circuitBreaker("GEMINI_AI_CIRCUIT_BREAKER");
+		CircuitBreaker cb = cbRegistry.circuitBreaker("GPT_AI_CIRCUIT_BREAKER");
 		assertThat(cb.getState()).isEqualTo(CircuitBreaker.State.OPEN);
 
 		// 두 번째 호출: Circuit breaker 열려 있어서 바로 실패
-		CompletableFuture<String> blocked = aiSummaryPortRouter.summarize(AiType.GEMINI,"y");
+		CompletableFuture<String> blocked = aiSummaryPortRouter.summarize(AiType.GPT,"y");
 		assertThatThrownBy(blocked::get)
 			.hasCauseInstanceOf(CallNotPermittedException.class);
 
@@ -143,7 +140,7 @@ public class GeminiAiAdapterTest {
 	}
 
 	@Test
-	@DisplayName("Gemini 요약 호출 - rateLimiter 확인")
+	@DisplayName("Gpt 요약 호출 - rateLimiter 확인")
 	void summary_rateLimiter_blocked() throws Exception {
 		// given
 		String successBody = """
@@ -166,15 +163,15 @@ public class GeminiAiAdapterTest {
 			);
 
 		// when
-		CompletableFuture<String> f1 = aiSummaryPortRouter.summarize(AiType.GEMINI,"u");
-		CompletableFuture<String> f2 = aiSummaryPortRouter.summarize(AiType.GEMINI,"u");
+		CompletableFuture<String> f1 = aiSummaryPortRouter.summarize(AiType.GPT,"u");
+		CompletableFuture<String> f2 = aiSummaryPortRouter.summarize(AiType.GPT,"u");
 
 		// then
 		assertThat(f1.get()).contains("title");
 		assertThat(f2.get()).contains("summary");
 
 		// 3번째 요청은 RateLimiter에 막힘 예상
-		assertThatThrownBy(() -> aiSummaryPortRouter.summarize(AiType.GEMINI,"u").get())
+		assertThatThrownBy(() -> aiSummaryPortRouter.summarize(AiType.GPT,"u").get())
 			.hasCauseInstanceOf(io.github.resilience4j.ratelimiter.RequestNotPermitted.class);
 
 		verify(ef, times(2)).exchange(any());

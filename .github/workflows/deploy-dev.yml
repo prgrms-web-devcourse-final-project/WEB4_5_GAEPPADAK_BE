@@ -17,7 +17,6 @@ jobs:
     with:
       branch: dev
       branch_upper: DEV
-      doppler_token: ${{ secrets.DOPPLER_DEV_SERVICE_TOKEN }}
       doppler_config: dev
       tag_prefix: v-dev-
       dockerfile: Dockerfile.dev
@@ -26,6 +25,7 @@ jobs:
       AWS_REGION: ${{ secrets.AWS_REGION }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       TK_GITHUB_ACCESS_TOKEN: ${{ secrets.TK_GITHUB_ACCESS_TOKEN }}
       TK_GITHUB_ACCESS_TOKEN_OWNER: ${{ secrets.TK_GITHUB_ACCESS_TOKEN_OWNER }}
+      DOPPLER_SERVICE_TOKEN: ${{ secrets.DOPPLER_DEV_SERVICE_TOKEN }}
+      BASTION_SSH_KEY: ${{secrets.BASTION_SSH_KEY}}

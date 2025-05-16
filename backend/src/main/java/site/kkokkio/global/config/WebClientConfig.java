@@ -1,4 +1,5 @@
 package site.kkokkio.global.config;
+
 import java.time.Duration;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -18,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import reactor.netty.http.client.HttpClient;
 import site.kkokkio.infra.ai.gemini.GeminiApiProperties;
+import site.kkokkio.infra.ai.gpt.GptApiProperties;
 
 @Configuration
 public class WebClientConfig {
@@ -54,6 +56,41 @@ public class WebClientConfig {
 	public WebClient geminiWebClient(
 		GeminiApiProperties props
 	) {
+		// WebClient 전용 ObjectMapper
+		ObjectMapper geminiMapper = new ObjectMapper()
+			// unquoted control chars 허용
+			.configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true)
+			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+		MediaType jsonUtf8 = MediaType.parseMediaType("application/json; charset=UTF-8");
+
+		return WebClient.builder()
+			.baseUrl(props.getBaseUrl())
+			// 요청 본문 Content-Type
+			.defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8")
+			// 응답으로 JSON만 받겠다고 명시
+			.defaultHeader(HttpHeaders.ACCEPT, "application/json; charset=UTF-8")
+			.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + props.getKey())
+			.codecs(spec -> {
+				spec.defaultCodecs().jackson2JsonDecoder(
+					new Jackson2JsonDecoder(geminiMapper, jsonUtf8)
+				);
+				spec.defaultCodecs().jackson2JsonEncoder(
+					new Jackson2JsonEncoder(geminiMapper, jsonUtf8)
+				);
+			})
+			.clientConnector(new ReactorClientHttpConnector(
+				HttpClient.create()
+					.responseTimeout(Duration.ofSeconds(5))
+			))
+			.build();
+	}
+
+	@Bean
+	@Qualifier("gptWebClient")
+	public WebClient gptWebClient(
+		GptApiProperties props
+	){
 		// WebClient 전용 ObjectMapper
 		ObjectMapper geminiMapper = new ObjectMapper()
 			// unquoted control chars 허용

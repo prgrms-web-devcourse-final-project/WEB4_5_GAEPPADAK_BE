@@ -29,8 +29,8 @@ import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import reactor.core.publisher.Mono;
-import site.kkokkio.domain.post.port.out.AiSummaryPort;
 import site.kkokkio.infra.ai.AiType;
+import site.kkokkio.infra.ai.adapter.AiSummaryPortRouter;
 import site.kkokkio.infra.common.exception.RetryableExternalApiException;
 
 @SpringBootTest
@@ -40,6 +40,8 @@ import site.kkokkio.infra.common.exception.RetryableExternalApiException;
 })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class GeminiAiAdapterTest {
+
+
 
 	@TestConfiguration
 	static class Config {
@@ -65,7 +67,7 @@ public class GeminiAiAdapterTest {
 	ExchangeFunction ef;
 
 	@Autowired
-	AiSummaryPort aiSummaryPort;
+	AiSummaryPortRouter aiSummaryPortRouter;
 
 	@Autowired
 	CircuitBreakerRegistry cbRegistry;
@@ -93,7 +95,7 @@ public class GeminiAiAdapterTest {
 
 		when(ef.exchange(any()))
 			.thenReturn(Mono.just(resp(geminiResponseJson, HttpStatus.OK)));
-		CompletableFuture<String> result = aiSummaryPort.summarize(AiType.GEMINI, "user");
+		CompletableFuture<String> result = aiSummaryPortRouter.summarize(AiType.GEMINI, "user");
 		assertThat(result).isNotNull();
 		assertThat(result.get()).isEqualTo("{\"title\":\"T\",\"summary\":\"S\"}");
 	}
@@ -121,7 +123,7 @@ public class GeminiAiAdapterTest {
 			.thenReturn(Mono.just(resp(errBody, HttpStatus.SERVICE_UNAVAILABLE)));
 
 		// 첫 번째 요청 → RetryableExternalApiException 발생 기대
-		CompletableFuture<String> future = aiSummaryPort.summarize(AiType.GEMINI,"y");
+		CompletableFuture<String> future = aiSummaryPortRouter.summarize(AiType.GEMINI,"y");
 
 		assertThatThrownBy(future::get)
 			.hasCauseInstanceOf(RetryableExternalApiException.class);
@@ -131,7 +133,7 @@ public class GeminiAiAdapterTest {
 		assertThat(cb.getState()).isEqualTo(CircuitBreaker.State.OPEN);
 
 		// 두 번째 호출: Circuit breaker 열려 있어서 바로 실패
-		CompletableFuture<String> blocked = aiSummaryPort.summarize(AiType.GEMINI,"y");
+		CompletableFuture<String> blocked = aiSummaryPortRouter.summarize(AiType.GEMINI,"y");
 		assertThatThrownBy(blocked::get)
 			.hasCauseInstanceOf(CallNotPermittedException.class);
 
@@ -162,15 +164,15 @@ public class GeminiAiAdapterTest {
 			);
 
 		// when
-		CompletableFuture<String> f1 = aiSummaryPort.summarize(AiType.GEMINI,"u");
-		CompletableFuture<String> f2 = aiSummaryPort.summarize(AiType.GEMINI,"u");
+		CompletableFuture<String> f1 = aiSummaryPortRouter.summarize(AiType.GEMINI,"u");
+		CompletableFuture<String> f2 = aiSummaryPortRouter.summarize(AiType.GEMINI,"u");
 
 		// then
 		assertThat(f1.get()).contains("title");
 		assertThat(f2.get()).contains("summary");
 
 		// 3번째 요청은 RateLimiter에 막힘 예상
-		assertThatThrownBy(() -> aiSummaryPort.summarize(AiType.GEMINI,"u").get())
+		assertThatThrownBy(() -> aiSummaryPortRouter.summarize(AiType.GEMINI,"u").get())
 			.hasCauseInstanceOf(io.github.resilience4j.ratelimiter.RequestNotPermitted.class);
 
 		verify(ef, times(2)).exchange(any());

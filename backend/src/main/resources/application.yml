@@ -192,6 +192,13 @@ ai:
     project-id: ${GEMINI_PROJECT_ID:test-gemini-project-id}
     model: ${GEMINI_MODEL:gemini-2.0-flash}
     base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta/openai}
+  gpt:
+    key: ${GPT_API_KEY:test-openai-key}
+    model: ${GPT_MODEL:gpt-4o-mini-2024-07-18}
+    base-url: ${GPT_BASE_URL:https://api.openai.com/v1}
+  type:
+    current: ${AI_CURRENT_TYPE:GPT}
+    backup: ${AI_BACKUP_TYPE:GEMINI}
 
 trend:
   platform: ${TREND_PLATFORM:GOOGLE_TREND}

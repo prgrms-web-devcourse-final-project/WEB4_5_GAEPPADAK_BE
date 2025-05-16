@@ -3,8 +3,8 @@ package site.kkokkio.domain.post.service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +59,6 @@ import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.enums.ReportProcessingStatus;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
-import site.kkokkio.infra.ai.AiType;
 
 @Slf4j
 @Service
@@ -118,7 +117,7 @@ public class PostService {
 	 */
 	@Async
 	public CompletableFuture<String> summarizeAsync(String content) {
-		return aiSummaryPort.summarize(AiType.GEMINI, content);
+		return aiSummaryPort.summarize(null, content);
 	}
 
 	/**

@@ -34,7 +34,7 @@ public class EvaluateNoveltyStepConfig {
 	private final BatchMetricsListener metrics;
 
 	@Bean(name = EVALUATE_NOVELTY_STEP)
-	public Step fetchTrendingKeywordsStep() {
+	public Step evalutateNoveltyStep() {
 		return new StepBuilder(EVALUATE_NOVELTY_STEP, jobRepository)
 			.tasklet((contrib, ctx) -> {
 

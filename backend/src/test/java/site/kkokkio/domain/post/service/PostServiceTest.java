@@ -57,7 +57,6 @@ import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.enums.ReportProcessingStatus;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
-import site.kkokkio.infra.ai.AiType;
 import site.kkokkio.infra.ai.adapter.AiSummaryPortRouter;
 
 @ExtendWith(MockitoExtension.class)
@@ -214,7 +213,7 @@ public class PostServiceTest {
 			{"title":"테스트제목","summary":"이것은 테스트 요약입니다."}
 			""";
 
-		given(aiSummaryAdapterRouter.summarize(eq(AiType.GEMINI), anyString()))
+		given(aiSummaryAdapterRouter.summarize(eq(null), anyString()))
 			.willReturn(CompletableFuture.completedFuture(fakeJson));
 
 		ObjectNode fakeNode = new ObjectNode(new ObjectMapper().getNodeFactory())

@@ -51,11 +51,17 @@ public class EvaluateNoveltyStepConfig {
 				int lowVarCnt = ns.lowVariationCount();
 
 				// 2) low_variation = false 인 키워드만 다음 Step 전달
-				jobEc.put(JC_POSTABLE_IDS, ns.postableIds());
-				jobEc.putInt(JC_POSTABLE_COUNT, ns.postableIds().size());
+				// jobEc.put(JC_POSTABLE_IDS, ns.postableIds());
+				// jobEc.putInt(JC_POSTABLE_COUNT, ns.postableIds().size());
+
+				// 임시 : 신규성 평가 미구현
+				jobEc.put(JC_POSTABLE_IDS, topKeywordIds);
+				jobEc.putInt(JC_POSTABLE_COUNT, topKeywordIds.size());
 
 				// 3) StepExecutionContext 업데이트
 				stepEc.putInt(SC_NOVELTY_SKIPPED, lowVarCnt);   // Counter
+
+				log.info("Evaluate novelty step completed.");
 
 				return RepeatStatus.FINISHED;
 			}, transactionManager)

@@ -6,6 +6,7 @@ import static site.kkokkio.domain.batch.context.ExecutionContextKeys.*;
 import java.util.List;
 
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ExecutionContext;
@@ -36,22 +37,20 @@ public class GeneratePostStepConfig {
 		return new StepBuilder(GENERATE_POST_STEP, jobRepository)
 			.tasklet((contrib, ctx) -> {
 
-				ExecutionContext jobEc = ctx.getStepContext()
-					.getStepExecution()
-					.getJobExecution()
-					.getExecutionContext();
-				ExecutionContext stepEc = ctx.getStepContext().getStepExecution().getExecutionContext();
+				StepExecution se = ctx.getStepContext().getStepExecution();
+				ExecutionContext jobEc = se.getJobExecution().getExecutionContext();
+				ExecutionContext stepEc = se.getExecutionContext();
 
 				// 대상 키워드(id) 목록
 				@SuppressWarnings("unchecked")
-				List<Long> ids = (List<Long>)jobEc.get(EC_POSTABLE_IDS);
+				List<Long> ids = (List<Long>)jobEc.get(JC_POSTABLE_IDS);
 
 				// Post 생성 (신규 Source ↔ LLM 요약)
 				List<Long> newPostIds = postService.generatePosts(ids);
 				int created = ids.isEmpty() ? 0 : newPostIds.size();
 
 				// StepExecutionContext 업데이트
-				jobEc.put(EC_NEW_POST_IDS, newPostIds);
+				jobEc.put(JC_NEW_POST_IDS, newPostIds);
 				stepEc.putInt(SC_POST_CREATED, created);          // Counter
 
 				return RepeatStatus.FINISHED;

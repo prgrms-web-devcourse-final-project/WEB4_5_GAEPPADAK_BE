@@ -39,17 +39,14 @@ public class CachePostStepConfig {
 			.tasklet((contrib, ctx) -> {
 
 				StepExecution se = ctx.getStepContext().getStepExecution();
-				ExecutionContext jobEc = ctx.getStepContext()
-					.getStepExecution()
-					.getJobExecution()
-					.getExecutionContext();
+				ExecutionContext jobEc = se.getJobExecution().getExecutionContext();
 				ExecutionContext stepEc = se.getExecutionContext();
 
 				@SuppressWarnings("unchecked")
 				List<Long> newPostIds =
-					(List<Long>)se.getJobExecution().getExecutionContext().get(EC_NEW_POST_IDS);
+					(List<Long>)se.getJobExecution().getExecutionContext().get(JC_NEW_POST_IDS);
 				@SuppressWarnings("unchecked")
-				List<Long> keywordIds = (List<Long>)jobEc.get(EC_POSTABLE_IDS);
+				List<Long> keywordIds = (List<Long>)jobEc.get(JC_POSTABLE_IDS);
 
 				// 캐싱이 필요 없는 경우 빠른 종료
 				if (newPostIds.isEmpty()) {

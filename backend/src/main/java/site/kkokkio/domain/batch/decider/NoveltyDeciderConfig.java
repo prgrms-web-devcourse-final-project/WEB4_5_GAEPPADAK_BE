@@ -23,11 +23,11 @@ public class NoveltyDeciderConfig {
 			// low-variation 키워드 유무 판정
 			@SuppressWarnings("unchecked")
 			List<Long> ids = (List<Long>)jobExec.getExecutionContext()
-				.get(EC_POSTABLE_IDS);
+				.get(JC_POSTABLE_IDS);
 
 			boolean noPostNeeded = ids.isEmpty();
 
-			jobExec.getExecutionContext().put(EC_NO_POST_NEEDED, noPostNeeded);
+			jobExec.getExecutionContext().put(JC_NO_POST_NEEDED, noPostNeeded);
 
 			return noPostNeeded
 				? new FlowExecutionStatus(NO_POST_NEEDED_STATUS)

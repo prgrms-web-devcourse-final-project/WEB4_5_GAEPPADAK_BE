@@ -2,12 +2,14 @@ package site.kkokkio.domain.batch.step;
 
 import static site.kkokkio.domain.batch.context.BatchConstants.*;
 import static site.kkokkio.domain.batch.context.ExecutionContextKeys.*;
+import static site.kkokkio.domain.batch.context.JobParameterKeys.*;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ExecutionContext;
@@ -39,19 +41,16 @@ public class FetchTrendingKeywordsStepConfig {
 		return new StepBuilder(FETCH_KEYWORDS_STEP, jobRepository)
 			.tasklet((contrib, ctx) -> {
 
-				ExecutionContext jobEc = ctx.getStepContext()
-					.getStepExecution()
-					.getJobExecution()
-					.getExecutionContext();
-				ExecutionContext stepEc = ctx.getStepContext().getStepExecution().getExecutionContext();
+				StepExecution se = ctx.getStepContext().getStepExecution();
+				ExecutionContext jobEc = se.getJobExecution().getExecutionContext();
+				ExecutionContext stepEc = se.getExecutionContext();
+				JobParameters jp = se.getJobExecution().getJobParameters();
 
-				// bucketAt : JobParameter 로 넘어왔으면 재사용, 없으면 생성
-				LocalDateTime bucketAt = jobEc.containsKey(EC_BUCKET_AT)
-					? (LocalDateTime)jobEc.get(EC_BUCKET_AT)
-					: LocalDateTime.now().truncatedTo(ChronoUnit.HOURS);
+				String runTimeStr = jp.getString(JP_RUNTIME);
+				LocalDateTime bucketAt = LocalDateTime.parse(runTimeStr);
 
-				if (!jobEc.containsKey(EC_BUCKET_AT)) {
-					jobEc.put(EC_BUCKET_AT, bucketAt);
+				if (!jobEc.containsKey(JC_BUCKET_AT)) {
+					jobEc.put(JC_BUCKET_AT, bucketAt);
 				}
 
 				// Google Trends 호출 + 지연(ms) 측정
@@ -61,8 +60,8 @@ public class FetchTrendingKeywordsStepConfig {
 
 				// JobExecutionContext 업데이트
 				List<Long> keywordIds = keywords.stream().map(Keyword::getId).toList();
-				jobEc.put(EC_TOP_IDS, keywordIds);
-				jobEc.putInt(EC_TOP_COUNT, keywordIds.size());
+				jobEc.put(JC_TOP_IDS, keywordIds);
+				jobEc.putInt(JC_TOP_COUNT, keywordIds.size());
 
 				// StepExecutionContext 업데이트
 				stepEc.putLong(SC_RSS_LATENCY_MS, latency);

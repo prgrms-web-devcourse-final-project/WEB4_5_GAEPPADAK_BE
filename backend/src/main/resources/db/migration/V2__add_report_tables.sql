@@ -4,7 +4,7 @@ ALTER TABLE comment
 
 -- post 테이블에 deleted_at 컬럼 추가
 ALTER TABLE post
-    ADD COLUMN deleted_at DATETIME NULL
+    ADD COLUMN deleted_at DATETIME NULL;
 
 -- comment_report 테이블 생성
 CREATE TABLE comment_report

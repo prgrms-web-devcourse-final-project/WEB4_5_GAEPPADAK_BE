@@ -49,7 +49,7 @@ public class CachePostStepConfig {
 				List<Long> keywordIds = (List<Long>)jobEc.get(JC_POSTABLE_IDS);
 
 				// 캐싱이 필요 없는 경우 빠른 종료
-				if (newPostIds.isEmpty()) {
+				if (newPostIds == null || newPostIds.isEmpty()) {
 					stepEc.putInt(SC_CACHE_SIZE, 0);
 					return RepeatStatus.FINISHED;
 				}

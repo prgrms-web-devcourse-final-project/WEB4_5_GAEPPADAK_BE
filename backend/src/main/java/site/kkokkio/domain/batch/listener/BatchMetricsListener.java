@@ -2,10 +2,12 @@ package site.kkokkio.domain.batch.listener;
 
 import static site.kkokkio.domain.batch.context.BatchConstants.*;
 import static site.kkokkio.domain.batch.context.ExecutionContextKeys.*;
+import static site.kkokkio.domain.batch.context.JobParameterKeys.*;
 
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
+import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.item.ExecutionContext;
@@ -36,13 +38,14 @@ public class BatchMetricsListener implements StepExecutionListener, JobExecution
 
 		JobExecution je = stepExec.getJobExecution();
 		ExecutionContext ctx = stepExec.getExecutionContext();
+		JobParameters jp = stepExec.getJobExecution().getJobParameters();
 
 		Tags base = Tags.of(
 			"application", application,
 			"instance", profile,
 			"job", je.getJobInstance().getJobName(),
 			"step", stepExec.getStepName(),
-			"bucket", String.valueOf(je.getExecutionContext().get("bucketAt"))
+			"bucket", jp.getString(JP_RUNTIME)
 		);
 
 		// Gauge & Counter 기록

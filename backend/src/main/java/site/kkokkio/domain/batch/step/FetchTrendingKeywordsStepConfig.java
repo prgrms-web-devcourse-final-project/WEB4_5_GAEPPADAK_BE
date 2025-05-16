@@ -2,9 +2,7 @@ package site.kkokkio.domain.batch.step;
 
 import static site.kkokkio.domain.batch.context.BatchConstants.*;
 import static site.kkokkio.domain.batch.context.ExecutionContextKeys.*;
-import static site.kkokkio.domain.batch.context.JobParameterKeys.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.batch.core.JobParameters;
@@ -45,13 +43,6 @@ public class FetchTrendingKeywordsStepConfig {
 				ExecutionContext jobEc = se.getJobExecution().getExecutionContext();
 				ExecutionContext stepEc = se.getExecutionContext();
 				JobParameters jp = se.getJobExecution().getJobParameters();
-
-				String runTimeStr = jp.getString(JP_RUNTIME);
-				LocalDateTime bucketAt = LocalDateTime.parse(runTimeStr);
-
-				if (!jobEc.containsKey(JC_BUCKET_AT)) {
-					jobEc.put(JC_BUCKET_AT, bucketAt);
-				}
 
 				// Google Trends 호출 + 지연(ms) 측정
 				long t0 = System.currentTimeMillis();

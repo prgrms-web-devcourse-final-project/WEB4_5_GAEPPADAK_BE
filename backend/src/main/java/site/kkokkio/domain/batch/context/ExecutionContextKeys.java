@@ -3,7 +3,6 @@ package site.kkokkio.domain.batch.context;
 public interface ExecutionContextKeys {
 
 	// JobExecutionContext Keys
-	String JC_BUCKET_AT = "bucketAt";
 	String JC_TOP_IDS = "topIds";
 	String JC_TOP_COUNT = "topCount";
 	String JC_POSTABLE_IDS = "postableIds";

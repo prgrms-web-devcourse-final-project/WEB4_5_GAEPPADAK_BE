@@ -44,7 +44,7 @@ public class GptAiApiPort implements AiSummaryPort {
 	@Value("${mock.enabled:true}")
 	private boolean mockEnabled;
 
-	@Value("${mock.gpt-file:Gpt-summary.json}")
+	@Value("${mock.gpt-file:gpt-summary.json}")
 	private String mockFile;
 
 	@CircuitBreaker(name = "GPT_AI_CIRCUIT_BREAKER")

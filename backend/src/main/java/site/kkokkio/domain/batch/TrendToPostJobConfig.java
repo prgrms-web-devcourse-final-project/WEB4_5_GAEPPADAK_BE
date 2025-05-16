@@ -30,7 +30,6 @@ public class TrendToPostJobConfig {
 	private final Step generatePostStep;
 	private final Step cachePostStep;
 
-	/* === Job 정의 === */
 	@Bean
 	public Job trendToPostJob() {
 		Flow trendToPostFlow = new FlowBuilder<SimpleFlow>(TREND_TO_POST_JOB)

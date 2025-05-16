@@ -5,8 +5,8 @@ import static site.kkokkio.domain.batch.context.ExecutionContextKeys.*;
 
 import java.util.List;
 
-import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ExecutionContext;
@@ -38,21 +38,21 @@ public class EvaluateNoveltyStepConfig {
 		return new StepBuilder(EVALUATE_NOVELTY_STEP, jobRepository)
 			.tasklet((contrib, ctx) -> {
 
-				JobExecution je = ctx.getStepContext().getStepExecution().getJobExecution();
-				ExecutionContext jobEc = je.getExecutionContext();
-				ExecutionContext stepEc = ctx.getStepContext().getStepExecution().getExecutionContext();
+				StepExecution se = ctx.getStepContext().getStepExecution();
+				ExecutionContext jobEc = se.getJobExecution().getExecutionContext();
+				ExecutionContext stepEc = se.getExecutionContext();
 
 				// Top-10 키워드 ID 가져오기
 				@SuppressWarnings("unchecked")
-				List<Long> topKeywordIds = (List<Long>)jobEc.get(EC_TOP_IDS);
+				List<Long> topKeywordIds = (List<Long>)jobEc.get(JC_TOP_IDS);
 
 				// 1) Novelty 계산 & keyword_metric_hourly UPDATE
 				NoveltyStatsDto ns = keywordMetricHourlyService.evaluateNovelty(topKeywordIds);
 				int lowVarCnt = ns.lowVariationCount();
 
 				// 2) low_variation = false 인 키워드만 다음 Step 전달
-				jobEc.put(EC_POSTABLE_IDS, ns.postableIds());
-				jobEc.putInt(EC_POSTABLE_COUNT, ns.postableIds().size());
+				jobEc.put(JC_POSTABLE_IDS, ns.postableIds());
+				jobEc.putInt(JC_POSTABLE_COUNT, ns.postableIds().size());
 
 				// 3) StepExecutionContext 업데이트
 				stepEc.putInt(SC_NOVELTY_SKIPPED, lowVarCnt);   // Counter

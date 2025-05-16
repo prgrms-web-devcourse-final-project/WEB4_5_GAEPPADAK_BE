@@ -35,9 +35,7 @@ public class SearchNewsStepConfig {
 		return new StepBuilder(SEARCH_NEWS_STEP, jobRepository)
 			.tasklet((contrib, ctx) -> {
 
-				ExecutionContext stepEc = ctx.getStepContext()
-					.getStepExecution()
-					.getExecutionContext();
+				ExecutionContext stepEc = ctx.getStepContext().getStepExecution().getExecutionContext();
 
 				SearchStatsDto stat = sourceService.searchNews();
 

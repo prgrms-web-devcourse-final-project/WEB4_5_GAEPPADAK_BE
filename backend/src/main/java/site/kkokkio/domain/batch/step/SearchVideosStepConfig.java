@@ -35,9 +35,7 @@ public class SearchVideosStepConfig {
 		return new StepBuilder(SEARCH_VIDEOS_STEP, jobRepository)
 			.tasklet((contrib, ctx) -> {
 
-				ExecutionContext stepEc = ctx.getStepContext()
-					.getStepExecution()
-					.getExecutionContext();
+				ExecutionContext stepEc = ctx.getStepContext().getStepExecution().getExecutionContext();
 
 				SearchStatsDto stat = sourceService.searchYoutube();
 

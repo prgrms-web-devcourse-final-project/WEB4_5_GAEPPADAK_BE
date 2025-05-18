@@ -203,7 +203,7 @@ ai:
   type:
     current: ${AI_CURRENT_TYPE:GPT}
     backup: ${AI_BACKUP_TYPE:GEMINI}
-    fallback: ${AI_FALLBACK_TYPE:CLAUDE}
+    tertiary: ${AI_TERTIARY_TYPE:CLAUDE}
 
 trend:
   platform: ${TREND_PLATFORM:GOOGLE_TREND}

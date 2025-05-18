@@ -29,8 +29,8 @@ public class AiSummaryPortRouter implements AiSummaryPort {
 	@Value("${ai.type.backup}")
 	private AiType backupAiType;
 
-	@Value("${ai.type.fallback}")
-	private AiType fallbackAiType;
+	@Value("${ai.type.tertiary}")
+	private AiType tertiaryAiType;
 
 	public AiSummaryPortRouter(
 		GeminiAiApiPort geminiAdapter,
@@ -54,7 +54,7 @@ public class AiSummaryPortRouter implements AiSummaryPort {
 
 		AiSummaryPort primaryAdapter = delegateMap.get(primaryAi);
 		AiSummaryPort secondaryAdapter = delegateMap.get(secondaryAi);
-		AiSummaryPort fallbackAdapter = delegateMap.get(fallbackAiType);
+		AiSummaryPort fallbackAdapter = delegateMap.get(tertiaryAiType);
 
 		if (primaryAdapter == null) {
 			throw new IllegalArgumentException("지원하지 않는 AI 타입입니다: " + primaryAi);
@@ -67,10 +67,10 @@ public class AiSummaryPortRouter implements AiSummaryPort {
 					log.warn("1차 AI '{}' 요약 실패, 2차 AI '{}'로 폴백합니다.", primaryAi, secondaryAi, primaryError);
 					return Mono.fromFuture(secondaryAdapter.summarize(secondaryAi, content))
 						.onErrorResume(secondaryError -> {
-							if (fallbackAdapter != null && !secondaryAi.equals(fallbackAiType)) {
-								log.warn("2차 AI '{}' 요약 실패, 3차 AI '{}'로 폴백합니다.", secondaryAi, fallbackAiType,
+							if (fallbackAdapter != null && !secondaryAi.equals(tertiaryAiType)) {
+								log.warn("2차 AI '{}' 요약 실패, 3차 AI '{}'로 폴백합니다.", secondaryAi, tertiaryAiType,
 									secondaryError);
-								return Mono.fromFuture(fallbackAdapter.summarize(fallbackAiType, content));
+								return Mono.fromFuture(fallbackAdapter.summarize(tertiaryAiType, content));
 							} else {
 								log.error("2차 AI 실패, 폴백할 AI가 없거나 동일합니다.", secondaryError);
 								return Mono.error(secondaryError);

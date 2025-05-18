@@ -38,7 +38,8 @@ import site.kkokkio.infra.common.exception.RetryableExternalApiException;
 @TestPropertySource(properties = {
 	"mock.enabled=false",
 	"ai.type.current=GEMINI",
-	"ai.type.backup=GEMINI" // 폴백 방지
+	"ai.type.backup=GEMINI", // 폴백 방지
+	"ai.type.tertiary=GEMINI" // 폴백 방지
 })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class GeminiAiAdapterTest {

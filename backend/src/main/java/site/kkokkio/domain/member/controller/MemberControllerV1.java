@@ -32,7 +32,7 @@ import site.kkokkio.global.exception.doc.ErrorCode;
 @Tag(name = "Member API", description = "회원 관련 기능을 제공")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/member")
+@RequestMapping("/api/v1/members")
 public class MemberControllerV1 {
 
 	private final MemberService memberService;

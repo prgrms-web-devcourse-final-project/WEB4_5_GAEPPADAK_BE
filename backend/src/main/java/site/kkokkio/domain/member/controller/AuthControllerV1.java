@@ -50,11 +50,6 @@ public class AuthControllerV1 {
 		// 로그인 서비스 호출
 		MemberLoginResponse loginResponse = authService.login(request.email(), request.passwordHash(), response);
 
-		// // JWT 토큰 쿠키에 설정
-		// jwtUtils.setJwtInCookie(loginResponse.token(), response);
-		// //
-		// jwtUtils.setRefreshTokenInCookie(loginResponse.refreshToken(), response);
-
 		return new RsData<>("200", "로그인 성공", loginResponse);
 	}
 

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.dto.NoveltyStatsDto;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourly;
@@ -16,6 +17,7 @@ import site.kkokkio.global.exception.ServiceException;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class KeywordMetricHourlyService {
 	private final KeywordMetricHourlyRepository keywordMetricHourlyRepository;
 
@@ -51,8 +53,58 @@ public class KeywordMetricHourlyService {
 		return responses;
 	}
 
-	public NoveltyStatsDto evaluateNovelty(List<Long> keywordIds) {
-		// TODO: need to implement
-		return new NoveltyStatsDto(0, List.of());
+	@Transactional
+	public NoveltyStatsDto evaluateNovelty(List<Long> topKeywordIds) {
+		int lowVariationCount = 0;
+		List<Long> postableIds = new ArrayList<>();
+
+		for (Long keywordId : topKeywordIds) {
+			int score = 0;
+			boolean lowVariation = false;
+			int noPostStreak = 0;
+			List<KeywordMetricHourly> allMetric = keywordMetricHourlyRepository
+				.findById_KeywordIdOrderById_BucketAtDesc(keywordId);
+
+			if (allMetric.size() >= 2) {
+				KeywordMetricHourly currentMetric = allMetric.get(0);
+
+				// rankDelta, weightedNovelty, getNoPostStreak를 종합으로 고려하여 score 작성
+				score += (int)(currentMetric.getRankDelta()/100);
+				score += (int)(currentMetric.getWeightedNovelty());
+				score += currentMetric.getNoPostStreak();
+
+				// 낮은 변동성 판단, 종합 10점 미만일 시 신규성이 낮다고 판단되어 포스트 생성 제외
+				if (score < 10) {
+					log.info("낮은 변동성 : 생성하지 않을 포스트의 키워드 id {}", keywordId);
+					lowVariation = true;
+					noPostStreak = currentMetric.getNoPostStreak() + 1;
+					lowVariationCount++;
+				} else {
+					log.info("높은 변동성 : 생성할 포스트의 키워드 id {}", keywordId);
+					postableIds.add(keywordId);
+				}
+
+				// 최종 스코어 (신규성 스코어 우선 / 신규성 스코어가 같을 시 검색량 우선하도록 score * 10000 삽입)
+				KeywordMetricHourly current = KeywordMetricHourly.builder()
+					.id(currentMetric.getId())
+					.keyword(currentMetric.getKeyword())
+					.post(currentMetric.getPost())
+					.volume(currentMetric.getVolume())
+					.score((score * 10000) + currentMetric.getVolume())
+					.rankDelta(currentMetric.getRankDelta())
+					.weightedNovelty(currentMetric.getWeightedNovelty())
+					.noPostStreak(noPostStreak)
+					.noveltyRatio(currentMetric.getNoveltyRatio())
+					.weightedNovelty(currentMetric.getWeightedNovelty())
+					.lowVariation(lowVariation).build();
+
+				keywordMetricHourlyRepository.save(current); // lowVariation 업데이트
+			} else {
+				// (데이터가 없는 경우) 포스팅 대상으로 추가
+				postableIds.add(keywordId);
+			}
+		}
+
+		return new NoveltyStatsDto(lowVariationCount, postableIds);
 	}
 }

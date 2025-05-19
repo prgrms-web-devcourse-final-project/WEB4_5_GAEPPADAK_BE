@@ -2,6 +2,7 @@ package site.kkokkio.domain.keyword.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -26,4 +27,8 @@ public interface KeywordMetricHourlyRepository extends JpaRepository<KeywordMetr
 		""",
 		nativeQuery = true)
 	List<KeywordMetricHourly> findTop10HourlyMetricsClosestToNowNative(@Param("now") LocalDateTime now);
+
+	List<KeywordMetricHourly> findById_KeywordIdOrderById_BucketAtDesc(Long keywordId);
+
+	Optional<KeywordMetricHourly> findTop1ById_KeywordIdAndId_BucketAtLessThanOrderById_BucketAtDesc(Long keywordId, LocalDateTime bucketAt);
 }

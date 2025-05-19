@@ -44,15 +44,15 @@ public class EvaluateNoveltyStepConfig {
 
 				// Top-10 키워드 ID 가져오기
 				@SuppressWarnings("unchecked")
-				List<Long> topKeywordIds = (List<Long>)jobEc.get(JC_TOP_IDS);
+				List<Long> topKeywordIds = (List<Long>)jobEc.get(JC_TOP_KEYWORD_IDS);
 
 				// 1) Novelty 계산 & keyword_metric_hourly UPDATE
 				NoveltyStatsDto ns = keywordMetricHourlyService.evaluateNovelty(topKeywordIds);
 				int lowVarCnt = ns.lowVariationCount();
 
 				// 2) low_variation = false 인 키워드만 다음 Step 전달
-				jobEc.put(JC_POSTABLE_IDS, ns.postableIds());
-				jobEc.putInt(JC_POSTABLE_COUNT, ns.postableIds().size());
+				jobEc.put(JC_POSTABLE_KEYWORD_IDS, ns.postableIds());
+				jobEc.putInt(JC_POSTABLE_KEYWORD_COUNT, ns.postableIds().size());
 
 				// 3) StepExecutionContext 업데이트
 				stepEc.putInt(SC_NOVELTY_SKIPPED, lowVarCnt);   // Counter

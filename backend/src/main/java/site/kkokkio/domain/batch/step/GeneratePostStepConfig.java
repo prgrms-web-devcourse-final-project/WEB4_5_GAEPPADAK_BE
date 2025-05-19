@@ -43,7 +43,7 @@ public class GeneratePostStepConfig {
 
 				// 대상 키워드(id) 목록
 				@SuppressWarnings("unchecked")
-				List<Long> ids = (List<Long>)jobEc.get(JC_POSTABLE_IDS);
+				List<Long> ids = (List<Long>)jobEc.get(JC_POSTABLE_KEYWORD_IDS);
 
 				// Post 생성 (신규 Source ↔ LLM 요약)
 				List<Long> newPostIds = postService.generatePosts(ids);

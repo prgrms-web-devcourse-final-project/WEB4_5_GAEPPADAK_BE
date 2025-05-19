@@ -67,7 +67,6 @@ public class KeywordMetricHourlyService {
 
 			if (allMetric.size() >= 2) {
 				KeywordMetricHourly currentMetric = allMetric.get(0);
-				System.out.println(keywordId + "번의 키워드 : " + currentMetric.getKeyword().getText() + " bucketAt : "+currentMetric.getId().getBucketAt());
 
 				// rankDelta, weightedNovelty, getNoPostStreak를 종합으로 고려하여 score 작성
 				score += (int)(currentMetric.getRankDelta()/100);

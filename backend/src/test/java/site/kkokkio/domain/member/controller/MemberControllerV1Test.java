@@ -95,7 +95,7 @@ class MemberControllerV1Test {
 			""";
 
 		// when & then
-		mockMvc.perform(post("/api/v1/member/signup")
+		mockMvc.perform(post("/api/v1/members/signup")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(signupJson))
 			.andExpect(status().isOk())
@@ -126,7 +126,7 @@ class MemberControllerV1Test {
 			.build();
 
 		// when & then
-		mockMvc.perform(get("/api/v1/member/me")
+		mockMvc.perform(get("/api/v1/members/me")
 				.with(user(new CustomUserDetails(member.getEmail(), member.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(APPLICATION_JSON))
@@ -153,7 +153,7 @@ class MemberControllerV1Test {
 			.build();
 
 		// when & then
-		mockMvc.perform(get("/api/v1/member/me")
+		mockMvc.perform(get("/api/v1/members/me")
 				.with(user(new CustomUserDetails(member.getEmail(), member.getRole().toString(), true)))
 				.with(csrf())
 				.accept(MediaType.APPLICATION_JSON))
@@ -189,7 +189,7 @@ class MemberControllerV1Test {
 		String updateJson = objectMapper.writeValueAsString(request);
 
 		// when & then
-		mockMvc.perform(patch("/api/v1/member/me")
+		mockMvc.perform(patch("/api/v1/members/me")
 				.with(user(new CustomUserDetails(
 					member.getEmail(), member.getRole().toString(), member.isEmailVerified())))
 				.with(csrf())
@@ -227,7 +227,7 @@ class MemberControllerV1Test {
 		String updateJson = objectMapper.writeValueAsString(request);
 
 		// when & then
-		mockMvc.perform(patch("/api/v1/member/me")
+		mockMvc.perform(patch("/api/v1/members/me")
 				.with(user(new CustomUserDetails(
 					member.getEmail(), member.getRole().toString(), member.isEmailVerified())))
 				.with(csrf())
@@ -254,7 +254,7 @@ class MemberControllerV1Test {
 			.build();
 
 		// when & then
-		mockMvc.perform(delete("/api/v1/member/me")
+		mockMvc.perform(delete("/api/v1/members/me")
 				.with(user(new CustomUserDetails(member.getEmail(), member.getRole().toString(), true)))
 				.with(csrf())
 				.contentType(MediaType.APPLICATION_JSON))
@@ -275,7 +275,7 @@ class MemberControllerV1Test {
 		String json = objectMapper.writeValueAsString(req);
 
 		// when & then
-		mockMvc.perform(patch("/api/v1/member/password")
+		mockMvc.perform(patch("/api/v1/members/password")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(json))
 			.andExpect(status().isOk())
@@ -296,7 +296,7 @@ class MemberControllerV1Test {
 		String json = objectMapper.writeValueAsString(req);
 
 		// when & then
-		mockMvc.perform(patch("/api/v1/member/password")
+		mockMvc.perform(patch("/api/v1/members/password")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(json))
 			.andExpect(status().isUnauthorized())
@@ -317,7 +317,7 @@ class MemberControllerV1Test {
 		String json = objectMapper.writeValueAsString(req);
 
 		// when & then
-		mockMvc.perform(patch("/api/v1/member/password")
+		mockMvc.perform(patch("/api/v1/members/password")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(json))
 			.andExpect(status().isNotFound())

@@ -106,20 +106,13 @@ public class KeywordMetricHourlyServiceTest {
 	}
 
 	@Test
-	@DisplayName("신규성 평가 - 낮은 변동성")
-	void evaluateNovelty_LowVariation() throws Exception {
+	@DisplayName("신규성 점수 평가 - 낮은 변동성")
+	void scoreNoveltyEvaluation_LowVariation() throws Exception {
 		// given
 		Long keywordId = 1L;
 		Keyword keyword = Keyword.builder().id(keywordId).text("테스트 키워드").build();
-		KeywordMetricHourlyId id = KeywordMetricHourlyId.builder()
-			.keywordId(keywordId)
-			.bucketAt(LocalDateTime.now(ZoneId.of("UTC")))
-			.platform(Platform.GOOGLE_TREND)
-			.build();
-
-		// 0.5 + 3 + 1 = 4.5 (score 10 미만 / 낮은 변동성)
 		KeywordMetricHourly currentMetric = KeywordMetricHourly.builder()
-			.id(id)
+			.id(KeywordMetricHourlyId.builder().keywordId(keywordId).bucketAt(LocalDateTime.now(ZoneId.of("UTC"))).platform(Platform.GOOGLE_TREND).build())
 			.keyword(keyword)
 			.rankDelta(50.0)
 			.weightedNovelty(3.0)
@@ -127,40 +120,32 @@ public class KeywordMetricHourlyServiceTest {
 			.volume(100)
 			.noveltyRatio(0.5)
 			.build();
-		List<KeywordMetricHourly> allMetric = List.of(currentMetric, KeywordMetricHourly.builder().build()); // size >= 2 충족
-		when(keywordMetricHourlyRepository.findById_KeywordIdOrderById_BucketAtDesc(keywordId)).thenReturn(allMetric);
-		when(keywordMetricHourlyRepository.save(any(KeywordMetricHourly.class))).thenReturn(currentMetric);
+		List<Long> postableIds = new ArrayList<>();
+		ArgumentCaptor<KeywordMetricHourly> metricCaptor = ArgumentCaptor.forClass(KeywordMetricHourly.class);
+		when(keywordMetricHourlyRepository.save(metricCaptor.capture())).thenReturn(currentMetric);
 
 		// when
-		NoveltyStatsDto result = keywordMetricHourlyService.evaluateNovelty(List.of(keywordId));
+		Method scoreNoveltyEvaluationMethod = KeywordMetricHourlyService.class.getDeclaredMethod("scoreNoveltyEvaluation", KeywordMetricHourly.class, List.class);
+		scoreNoveltyEvaluationMethod.setAccessible(true);
+		boolean lowVariationResult = (boolean) scoreNoveltyEvaluationMethod.invoke(keywordMetricHourlyService, currentMetric, postableIds);
 
 		// then
-		assertThat(result.lowVariationCount()).isEqualTo(1);
-		assertThat(result.postableIds()).isEmpty();
-		ArgumentCaptor<KeywordMetricHourly> metricCaptor = ArgumentCaptor.forClass(KeywordMetricHourly.class);
-		verify(keywordMetricHourlyRepository, times(1)).save(metricCaptor.capture());
+		assertThat(lowVariationResult).isTrue();
+		assertThat(postableIds).isEmpty();
 		KeywordMetricHourly savedMetric = metricCaptor.getValue();
-		// score 10 미만 시 lowVariation은 true
 		assertThat(savedMetric.isLowVariation()).isTrue();
 		assertThat(savedMetric.getNoPostStreak()).isEqualTo(2);
 		assertThat(savedMetric.getScore()).isEqualTo(( (int)(50.0/100) + (int)(3.0) + 1) * 10000 + 100);
 	}
 
 	@Test
-	@DisplayName("신규성 평가 - 높은 변동성")
-	void evaluateNovelty_HighVariation() throws Exception {
+	@DisplayName("신규성 점수 평가 - 높은 변동성")
+	void scoreNoveltyEvaluation_HighVariation() throws Exception {
 		// given
 		Long keywordId = 1L;
 		Keyword keyword = Keyword.builder().id(keywordId).text("테스트 키워드").build();
-		KeywordMetricHourlyId id = KeywordMetricHourlyId.builder()
-			.keywordId(keywordId)
-			.bucketAt(LocalDateTime.now(ZoneId.of("UTC")))
-			.platform(Platform.GOOGLE_TREND)
-			.build();
-
-		// 5 + 7 + 3 = 15 (score 10 이상 / 높은 변동성)
 		KeywordMetricHourly currentMetric = KeywordMetricHourly.builder()
-			.id(id)
+			.id(KeywordMetricHourlyId.builder().keywordId(keywordId).bucketAt(LocalDateTime.now(ZoneId.of("UTC"))).platform(Platform.GOOGLE_TREND).build())
 			.keyword(keyword)
 			.rankDelta(500.0)
 			.weightedNovelty(7.0)
@@ -168,20 +153,19 @@ public class KeywordMetricHourlyServiceTest {
 			.volume(200)
 			.noveltyRatio(0.8)
 			.build();
-		List<KeywordMetricHourly> allMetric = List.of(currentMetric, KeywordMetricHourly.builder().build()); // size >= 2 충족
-		when(keywordMetricHourlyRepository.findById_KeywordIdOrderById_BucketAtDesc(keywordId)).thenReturn(allMetric);
-		when(keywordMetricHourlyRepository.save(any(KeywordMetricHourly.class))).thenReturn(currentMetric);
+		List<Long> postableIds = new ArrayList<>();
+		ArgumentCaptor<KeywordMetricHourly> metricCaptor = ArgumentCaptor.forClass(KeywordMetricHourly.class);
+		when(keywordMetricHourlyRepository.save(metricCaptor.capture())).thenReturn(currentMetric);
 
 		// when
-		NoveltyStatsDto result = keywordMetricHourlyService.evaluateNovelty(List.of(keywordId));
+		Method scoreNoveltyEvaluationMethod = KeywordMetricHourlyService.class.getDeclaredMethod("scoreNoveltyEvaluation", KeywordMetricHourly.class, List.class);
+		scoreNoveltyEvaluationMethod.setAccessible(true);
+		boolean lowVariationResult = (boolean) scoreNoveltyEvaluationMethod.invoke(keywordMetricHourlyService, currentMetric, postableIds);
 
 		// then
-		assertThat(result.lowVariationCount()).isZero();
-		assertThat(result.postableIds()).containsExactly(keywordId);
-		ArgumentCaptor<KeywordMetricHourly> metricCaptor = ArgumentCaptor.forClass(KeywordMetricHourly.class);
-		verify(keywordMetricHourlyRepository, times(1)).save(metricCaptor.capture());
+		assertThat(lowVariationResult).isFalse();
+		assertThat(postableIds).containsExactly(keywordId);
 		KeywordMetricHourly savedMetric = metricCaptor.getValue();
-		// score 10 이상 시 lowVariation은 false
 		assertThat(savedMetric.isLowVariation()).isFalse();
 		assertThat(savedMetric.getNoPostStreak()).isZero();
 		assertThat(savedMetric.getScore()).isEqualTo(( (int)(500.0/100) + (int)(7.0) + 3) * 10000 + 200);

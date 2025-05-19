@@ -1,137 +1,181 @@
 # WEB4_5_GAEPPADAK_BE
 
-프로그래머스 백엔드 데브코스 4기 5회차 4팀 최종 프로젝트
+### 꼬끼오(KKokkio) - 뉴스 속보 및 트렌드 알림 서비스
+
+> Programmers 백엔드 데브코스 4기 5회차 4팀 **최종 프로젝트** <br> _Real-time multi-source trend aggregation & summarization platform_
+
+<br>
+
+---
 
 ## 👥 Team Introduction
 
 | <img src="https://avatars.githubusercontent.com/u/84301295?v=4" width="100"> | <img src="https://avatars.githubusercontent.com/u/69628269?v=4" width="100"> | <img src="https://avatars.githubusercontent.com/u/15260002?v=4" width="100"> | <img src="https://avatars.githubusercontent.com/u/78626811?v=4" width="100"> | <img src="https://avatars.githubusercontent.com/u/70743878?v=4" width="100"> | <img src="https://avatars.githubusercontent.com/u/115456416?v=4" width="100"> |
-|:----------------------------------------------------------------------------:|:----------------------------------------------------------------------------:|:----------------------------------------------------------------------------:|:----------------------------------------------------------------------------:|:----------------------------------------------------------------------------:|:-----------------------------------------------------------------------------:|
-|    이하은 <br> [haeun9988](https://github.com/haeun9988) <br> Product Owner     |    이화영 <br> [2hwayoung](https://github.com/2hwayoung) <br> Backend Leader    |             김경래 <br> [godaos](https://github.com/godaos) <br> 비고             |             김하연 <br> [xaxeon](https://github.com/xaxeon) <br> 비고             |   이태경 <br> [dlfjsld1](https://github.com/dlfjsld1) <br> AWS Administrator    |         윤상민 <br> [skvhffpdyd](https://github.com/skvhffpdyd) <br> 비고          |
+| :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------: | :---------------------------------------------------------------------------: |
+|   이하은 <br> [haeun9988](https://github.com/haeun9988) <br> Product Owner   |  이화영 <br> [2hwayoung](https://github.com/2hwayoung) <br> Backend Leader   |          김경래 <br> [godaos](https://github.com/godaos) <br> 비고           |          김하연 <br> [xaxeon](https://github.com/xaxeon) <br> 비고           |  이태경 <br> [dlfjsld1](https://github.com/dlfjsld1) <br> AWS Administrator  |       윤상민 <br> [skvhffpdyd](https://github.com/skvhffpdyd) <br> 비고       |
+
+<br>
+
+---
 
 ## 📊 Project Overview
 
 ### 프로젝트 이름: **꼬끼오(KKokkio)**
 
-다양한 뉴스 채널의 실시간 속보 데이터를 수집하고, 급상승 트렌드 키워드와 주요 이슈를 탐지하여 사용자에게 여론의 흐름을 시각화하고 요약과 알림을 제공하는 서비스
+다양한 뉴스 채널의 실시간 속보 데이터를 수집하고, 급상승 트렌드 키워드와 주요 이슈를 탐지하여 사용자에게 여론의 흐름을 시각화하고 요약·알림을 제공하는 서비스입니다.
 
 ### 기획 의도
 
-알고리즘 기반 개인화 서비스로 인해 발생하는 확증 편향과 에코챔버 문제를 해결하고자, 실시간 인기 검색어를 중심으로 다수의 사회적 관심사를 반영한 정보를 제공하여 사용자의 시야를 넓히고 관심사를 확장시키는
-서비스입니다.
+알고리즘 기반 개인화 서비스로 인한 **확증 편향(Confirmation Bias**)과 **에코챔버(Echo Chamber)** 현상을 완화하기 위해, “많은 사람이 동시에 주목하는 이슈”에 기반한 뉴스를 균형 있게 노출합니다.
 
-- 실시간 검색어를 기준으로 현재 인기 있는 주제에 대한 정보를 찾을 수 있도록 도와준다.
-- 많은 서비스가 개인의 관심사에 대한 알고리즘을 바탕으로 정보를 제공하는데, 많은 사람들이 관심있는 주제를 토대로 정보를 제공
-- 알고리즘에 갇힌 사회확증편향 문제를 해소
-- 한정된 정보만 소비하게 되는 에코챔버 현상을 완화하고, 다양한 관점에 노출되도록 돕기 위함
-
-### 메인 기능
-
-- **구글 트렌드, 뉴스 Naver API에서 실시간으로 데이터 수집**
-- **데이터 기반 인기 키워드 추출**
-- **인기 키워드를 기반으로 출처(기사, 유튜브 링크) 제공**
-- **키워드 기반 AI 내용 요약**
-- **사용자 인증**
-- **콘텐츠 별 사용자 댓글 기능**
+- 실시간 인기 검색어 기반으로 현재 사회적 관심사를 한눈에 파악
+- 개인화 추천의 편향을 줄이고, 다양한 관점의 정보를 탐색하도록 유도
+- SNS(인스타·유튜브 숏폼 등) 확장 가능성을 고려한 키워드 중심 설계
 
 ### 기술적 목표
 
-**“실시간 대용량 외부 데이터를 안정적으로 수집·가공·전달하는 백엔드 파이프라인 구축”**
+> **“실시간 대용량 외부 데이터를 안정적으로 수집·가공·전달하는 백엔드 파이프라인 구축”**
+>
+> - Google Trends·NewsAPI·YouTube API 등 실시간 외부 데이터 연동
+> - Spring Batch 스케줄링을 활용해 데이터 수집 및 전처리 워크플로우 자동화
+> - LLM(Gemini·chatGPT·Claude) 활용 AI 요약 기능 내재화
 
-- Google Open API 및 다양한 뉴스/검색 API를 활용한 실시간 외부 데이터 수집
-- 비동기 메시징으로 고트래픽 상황에서도 유실 없이 처리
-- 스케줄링을 활용해 데이터 수집 및 전처리 워크플로우 자동화
-- 비정형 뉴스 데이터를 구조화하고 저장하는 데이터 가공 로직 설계
+<br>
 
-## 🌐 서비스 접속 주소 (Backend Endpoints)
+---
 
-배포된 백엔드 서버의 접속 주소입니다.
+## 🚀 핵심 기능 (Key Features)
 
-* **개발 환경 (Development)**: `https://api.deploy.kkokkio.site`
-* **운영 환경 (Production)**: `https://api.prd.kkokkio.site`
+| 기능                      | 설명                                                                |
+| ------------------------- | ------------------------------------------------------------------- |
+| 🔑 **실시간 키워드 수집** | Google Trends RSS에서 매시간 인기 키워드 Top-10 수집                |
+| 📺 **연관 출처 매칭**     | Naver News & YouTube API로 뉴스·영상 10건씩 연결                    |
+| 📰 **AI 포스트 생성**     | 각 키워드에 대해 Gemini / chatGPT / Claude 로 요약 포스트 자동 작성 |
+| 💬 **댓글 & 리액션**      | 로그인 사용자의 댓글 CRUD, 좋아요, 신고                             |
+| 🛠 **관리자 RBAC**         | 회원·포스트·댓글·신고 통합 관리 대시보드                            |
 
-Swagger 문서는 각 주소에 `/swagger-ui/index.html` 경로를 붙여 접근할 수 있습니다.
+<br>
 
-* **개발 환경 Swagger**: `https://api.deploy.kkokkio.site/swagger-ui/index.html`
-* **운영 환경 Swagger**: `https://api.prd.kkokkio.site/swagger-ui/index.html`
+---
+
+## 🌐 서비스 접속 주소 (Endpoints)
+
+### 꼬끼오 웹사이트: https://web.kkokkio.site/
+
+> 아래는 배포된 백엔드 서버의 접속 주소입니다.
+>
+> | 환경     | API Base URL                      | Swagger UI                                              |
+> | -------- | --------------------------------- | ------------------------------------------------------- |
+> | **개발** | `https://api.deploy.kkokkio.site` | `https://api.deploy.kkokkio.site/swagger-ui/index.html` |
+> | **운영** | `https://api.prd.kkokkio.site`    | `https://api.prd.kkokkio.site/swagger-ui/index.html`    |
+
+<br>
+
+---
 
 ## 🛠️ Technology Stack
 
-#### 🎨 Frontend
+### 🖥️ Backend & Infra
 
-<div> 
-  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white"/>
-  <img src="https://img.shields.io/badge/creatie.ai-5C2D91?style=for-the-badge&logoColor=white"/>
-</div>
+| Layer          | Stack & Version                                                   |
+| -------------- | ----------------------------------------------------------------- |
+| **Language**   | Java 21                                                           |
+| **Framework**  | Spring Boot 3.4 · Spring Batch 5.2 · Spring Data JPA 3.4          |
+| **Data**       | MySQL 8.0 · Redis 8                                               |
+| **Monitoring** | Micrometer 1.14 · Prometheus 3.4 · Grafana 12                     |
+| **CI/CD**      | GitHub Actions · Docker 28 · AWS ECR & RDS · NGINX · Flyway 10.20 |
+| **Secrets**    | Doppler CLI                                                       |
+| **IaC**        | Terraform 1.11                                                    |
+| **Docs**       | Swagger 3.1                                                       |
 
-#### 🛠 Backend
+### 🎨 Frontend
 
-<div> 
-  <img src="https://img.shields.io/badge/Java-007396?style=for-the-badge&logo=java&logoColor=white"/>
-  <img src="https://img.shields.io/badge/SpringBoot-6DB33F?style=for-the-badge&logo=springboot&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black"/>
-  <img src="https://img.shields.io/badge/Apache%20Airflow-017CEE?style=for-the-badge&logo=apacheairflow&logoColor=white"/>
-</div>
+| Layer         | Stack & Version                                                                                                                         |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **Framework** | Next.js 15                                                                                                                              |
+| **Language**  | TypeScript 5.8                                                                                                                          |
+| **WireFrame** | [FigZam 링크 바로가기](https://www.figma.com/board/T9dM5oVh1Gox1FVbHDyriL/%EA%B0%9C%EB%B9%A0%EB%8B%AD?node-id=0-1&t=KBHz7octPCnhTELP-1) |
 
-#### 🗄 Database
+### 📶 Open APIs & External Services
 
-<div> 
-  <img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white"/>
-  <img src="https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white"/>
-</div>
+| Service           | Version / Notes             |
+| ----------------- | --------------------------- |
+| Google Trends RSS | -                           |
+| Naver News API    | v1/search                   |
+| YouTube Data API  | v3/search                   |
+| ChatGPT LLM       | gpt-4o-mini(2024-07-18)     |
+| Google Gemini LLM | gemini-2.0-flash            |
+| Claude LLM        | claude-3-haiku-(2024-03-07) |
 
-#### 🔧 IDLE & Tool
+### 🛠 Dev & Collaboration Tools
 
-<div> 
-  <img src="https://img.shields.io/badge/IntelliJ%20IDEA-000000?style=for-the-badge&logo=intellijidea&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Gradle-02303A?style=for-the-badge&logo=gradle&logoColor=white"/>
-</div>
+| Tool          | Notes                                                                                           |
+| ------------- | ----------------------------------------------------------------------------------------------- |
+| IntelliJ IDEA | 2024.1 Ultimate                                                                                 |
+| Gradle        | 8.14                                                                                            |
+| GitHub        | -                                                                                               |
+| Notion        | [Notion 페이지 바로 가기](https://www.notion.so/Team-04-1db3550b7b5580849242c1cd0985e39c?pvs=4) |
+| Slack         | -                                                                                               |
+| Discord       | -                                                                                               |
+| Zep           | -                                                                                               |
+| Google Meet   | -                                                                                               |
 
-#### 📶 OPEN API
+<br>
 
-<div> 
-    <img src="https://img.shields.io/badge/ChatGPT%20API-412991?style=for-the-badge&logo=openai&logoColor=white"/> 
-    <img src="https://img.shields.io/badge/News%20API-0A0A0A?style=for-the-badge&logoColor=white"/>
-    <img src="https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white"/>
-    <img src="https://img.shields.io/badge/Google%20Trends-4285F4?style=for-the-badge&logoColor=white"/>
-    <img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white"/>
-</div>
+---
 
-#### 🚀 Deployment & Infra
+## 🏗️ 시스템 아키텍처 (System Architecture)
 
-<div> 
-  <img src="https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black"/>
-  <img src="https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white"/>
-  <img src="https://img.shields.io/badge/AWS-232F3E?style=for-the-badge&logo=amazonwebservices&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white"/>
-  <img src="https://img.shields.io/badge/GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white"/>
-</div>
+![image](https://github.com/user-attachments/assets/ab8aac7a-ee14-4a5a-a7eb-1fb01c4d61b0)
 
-#### 🖥️ Monitoring
+<br>
 
-<div> 
-    <img src="https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus&logoColor=white"/>
-    <img src="https://img.shields.io/badge/Grafana-F46800?style=for-the-badge&logo=grafana&logoColor=white"/>
-</div>
+---
 
-#### 🗂️ Version management and collaboration tools
+## 🛠 데이터 파이프라인 (Data Pipeline)
 
-<div> 
-  <img src="https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Notion-%23000000.svg?style=for-the-badge&logo=notion&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Slack-4A154B?style=for-the-badge&logo=slack&logoColor=white)"/>
-  <img src="https://img.shields.io/badge/Zep-6001D2?style=for-the-badge&logo=Zep&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Google%20Meet-00897B?style=for-the-badge&logo=googlemeet&logoColor=white"/>
-</div>
+```mermaid
+flowchart LR
+		    S1[Step 1: Google RSS 수집]
+		    S1 --> SPL{{외부 출처 수집}}
+		    SPL --> N1[Step 2-1: Naver News 수집]
+		    SPL --> V1[Step 2-2: YouTube 수집]
+		    N1 --> S3[Step 3: 신규성 평가]
+		    V1 --> S3
+		    S3 --> DEC{{스킵 여부}}
+		    DEC -- SKIP_POST --> S6[END]
+		    DEC -- CONTINUE --> S4[Step 4: LLM 포스트 생성]
+		    S4 --> S5[Step 5: 신규 포스트 Redis Cache]
+		    S5 --> S6
+```
 
-## System Architecture & Deployment
+### 📑 요약 테이블
 
-**추가 예정**
+| 단계                         | 기술                  | 주요 작업                         | Metrics                         |
+| ---------------------------- | --------------------- | --------------------------------- | ------------------------------- |
+| **1. fetchTrendingKeywords** | Google Trend RSS      | RSS 파싱 후 Top10 키워드 수집     | -                               |
+| **2. searchSources**         | NewsAPI/YouTube API   | 비동기 병렬 호출로 뉴스·영상 수집 | `fetched_total`, `failed_total` |
+| **3. evaluateNovelty**       | Spring Batch Decider  | 중복·저변동 키워드 필터링         | `novelty_lowvar_total`          |
+| **4. generatePost**          | Gemini/chatGPT/Claude | 프롬프트 → LLM 요약문 생성        | `post_added_total`              |
+| **5. cachePost**             | Redis                 | Hot-Post 캐시 적재                | `post_cached_total`             |
+
+### 모니터링 (Grafana)
+
+> Grafana dashboard 템플릿은 [`infra/grafana/dashboard/batch.json`](infra/grafana/dashboard/batch.json) 참조 .
+
+![image](https://github.com/user-attachments/assets/accff231-b04a-40de-bf7d-e214846b41d7)
+
+<br>
+
+---
 
 ## ERD
 
-**추가 예정**
+![image](https://github.com/user-attachments/assets/d521071e-82ab-447c-b1c0-ccb9da0aa90f)
+
+<br>
+
+---
 
 ## 🛠️ 개발 환경 설정 (Development Setup)
 
@@ -145,22 +189,16 @@ git clone https://github.com/prgrms-web-devcourse-final-project/WEB4_5_GAEPPADAK
 ✅ Using Doppler (Recommended)
 
 > Doppler는 .env 환경 변수 파일을 안전하게 관리해주는 도구입니다.
-> 현재 프로젝트는 backend와 infra 두 폴더 안에서 Doppler를 사용하도록 구성되어 있습니다.
-> 각각의 폴더 안에서 npm run doppler 명령어를 별도로 실행해야 합니다.
+> 현재 프로젝트는 backend와 infra 두 폴더 안에서 Doppler를 사용하도록 구성되어 있습니다.  
 > 처음 실행하는 경우, doppler setup으로 설정할 프로젝트와 환경을 먼저 선택해 주세요.
 
 ```bash
-# Install Doppler CLI
+# Doppler CLI 설치 (macOS)
 brew install dopplerhq/cli/doppler
 
 # Login & Setup
 doppler login
-## Select an option: Scope login to current directory
-## Open the authorization page in your browser?: Y
-## Your auth code is: {CODE} -> Enter in your browser
-
-doppler setup
-## Use settings from repo config file (doppler.yaml) : Y
+doppler setup # doppler.yaml 로 자동 설정
 
 # Run with environment loaded
 npm run doppler
@@ -169,26 +207,114 @@ npm run doppler
 **3️⃣ Run Server & Database**
 
 ```bash
-# Start MySQL & SpringBoot container with Docker Compose
+# Docker Compose 로 MySQL · Redis · Prometheus · Grafana 등 실행
 npm run docker
 
-# Monitor logs (logs are mapped locally)
-tail -f ./infra/mysql_logs/general.log
+# Spring Boot (Local profile)
+./gradlew bootRun -Pprofile=local
 
 # Reset Containers
 npm run docker:reset
 
+# Monitor logs (logs are mapped locally)
+tail -f ./infra/mysql_logs/general.log
 ```
 
-- Swagger Docs: http://localhost:8080/swagger-ui/index.html
+Swagger Docs: [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 
 **4️⃣ Generate Test Coverage Report**
 ✅JaCoCo를 사용하여 코드 테스트 커버리지 리포트를 생성합니다.
 
 ```bash
-#자동으로 테스트를 실행 후 HTML 형식의 커버리지 리포트를 생성
-#/backend 경로에서 실행
-#build/jacocoHtml/index.html 경로에서 결과 확인 가능
-./gradlew jacocoTestReport
+# 자동으로 테스트를 실행 후 HTML 형식의 커버리지 리포트를 생성
+# /backend 경로에서 실행
+./gradlew jacocoTestReport  # 결과: build/jacocoHtml/index.html
 
 ```
+
+<br>
+
+---
+
+## 🚚 배포 (Deployment)
+
+### CI/CD 워크플로우
+
+![image](https://github.com/user-attachments/assets/46a5bae5-a8dc-449d-a123-d25eff17b900)
+
+1. **Pull Request**
+
+   - `gradle test` 실행
+   - JaCoCo 커버리지 체크 (> 70%)
+
+2. **`develop` / `main` 브랜치 머지**
+
+   - GitHub Actions `deploy-common.yml` 워크플로우 호출
+   - **get-instance-id**
+
+     - AWS 자격증명 설정
+     - 태그(`Name=team04-kkokkio`, `env=${{ inputs.instance_env }}`) 기준으로 EC2 인스턴스 ID 조회
+
+   - **flyway-validate**
+
+     - SSH 터널(ℹ️ Doppler에서 받은 Bastion 정보 + `ssh-agent`)
+     - `redgate/flyway:11` 컨테이너로 RDS 마이그레이션 검증(validate & info)
+
+   - **makeTagAndRelease**
+
+     - `mathieudutour/github-tag-action`로 태그 생성 (`${{ inputs.tag_prefix }}`)
+     - `actions/create-release`로 GitHub Release 발행
+
+   - **buildImageAndPush**
+
+     - Docker Buildx 설치 → GHCR 로그인
+     - `docker/build-push-action`로 이미지 빌드 & GHCR 푸시
+     - 태그: `ghcr.io/{owner}/{repo}:${{ outputs.tag_name }}`, `:latest`
+
+   - **deploy**
+
+     - AWS SSM Send-Command를 통해 EC2에 접속
+     - `docker pull` → 기존 컨테이너 중지·제거 → `docker run --restart always`
+
+<br>
+
+---
+
+## 🧪 테스트 (Testing)
+
+| Layer         | Framework                                 | Notes                   |
+| ------------- | ----------------------------------------- | ----------------------- |
+| Unit          | JUnit 5 + Mockito 5 (`@MockitoBean`)      | Service & Utility 집중  |
+| Integration   | SpringBootTest + Testcontainers (MySQL)   | Repository & Controller |
+| E2E           | 팀원 QA                                   | 실사용자 플로우         |
+| Coverage Gate | JaCoCo & Codecov ≥ 70% line, ≥ 50% branch | CI 차단(예정)           |
+
+<br>
+
+---
+
+## 📅 프로젝트 일정 (Project Timeline)
+
+| 기간               | 스프린트 | 주요 산출물                                                      |
+| ------------------ | -------- | ---------------------------------------------------------------- |
+| 2025‑04‑28 ~ 05‑08 | **1차**  | MVP 아키텍처, 회원/인증, 키워드 수집 스케줄러, 배포 자동화       |
+| 2025‑05‑09 ~ 05‑20 | **2차**  | LLM 포스트 요약, 관리자 RBAC, 스케줄러 고도화, 모니터링 대시보드 |
+
+<br>
+
+---
+
+## 🤝 기여 가이드 (Contributing)
+
+1. Issue 생성 → `{tag}/{issueId}-{slug}` 브랜치 → PR (Squash‑merge)
+2. 리뷰어 3명 이상 승인 & GitHub Actions ✅ 통과 후 병합
+
+자세한 코딩 컨벤션·커밋 규칙은 [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) 참조 .
+
+<br>
+
+---
+
+## 📜 라이선스 (License)
+
+MIT License © 2025 **DevCourse Team “개발에 빠진 닭”**

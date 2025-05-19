@@ -160,7 +160,12 @@ management:
       application: trend-batch
       instance: ${SPRING_ACTIVE_PROFILES:test}
     enable:
+      batch: true
       scheduling: true
+    distribution:
+      percentiles-histogram:
+        spring.batch.step: true
+        spring.batch.job: true
   prometheus:
     metrics:
       export:

@@ -61,8 +61,7 @@ class BatchMetricsListenerTest {
 			io.micrometer.core.instrument.Tag.of("application", "trend-batch-test"),
 			io.micrometer.core.instrument.Tag.of("instance", "test"),
 			io.micrometer.core.instrument.Tag.of("job", "myJob"),
-			io.micrometer.core.instrument.Tag.of("step", "myStep"),
-			io.micrometer.core.instrument.Tag.of("bucket", "bucket1")
+			io.micrometer.core.instrument.Tag.of("step", "myStep")
 		);
 		DistributionSummary newsSum = registry.find(BATCH_NEWS_FETCHED)
 			.tags(baseTags).summary();

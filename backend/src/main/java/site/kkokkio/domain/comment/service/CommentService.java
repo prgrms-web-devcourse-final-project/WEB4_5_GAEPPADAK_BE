@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.comment.controller.dto.CommentCreateRequest;
+import site.kkokkio.domain.comment.controller.dto.CommentReportRequest;
 import site.kkokkio.domain.comment.dto.CommentDto;
 import site.kkokkio.domain.comment.dto.ReportedCommentSummary;
 import site.kkokkio.domain.comment.entity.Comment;
@@ -133,10 +134,10 @@ public class CommentService {
 	 * 댓글 신고 기능
 	 * @param commentId 신고 대상 댓글 ID
 	 * @param userDetails 신고하는 사용자 (인증된 사용자)
-	 * @param reason 신고 사유
+	 * @param request 신고 정보 DTO
 	 */
 	@Transactional
-	public void reportComment(Long commentId, UserDetails userDetails, ReportReason reason) {
+	public void reportComment(Long commentId, UserDetails userDetails, CommentReportRequest request) {
 
 		// 1. 신고 대상 댓글 조회
 		Comment comment = commentRepository.findById(commentId)
@@ -161,17 +162,26 @@ public class CommentService {
 			throw new ServiceException("400", "이미 신고한 댓글입니다.");
 		}
 
-		// 5. 신고 정보 생성
+		// 5. 기타 사유 선택 시 필수 입력 검증
+		if (request.reason() == ReportReason.ETC) {
+			// etcReason이 null이거나, 공백만 있거나, 비어있으면 오류
+			if (request.etcReason() == null || request.etcReason().trim().isEmpty()) {
+				throw new ServiceException("400", "기타 사유 선택 시 상세 내용을 입력해야 합니다.");
+			}
+		}
+
+		// 6. 신고 정보 생성
 		CommentReport commentReport = CommentReport.builder()
 			.comment(comment)
 			.reporter(reporter)
-			.reason(reason)
+			.reason(request.reason())
+			.etcReason(request.reason() == ReportReason.ETC ? request.etcReason().trim() : null)
 			.build();
 
-		// 6. 신고 정보 저장
+		// 7. 신고 정보 저장
 		commentReportRepository.save(commentReport);
 
-		// 7. 댓글의 신고 카운트 증가 및 저장
+		// 8. 댓글의 신고 카운트 증가 및 저장
 		comment.increaseReportCount();
 		commentRepository.save(comment);
 	}

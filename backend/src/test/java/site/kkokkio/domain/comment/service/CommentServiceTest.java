@@ -269,6 +269,8 @@ class CommentServiceTest {
 		UUID reporterId = UUID.randomUUID();
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
 
+		CommentReportRequest request = new CommentReportRequest(reportReason, null);
+
 		// 댓글 작성자 Member 모킹
 		Member commentWriter = mock(Member.class);
 		when(commentWriter.getId()).thenReturn(UUID.randomUUID());
@@ -299,7 +301,58 @@ class CommentServiceTest {
 		when(commentRepository.save(comment)).thenReturn(comment);
 
 		// Service 메서드 호출
-		commentService.reportComment(commentId, userDetails, reportReason);
+		commentService.reportComment(commentId, userDetails, request);
+
+		/// 검증
+		verify(commentRepository).findById(commentId);
+		verify(commentReportRepository).existsByCommentAndReporter(comment, reporter);
+		verify(commentReportRepository).save(any(CommentReport.class));
+		verify(commentRepository).save(comment);
+
+		assertEquals(1, comment.getReportCount());
+	}
+
+	@Test
+	@DisplayName("댓글 신고 성공 - ETC 사유 유효한 값 입력 시")
+	void test7_1_1() {
+		Long commentId = 5L;
+		UUID reporterId = UUID.randomUUID();
+		ReportReason reportReason = ReportReason.ETC;
+		String etcReasonText = "기타 상세 사유";
+
+		CommentReportRequest request = new CommentReportRequest(reportReason, etcReasonText);
+
+		// 댓글 작성자 Member 모킹
+		Member commentWriter = mock(Member.class);
+		when(commentWriter.getId()).thenReturn(UUID.randomUUID());
+
+		// 신고 대상 댓글 Comment 모킹
+		Comment comment = Comment.builder().member(commentWriter).body("댓글 내용").build();
+		ReflectionTestUtils.setField(comment, "id", commentId);
+		ReflectionTestUtils.setField(comment, "deletedAt", null);
+		ReflectionTestUtils.setField(comment, "reportCount", 0);
+
+		// commentRepository.findById 호출 시 모킹된 comment 객체 반환
+		when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+
+		// 신고하는 사용자 Member 모킹
+		Member reporter = Member.builder().build();
+		ReflectionTestUtils.setField(reporter, "id", reporterId);
+		UserDetails userDetails = mock(UserDetails.class);
+		when(userDetails.getUsername()).thenReturn("test@email.com");
+		when(memberService.findByEmail(any())).thenReturn(reporter);
+
+		// commentReportRepository.existsByCommentAndReporter 호출 시 false 반환 모킹
+		when(commentReportRepository.existsByCommentAndReporter(comment, reporter)).thenReturn(false);
+
+		// CommentReport 저장 모킹
+		when(commentReportRepository.save(any(CommentReport.class))).thenReturn(mock(CommentReport.class));
+
+		// commentRepository.save 호출 시 comment 객체 인자로 받아서 comment 객체 반환 모킹
+		when(commentRepository.save(comment)).thenReturn(comment);
+
+		// Service 메서드 호출
+		commentService.reportComment(commentId, userDetails, request);
 
 		/// 검증
 		verify(commentRepository).findById(commentId);
@@ -315,7 +368,7 @@ class CommentServiceTest {
 	void test7_1() {
 		Long commentId = 999L;
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		CommentReportRequest request = new CommentReportRequest(reportReason);
+		CommentReportRequest request = new CommentReportRequest(reportReason, null);
 		Member reporter = Member.builder().build();
 		ReflectionTestUtils.setField(reporter, "id", UUID.randomUUID());
 
@@ -324,7 +377,7 @@ class CommentServiceTest {
 
 		// ServiceException 발생 예상 및 검증
 		ServiceException exception = assertThrows(ServiceException.class, () ->
-			commentService.reportComment(commentId, any(), request.reason()));
+			commentService.reportComment(commentId, any(), request));
 
 		// 예외 메시지 및 코드 검증
 		assertEquals("404", exception.getCode());
@@ -341,7 +394,7 @@ class CommentServiceTest {
 	void test7_2() {
 		Long commentId = 2L;
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		CommentReportRequest request = new CommentReportRequest(reportReason);
+		CommentReportRequest request = new CommentReportRequest(reportReason, null);
 		Member reporter = Member.builder().build();
 		ReflectionTestUtils.setField(reporter, "id", UUID.randomUUID());
 
@@ -350,7 +403,7 @@ class CommentServiceTest {
 
 		// ServiceException 발생 예상 및 검증
 		ServiceException exception = assertThrows(ServiceException.class, () ->
-			commentService.reportComment(commentId, any(), request.reason()));
+			commentService.reportComment(commentId, any(), request));
 
 		// 예외 메시지 및 코드 검증
 		assertEquals("404", exception.getCode());
@@ -368,7 +421,7 @@ class CommentServiceTest {
 		Long commentId = 3L;
 		UUID reporterId = UUID.randomUUID();
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		CommentReportRequest request = new CommentReportRequest(reportReason);
+		CommentReportRequest request = new CommentReportRequest(reportReason, null);
 
 		// 신고하는 사용자 Member 실제 객체 생성 및 필드 설정
 		Member reporter = Member.builder().build();
@@ -387,7 +440,7 @@ class CommentServiceTest {
 
 		// ServiceException 발생 예상 및 검증
 		ServiceException exception = assertThrows(ServiceException.class, () ->
-			commentService.reportComment(commentId, userDetails, request.reason()));
+			commentService.reportComment(commentId, userDetails, request));
 
 		// 예외 메시지 및 코드 검증
 		assertEquals("403", exception.getCode());
@@ -405,7 +458,7 @@ class CommentServiceTest {
 		Long commentId = 4L;
 		UUID reporterId = UUID.randomUUID();
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		CommentReportRequest request = new CommentReportRequest(reportReason);
+		CommentReportRequest request = new CommentReportRequest(reportReason, null);
 
 		// 댓글 작성자 Member 실제 객체 생성 및 필드 설정
 		Member commentWriter = Member.builder().build();
@@ -431,7 +484,7 @@ class CommentServiceTest {
 
 		// ServiceException 발생 예상 및 검증
 		ServiceException exception = assertThrows(ServiceException.class, () ->
-			commentService.reportComment(commentId, userDetails, request.reason()));
+			commentService.reportComment(commentId, userDetails, request));
 
 		// 예외 메시지 및 코드 검증
 		assertEquals("400", exception.getCode());

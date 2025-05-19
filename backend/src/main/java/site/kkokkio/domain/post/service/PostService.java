@@ -39,6 +39,7 @@ import site.kkokkio.domain.keyword.repository.KeywordRepository;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.service.MemberService;
+import site.kkokkio.domain.post.controller.dto.PostReportRequest;
 import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.dto.ReportedPostSummary;
 import site.kkokkio.domain.post.entity.Post;
@@ -351,10 +352,10 @@ public class PostService {
 	 * 포스트 신고 기능
 	 * @param postId 신고 대상 포스트 ID
 	 * @param userDetails 신고하는 사용자
-	 * @param reason 신고 사유
+	 * @param request 신고 정보 DTO
 	 */
 	@Transactional
-	public void reportPost(Long postId, UserDetails userDetails, ReportReason reason) {
+	public void reportPost(Long postId, UserDetails userDetails, PostReportRequest request) {
 
 		// 1. 신고 대상 포스트 조회
 		Post post = postRepository.findById(postId)
@@ -374,17 +375,26 @@ public class PostService {
 			throw new ServiceException("400", "이미 신고한 포스트입니다.");
 		}
 
-		// 4. 신고 정보 생성
+		// 4. 기타 사유 선택 시 etcReason 필수 입력 검증
+		if (request.reason() == ReportReason.ETC) {
+			// etcReason이 null이거나, 공백만 있거나, 비어있으면 오류
+			if (request.etcReason() == null || request.etcReason().trim().isEmpty()) {
+				throw new ServiceException("400", "기타 사유 선택 시 상세 내용을 입력해야 합니다.");
+			}
+		}
+
+		// 5. 신고 정보 생성
 		PostReport report = PostReport.builder()
 			.post(post)
 			.reporter(reporter)
-			.reason(reason)
+			.reason(request.reason())
+			.etcReason(request.reason() == ReportReason.ETC ? request.etcReason().trim() : null)
 			.build();
 
-		// 5. 신고 정보 저장
+		// 6. 신고 정보 저장
 		postReportRepository.save(report);
 
-		// 6. 포스트의 신고 카운트 증가 및 저장
+		// 7. 포스트의 신고 카운트 증가 및 저장
 		post.incrementReportCount();
 		postRepository.save(post);
 	}

@@ -40,6 +40,7 @@ import site.kkokkio.domain.keyword.repository.KeywordRepository;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.service.MemberService;
+import site.kkokkio.domain.post.controller.dto.PostReportRequest;
 import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.dto.ReportedPostSummary;
 import site.kkokkio.domain.post.entity.Post;
@@ -325,6 +326,9 @@ public class PostServiceTest {
 		UUID reporterId = UUID.randomUUID();
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
 
+		// 신고 요청 DTO 객체 생성
+		PostReportRequest request = new PostReportRequest(reportReason, null);
+
 		// 신고 대상 포스트 실제 객체 생성 및 필드 설정
 		Post post = Post.builder().build();
 		ReflectionTestUtils.setField(post, "id", postId);
@@ -346,7 +350,50 @@ public class PostServiceTest {
 
 		/// when
 		// Service 메소드 호출 시 ReportReason Enum 값을 직접 전달
-		postService.reportPost(postId, userDetails, reportReason);
+		postService.reportPost(postId, userDetails, request);
+
+		/// 검증
+		verify(postRepository).findById(postId);
+		verify(postReportRepository).existsByPostAndReporter(post, reporter);
+		verify(postReportRepository).save(any(PostReport.class));
+		verify(postRepository).save(post);
+
+		assertEquals(1, post.getReportCount());
+	}
+
+	@Test
+	@DisplayName("포스트 신고 성공 - 기타 사유")
+	void reportPost_Success_Etc() {
+		Long postId = 5L;
+		UUID reporterId = UUID.randomUUID();
+		ReportReason reportReason = ReportReason.ETC;
+		String etcReasonText = "기타 상세 사유";
+
+		// 신고 요청 DTO 객체 생성
+		PostReportRequest request = new PostReportRequest(reportReason, etcReasonText);
+
+		// 신고 대상 포스트 실제 객체 생성 및 필드 설정
+		Post post = Post.builder().build();
+		ReflectionTestUtils.setField(post, "id", postId);
+		ReflectionTestUtils.setField(post, "deletedAt", null);
+		ReflectionTestUtils.setField(post, "reportCount", 0);
+
+		// 신고하는 사용자 Member 실제 객체 생성
+		Member reporter = Member.builder().build();
+		ReflectionTestUtils.setField(reporter, "id", reporterId);
+		given(memberService.findByEmail(any())).willReturn(reporter);
+		UserDetails userDetails = mock(UserDetails.class);
+		given(userDetails.getUsername()).willReturn("test@email.com");
+
+		// postRepository.findById 호출 시 실제 post 객체 반환
+		given(postRepository.findById(postId)).willReturn(Optional.of(post));
+
+		// postRepository.save 호출 시 실제 post 객체를 인자로 받아서 실제 post 객체 반환
+		given(postRepository.save(post)).willReturn(post);
+
+		/// when
+		// Service 메소드 호출 시 ReportReason Enum 값을 직접 전달
+		postService.reportPost(postId, userDetails, request);
 
 		/// 검증
 		verify(postRepository).findById(postId);
@@ -366,12 +413,14 @@ public class PostServiceTest {
 		Member reporter = Member.builder().build();
 		ReflectionTestUtils.setField(reporter, "id", reporterId);
 
+		PostReportRequest request = new PostReportRequest(reportReason, null);
+
 		// postRepository.findById 호출 시 Optional.empty() 반환
 		given(postRepository.findById(postId)).willReturn(Optional.empty());
 
 		/// when & then
 		// ServiceException 발생 예상 및 검증
-		assertThatThrownBy(() -> postService.reportPost(postId, any(), reportReason))
+		assertThatThrownBy(() -> postService.reportPost(postId, any(), request))
 			.isInstanceOf(ServiceException.class)
 			.hasMessageContaining("존재하지 않는 포스트입니다.");
 
@@ -394,6 +443,8 @@ public class PostServiceTest {
 		UserDetails userDetails = mock(UserDetails.class);
 		given(userDetails.getUsername()).willReturn("test@email.com");
 
+		PostReportRequest request = new PostReportRequest(reportReason, null);
+
 		// 신고 대상 포스트 실제 객체 생성 및 필드 설정
 		Post post = Post.builder().build();
 		ReflectionTestUtils.setField(post, "id", postId);
@@ -404,7 +455,7 @@ public class PostServiceTest {
 		given(postRepository.findById(postId)).willReturn(Optional.of(post));
 
 		/// when & then
-		assertThatThrownBy(() -> postService.reportPost(postId, userDetails, reportReason))
+		assertThatThrownBy(() -> postService.reportPost(postId, userDetails, request))
 			.isInstanceOf(ServiceException.class)
 			.hasMessageContaining("삭제된 포스트는 신고할 수 없습니다.");
 
@@ -421,6 +472,8 @@ public class PostServiceTest {
 		Long postId = 3L;
 		UUID reporterId = UUID.randomUUID();
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
+
+		PostReportRequest request = new PostReportRequest(reportReason, null);
 
 		// 신고 대상 포스트 실제 객체 생성
 		Post post = Post.builder().build();
@@ -443,7 +496,7 @@ public class PostServiceTest {
 
 		/// when & then
 		// ServiceException 발생 예상 및 검증
-		assertThatThrownBy(() -> postService.reportPost(postId, userDetails, reportReason))
+		assertThatThrownBy(() -> postService.reportPost(postId, userDetails, request))
 			.isInstanceOf(ServiceException.class)
 			.hasMessageContaining("이미 신고한 포스트입니다.");
 

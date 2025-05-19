@@ -82,11 +82,11 @@ public class PostControllerV2Test {
 	void reportPost_Success() throws Exception {
 		Long postId = 1L;
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		PostReportRequest request = new PostReportRequest(reportReason);
+		PostReportRequest request = new PostReportRequest(reportReason, null);
 
 		// postService.reportPost 메소드는 void 이므로 doNothing() 모킹
 		Mockito.doNothing()
-			.when(postService).reportPost(eq(postId), any(UserDetails.class), eq(request.reason()));
+			.when(postService).reportPost(eq(postId), any(UserDetails.class), eq(request));
 
 		// 인증된 사용자 모킹
 		Member mockReporter = Mockito.mock(Member.class);
@@ -104,7 +104,7 @@ public class PostControllerV2Test {
 			.andExpect(jsonPath("$.message").value("정상적으로 포스트 신고가 접수 되었습니다."));
 
 		/// 검증
-		verify(postService).reportPost(eq(postId), any(UserDetails.class), eq(request.reason()));
+		verify(postService).reportPost(eq(postId), any(UserDetails.class), eq(request));
 	}
 
 	@Test
@@ -112,11 +112,11 @@ public class PostControllerV2Test {
 	void reportPost_PostNotFound() throws Exception {
 		Long postId = 999L;
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		PostReportRequest request = new PostReportRequest(reportReason);
+		PostReportRequest request = new PostReportRequest(reportReason, null);
 
 		// ServiceException 발생 모킹
 		Mockito.doThrow(new ServiceException("404", "존재하지 않는 포스트입니다."))
-			.when(postService).reportPost(eq(postId), any(UserDetails.class), eq(request.reason()));
+			.when(postService).reportPost(eq(postId), any(UserDetails.class), eq(request));
 
 		// 인증된 사용자 모킹
 		Member mockReporter = Mockito.mock(Member.class);
@@ -139,11 +139,11 @@ public class PostControllerV2Test {
 	void reportPost_DuplicateReport() throws Exception {
 		Long postId = 2L;
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		PostReportRequest request = new PostReportRequest(reportReason);
+		PostReportRequest request = new PostReportRequest(reportReason, null);
 
 		// ServiceException 발생 모킹
 		Mockito.doThrow(new ServiceException("400", "이미 신고한 포스트입니다."))
-			.when(postService).reportPost(eq(postId), any(UserDetails.class), eq(request.reason()));
+			.when(postService).reportPost(eq(postId), any(UserDetails.class), eq(request));
 
 		// 인증된 사용자 모킹
 		Member mockReporter = Mockito.mock(Member.class);

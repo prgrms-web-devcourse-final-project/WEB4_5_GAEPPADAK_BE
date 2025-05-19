@@ -80,11 +80,11 @@ class CommentControllerV2Test {
 	void test7() throws Exception {
 		Long commentId = 1L;
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		CommentReportRequest request = new CommentReportRequest(reportReason);
+		CommentReportRequest request = new CommentReportRequest(reportReason, null);
 
 		// commentService.reportComment 메소드는 void 이므로 doNothing() 모킹
 		Mockito.doNothing()
-			.when(commentService).reportComment(eq(commentId), any(UserDetails.class), eq(request.reason()));
+			.when(commentService).reportComment(eq(commentId), any(UserDetails.class), eq(request));
 
 		// 인증된 사용자 모킹
 		Member mockReporter = mock(Member.class);
@@ -108,12 +108,12 @@ class CommentControllerV2Test {
 	void test7_1() throws Exception {
 		Long commentId = 999L;
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		CommentReportRequest request = new CommentReportRequest(reportReason);
+		CommentReportRequest request = new CommentReportRequest(reportReason, null);
 
 		// ServiceException 발생 모킹 (ErrorCode.COMMENT_NOT_FOUND 사용)
 		Mockito.doThrow(
 				new ServiceException(ErrorCode.COMMENT_NOT_FOUND.getCode(), ErrorCode.COMMENT_NOT_FOUND.getMessage()))
-			.when(commentService).reportComment(eq(commentId), any(UserDetails.class), eq(request.reason()));
+			.when(commentService).reportComment(eq(commentId), any(UserDetails.class), eq(request));
 
 		// 인증된 사용자 모킹
 		Member mockReporter = mock(Member.class);
@@ -136,11 +136,11 @@ class CommentControllerV2Test {
 	void test7_2() throws Exception {
 		Long commentId = 2L;
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		CommentReportRequest request = new CommentReportRequest(reportReason);
+		CommentReportRequest request = new CommentReportRequest(reportReason, null);
 
 		// ServiceException 발생 모킹
 		Mockito.doThrow(new ServiceException("400", "삭제된 댓글은 신고할 수 없습니다."))
-			.when(commentService).reportComment(eq(commentId), any(UserDetails.class), eq(request.reason()));
+			.when(commentService).reportComment(eq(commentId), any(UserDetails.class), eq(request));
 
 		// 인증된 사용자 모킹
 		Member mockReporter = mock(Member.class);
@@ -163,11 +163,11 @@ class CommentControllerV2Test {
 	void test7_3() throws Exception {
 		Long commentId = 3L;
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		CommentReportRequest request = new CommentReportRequest(reportReason);
+		CommentReportRequest request = new CommentReportRequest(reportReason, null);
 
 		// ServiceException 발생 모킹
 		Mockito.doThrow(new ServiceException("403", "본인의 댓글은 신고할 수 없습니다.")) // Service에서 던지는 예외와 일치시켜야 함
-			.when(commentService).reportComment(eq(commentId), any(UserDetails.class), eq(request.reason()));
+			.when(commentService).reportComment(eq(commentId), any(UserDetails.class), eq(request));
 
 		// 인증된 사용자 모킹
 		Member mockReporter = mock(Member.class);
@@ -190,11 +190,11 @@ class CommentControllerV2Test {
 	void test7_4() throws Exception {
 		Long commentId = 4L;
 		ReportReason reportReason = ReportReason.BAD_CONTENT;
-		CommentReportRequest request = new CommentReportRequest(reportReason);
+		CommentReportRequest request = new CommentReportRequest(reportReason, null);
 
 		// ServiceException 발생 모킹
 		Mockito.doThrow(new ServiceException("400", "이미 신고한 댓글입니다."))
-			.when(commentService).reportComment(eq(commentId), any(UserDetails.class), eq(request.reason()));
+			.when(commentService).reportComment(eq(commentId), any(UserDetails.class), eq(request));
 
 		// 인증된 사용자 모킹
 		Member mockReporter = mock(Member.class);

@@ -63,7 +63,7 @@ public class CommentControllerV2 {
 		@Valid @RequestBody CommentReportRequest request
 	) {
 		// Service 메서드 호출
-		commentService.reportComment(commentId, userDetails, request.reason());
+		commentService.reportComment(commentId, userDetails, request);
 
 		return new RsData<>(
 			"200",

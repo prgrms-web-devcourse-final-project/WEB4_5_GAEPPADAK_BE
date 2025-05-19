@@ -1,8 +1,6 @@
 package site.kkokkio.domain.batch.step;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.*;
 import static site.kkokkio.domain.batch.context.ExecutionContextKeys.*;
 
@@ -29,18 +27,18 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import site.kkokkio.domain.batch.context.BatchConstants;
+import site.kkokkio.domain.batch.context.ExecutionContextKeys;
 import site.kkokkio.domain.batch.listener.BatchMetricsListener;
 import site.kkokkio.domain.batch.listener.LogStepListener;
-import site.kkokkio.domain.keyword.dto.NoveltyStatsDto;
-import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
+import site.kkokkio.domain.post.service.PostService;
 import site.kkokkio.global.scheduler.HourScheduler;
 
 @SpringBootTest
 @SpringBatchTest
 @ActiveProfiles("test")
-class EvaluateNoveltyStepConfigTest {
+class GeneratePostStepConfigTest {
 
-	private static final String STEP_NAME = BatchConstants.EVALUATE_NOVELTY_STEP;
+	private static final String STEP_NAME = BatchConstants.GENERATE_POST_STEP;
 
 	@Autowired
 	private JobLauncherTestUtils jobLauncherTestUtils;
@@ -49,7 +47,7 @@ class EvaluateNoveltyStepConfigTest {
 	private Job testJob;
 
 	@MockitoBean
-	private KeywordMetricHourlyService keywordMetricHourlyService;
+	private PostService postService;
 
 	@MockitoBean
 	private BatchMetricsListener metricsListener;
@@ -63,7 +61,7 @@ class EvaluateNoveltyStepConfigTest {
 	@BeforeEach
 	void setUp() {
 		jobLauncherTestUtils.setJob(testJob);
-		reset(keywordMetricHourlyService, metricsListener, errListener, hourScheduler);
+		reset(postService, metricsListener, errListener);
 	}
 
 	@TestConfiguration
@@ -72,30 +70,27 @@ class EvaluateNoveltyStepConfigTest {
 		private JobRepository jobRepository;
 
 		@Bean
-		public Job testJob(Step evaluateNoveltyStep) {
+		public Job testJob(Step generatePostStep) {
 			return new JobBuilder("testJob", jobRepository)
-				// Job 시작 전, JC_TOP_KEYWORD_IDS 주입
+				// Job 시작 전, JC_POSTABLE_KEYWORD_IDS 주입
 				.listener(new JobExecutionListener() {
 					@Override
 					public void beforeJob(JobExecution jobExecution) {
 						jobExecution.getExecutionContext()
-							.put(JC_TOP_KEYWORD_IDS, List.of(7L, 8L, 9L));
+							.put(JC_POSTABLE_KEYWORD_IDS, List.of(11L, 22L));
 					}
 				})
-				.start(evaluateNoveltyStep)
+				.start(generatePostStep)
 				.build();
 		}
 	}
 
 	@Test
-	@DisplayName("evalutateNoveltyStep 성공")
-	void testEvaluateNovelty_Success() throws Exception {
+	@DisplayName("GeneratePostStep 성공")
+	void testGeneratePost_Success() throws Exception {
 		// given
-		NoveltyStatsDto dto = mock(NoveltyStatsDto.class);
-		when(dto.lowVariationCount()).thenReturn(2);
-		when(dto.postableIds()).thenReturn(List.of(11L, 22L));
-		when(keywordMetricHourlyService.evaluateNovelty(anyList()))
-			.thenReturn(dto);
+		when(postService.generatePosts(List.of(11L, 22L)))
+			.thenReturn(List.of(101L, 102L));
 
 		// when
 		JobExecution exec = jobLauncherTestUtils.launchJob();
@@ -104,20 +99,19 @@ class EvaluateNoveltyStepConfigTest {
 		assertThat(exec.getStatus()).isEqualTo(BatchStatus.COMPLETED);
 
 		// JobExecutionContext 검증
-		var jobCtx = exec.getExecutionContext();
 		@SuppressWarnings("unchecked")
-		List<Long> postable = (List<Long>)jobCtx.get(JC_POSTABLE_KEYWORD_IDS);
-		int count = jobCtx.getInt(JC_POSTABLE_KEYWORD_COUNT);
-		assertThat(postable).containsExactly(11L, 22L);
-		assertThat(count).isEqualTo(2);
+		List<Long> createdIds = (List<Long>)exec.getExecutionContext()
+			.get(ExecutionContextKeys.JC_NEW_POST_IDS);
+		assertThat(createdIds).containsExactly(101L, 102L);
 
 		// StepExecutionContext 검증
 		StepExecution se = exec.getStepExecutions().iterator().next();
-		int skipped = se.getExecutionContext().getInt(SC_NOVELTY_SKIPPED);
-		assertThat(skipped).isEqualTo(2);
+		int created = se.getExecutionContext()
+			.getInt(ExecutionContextKeys.SC_POST_CREATED);
+		assertThat(created).isEqualTo(2);
 
 		// service 호출 검증
-		verify(keywordMetricHourlyService, times(1)).evaluateNovelty(anyList());
+		verify(postService, times(1)).generatePosts(List.of(11L, 22L));
 
 		// listener 호출 검증
 		verify(metricsListener, times(1)).beforeStep(any(StepExecution.class));
@@ -127,14 +121,11 @@ class EvaluateNoveltyStepConfigTest {
 	}
 
 	@Test
-	@DisplayName("evalutateNoveltyStep 성공: 빈 데이터")
-	void testEvaluateNovelty_Empty() throws Exception {
+	@DisplayName("GeneratePostStep 성공: generatePosts 빈 리스트 반환")
+	void testGeneratePost_Empty() throws Exception {
 		// given
-		NoveltyStatsDto dto = mock(NoveltyStatsDto.class);
-		when(dto.lowVariationCount()).thenReturn(0);
-		when(dto.postableIds()).thenReturn(List.of());
-		when(keywordMetricHourlyService.evaluateNovelty(anyList()))
-			.thenReturn(dto);
+		when(postService.generatePosts(anyList()))
+			.thenReturn(List.of());
 
 		// when
 		JobExecution exec = jobLauncherTestUtils.launchJob();
@@ -142,22 +133,20 @@ class EvaluateNoveltyStepConfigTest {
 		// then
 		assertThat(exec.getStatus()).isEqualTo(BatchStatus.COMPLETED);
 
-		// JobExecutionContext 검증
-		var jobCtx = exec.getExecutionContext();
+		// jobExecutionContext 검증
 		@SuppressWarnings("unchecked")
-		List<Long> postable = (List<Long>)jobCtx.get(JC_POSTABLE_KEYWORD_IDS);
-		int count = jobCtx.getInt(JC_POSTABLE_KEYWORD_COUNT);
-		assertThat(postable).isEmpty();
-		assertThat(count).isZero();
+		List<Long> createdIds = (List<Long>)exec.getExecutionContext()
+			.get(ExecutionContextKeys.JC_NEW_POST_IDS);
+		assertThat(createdIds).isEmpty();
 
-		// StepExecutionContext 검증
-		int skipped = exec.getStepExecutions().iterator().next()
-			.getExecutionContext()
-			.getInt(SC_NOVELTY_SKIPPED);
-		assertThat(skipped).isZero();
+		// stepExecutionContext 검증
+		StepExecution se = exec.getStepExecutions().iterator().next();
+		int created = se.getExecutionContext()
+			.getInt(ExecutionContextKeys.SC_POST_CREATED);
+		assertThat(created).isZero();
 
 		// service 호출 검증
-		verify(keywordMetricHourlyService, times(1)).evaluateNovelty(anyList());
+		verify(postService, times(1)).generatePosts(List.of(11L, 22L));
 
 		// listener 호출 검증
 		verify(metricsListener, times(1)).afterStep(any(StepExecution.class));
@@ -165,10 +154,10 @@ class EvaluateNoveltyStepConfigTest {
 	}
 
 	@Test
-	@DisplayName("evalutateNoveltyStep 실패: 서비스 예외")
-	void testEvaluateNovelty_Failure() throws Exception {
+	@DisplayName("GeneratePostStep 실패: generatePosts 예외 발생")
+	void testGeneratePost_Failure() throws Exception {
 		// given
-		when(keywordMetricHourlyService.evaluateNovelty(anyList()))
+		when(postService.generatePosts(anyList()))
 			.thenThrow(new RuntimeException("error"));
 
 		// when
@@ -177,17 +166,38 @@ class EvaluateNoveltyStepConfigTest {
 		// then
 		assertThat(exec.getStatus()).isEqualTo(BatchStatus.FAILED);
 
-		// Context 검증
-		assertThat(exec.getExecutionContext().containsKey(JC_TOP_KEYWORD_IDS)).isTrue();
-		assertThat(exec.getExecutionContext().containsKey(JC_POSTABLE_KEYWORD_IDS)).isFalse();
-		assertThat(exec.getExecutionContext().containsKey(JC_POSTABLE_KEYWORD_COUNT)).isFalse();
+		// JobExecutionContext 검증
+		assertThat(exec.getExecutionContext().containsKey(JC_NEW_POST_IDS)).isFalse();
+
+		// StepExecutionContext 검증
+		assertThat(exec.getStepExecutions().iterator().next().getExecutionContext()
+			.containsKey(SC_POST_CREATED)).isFalse();
+
+		// service 호출 검증
+		verify(postService, times(1)).generatePosts(anyList());
 
 		// listener 호출 검증
-		verify(metricsListener, times(1)).afterStep(argThat(se ->
-			se.getStatus() == BatchStatus.FAILED
+		verify(errListener).afterStep(argThat(stepExec ->
+			stepExec.getStatus() == BatchStatus.FAILED
 		));
-		verify(errListener, times(1)).afterStep(argThat(se ->
-			se.getStatus() == BatchStatus.FAILED
-		));
+	}
+
+	@Test
+	@DisplayName("GeneratePostStep 재시도 성공(allowStartIfComplete=true): 2회 연속 실행 시도 가능")
+	void testAllowStartIfComplete() throws Exception {
+		// given
+		when(postService.generatePosts(anyList()))
+			.thenReturn(List.of(1L));
+
+		// when&then: 첫 번째 실행
+		JobExecution first = jobLauncherTestUtils.launchJob();
+		assertThat(first.getStatus()).isEqualTo(BatchStatus.COMPLETED);
+
+		// when&then: 두 번째 실행
+		JobExecution second = jobLauncherTestUtils.launchJob();
+		assertThat(second.getStatus()).isEqualTo(BatchStatus.COMPLETED);
+
+		// trendsService 두 번 호출
+		verify(postService, times(2)).generatePosts(anyList());
 	}
 }

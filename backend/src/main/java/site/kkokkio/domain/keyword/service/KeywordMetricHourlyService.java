@@ -66,12 +66,10 @@ public class KeywordMetricHourlyService {
 				.findById_KeywordIdOrderById_BucketAtDesc(keywordId);
 
 			if (allMetric.size() >= 2) {
-				KeywordMetricHourly currentMetric = allMetric.get(0);
+				KeywordMetricHourly currentMetric = allMetric.getFirst();
 
-				// rankDelta, weightedNovelty, getNoPostStreak를 종합으로 고려하여 score 작성
-				score += (int)(currentMetric.getRankDelta()/100);
-				score += (int)(currentMetric.getWeightedNovelty());
-				score += currentMetric.getNoPostStreak();
+				// RankDelta, WeightedNovelty, NoPostStreak 을 종합적으로 판단하여 점수 작성
+				score = calculateNoveltyScore(currentMetric);
 
 				// 낮은 변동성 판단, 종합 10점 미만일 시 신규성이 낮다고 판단되어 포스트 생성 제외
 				if (score < 10) {
@@ -85,20 +83,7 @@ public class KeywordMetricHourlyService {
 				}
 
 				// 최종 스코어 (신규성 스코어 우선 / 신규성 스코어가 같을 시 검색량 우선하도록 score * 10000 삽입)
-				KeywordMetricHourly current = KeywordMetricHourly.builder()
-					.id(currentMetric.getId())
-					.keyword(currentMetric.getKeyword())
-					.post(currentMetric.getPost())
-					.volume(currentMetric.getVolume())
-					.score((score * 10000) + currentMetric.getVolume())
-					.rankDelta(currentMetric.getRankDelta())
-					.weightedNovelty(currentMetric.getWeightedNovelty())
-					.noPostStreak(noPostStreak)
-					.noveltyRatio(currentMetric.getNoveltyRatio())
-					.weightedNovelty(currentMetric.getWeightedNovelty())
-					.lowVariation(lowVariation).build();
-
-				keywordMetricHourlyRepository.save(current); // lowVariation 업데이트
+				updateKeywordMetric(currentMetric, score, lowVariation, noPostStreak);
 			} else {
 				// (데이터가 없는 경우) 포스팅 대상으로 추가
 				postableIds.add(keywordId);
@@ -106,5 +91,30 @@ public class KeywordMetricHourlyService {
 		}
 
 		return new NoveltyStatsDto(lowVariationCount, postableIds);
+	}
+
+	private int calculateNoveltyScore(KeywordMetricHourly metric) {
+		int score = 0;
+		score += (int) (metric.getRankDelta() / 100);
+		score += (int) (metric.getWeightedNovelty());
+		score += metric.getNoPostStreak();
+		return score;
+	}
+
+	private void updateKeywordMetric(KeywordMetricHourly currentMetric, int noveltyScore, boolean lowVariation, int noPostStreak) {
+		KeywordMetricHourly updatedMetric = KeywordMetricHourly.builder()
+			.id(currentMetric.getId())
+			.keyword(currentMetric.getKeyword())
+			.post(currentMetric.getPost())
+			.volume(currentMetric.getVolume())
+			.score((noveltyScore * 10000) + currentMetric.getVolume())
+			.rankDelta(currentMetric.getRankDelta())
+			.weightedNovelty(currentMetric.getWeightedNovelty())
+			.noPostStreak(noPostStreak)
+			.noveltyRatio(currentMetric.getNoveltyRatio())
+			.lowVariation(lowVariation)
+			.build();
+
+		keywordMetricHourlyRepository.save(updatedMetric);
 	}
 }

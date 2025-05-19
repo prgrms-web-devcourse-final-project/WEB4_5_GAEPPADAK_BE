@@ -55,7 +55,7 @@ public class EvaluateNoveltyStepConfig {
 				jobEc.putInt(JC_POSTABLE_KEYWORD_COUNT, ns.postableIds().size());
 
 				// 3) StepExecutionContext 업데이트
-				stepEc.putInt(SC_NOVELTY_SKIPPED, lowVarCnt);   // Counter
+				stepEc.putInt(SC_NOVELTY_SKIPPED, lowVarCnt);
 
 				log.info("Evaluate novelty step completed.");
 

@@ -49,6 +49,10 @@ public class PostReport extends BaseTimeEntity {
 	@Builder.Default
 	private ReportReason reason = ReportReason.BAD_CONTENT;
 
+	// 기타 사유
+	@Column(name = "etc_reason", columnDefinition = "TEXT", nullable = true)
+	private String etcReason;
+
 	// 관리자 처리 상태 필드
 	@Enumerated(EnumType.STRING)
 	@Column(name = "status", nullable = false)

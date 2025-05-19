@@ -170,7 +170,7 @@ public class CommentService {
 			}
 		}
 
-		// 5. 신고 정보 생성
+		// 6. 신고 정보 생성
 		CommentReport commentReport = CommentReport.builder()
 			.comment(comment)
 			.reporter(reporter)
@@ -178,10 +178,10 @@ public class CommentService {
 			.etcReason(request.reason() == ReportReason.ETC ? request.etcReason().trim() : null)
 			.build();
 
-		// 6. 신고 정보 저장
+		// 7. 신고 정보 저장
 		commentReportRepository.save(commentReport);
 
-		// 7. 댓글의 신고 카운트 증가 및 저장
+		// 8. 댓글의 신고 카운트 증가 및 저장
 		comment.increaseReportCount();
 		commentRepository.save(comment);
 	}

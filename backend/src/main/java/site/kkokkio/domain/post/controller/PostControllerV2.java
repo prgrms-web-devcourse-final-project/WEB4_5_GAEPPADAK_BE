@@ -60,7 +60,7 @@ public class PostControllerV2 {
 		@Valid @RequestBody PostReportRequest request
 	) {
 		// Service 메서드 호출
-		postService.reportPost(postId, userDetails, request.reason());
+		postService.reportPost(postId, userDetails, request);
 
 		return new RsData<>(
 			"200",

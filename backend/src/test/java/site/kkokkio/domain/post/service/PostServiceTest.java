@@ -394,7 +394,7 @@ public class PostServiceTest {
 
 		/// when
 		// Service 메소드 호출 시 ReportReason Enum 값을 직접 전달
-		postService.reportPost(postId, any(), request);
+		postService.reportPost(postId, userDetails, request);
 
 		/// 검증
 		verify(postRepository).findById(postId);

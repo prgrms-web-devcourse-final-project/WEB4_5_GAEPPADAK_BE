@@ -61,7 +61,7 @@ class SearchNewsStepConfigTest {
 	@BeforeEach
 	void resetMocks() {
 		jobLauncherTestUtils.setJob(testJob);
-		reset(sourceService, metricsListener, errListener);
+		reset(sourceService, metricsListener, errListener, hourScheduler);
 	}
 
 	@TestConfiguration

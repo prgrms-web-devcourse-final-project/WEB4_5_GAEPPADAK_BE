@@ -16,9 +16,10 @@ public record SourceListResponse(
 	private record SourceList(
 		@NonNull String sourceId,
 		@NonNull String url,
-		@NonNull String thumbnailUrl,
+		String thumbnailUrl,
 		@NonNull String title
-	) {}
+	) {
+	}
 
 	public static SourceListResponse from(List<SourceDto> sources) {
 		return SourceListResponse.builder()

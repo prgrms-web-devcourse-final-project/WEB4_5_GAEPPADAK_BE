@@ -5,9 +5,7 @@ import static site.kkokkio.domain.batch.context.ExecutionContextKeys.*;
 
 import java.util.List;
 
-import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ExecutionContext;
@@ -39,23 +37,17 @@ public class FetchTrendingKeywordsStepConfig {
 		return new StepBuilder(FETCH_KEYWORDS_STEP, jobRepository)
 			.tasklet((contrib, ctx) -> {
 
-				StepExecution se = ctx.getStepContext().getStepExecution();
-				ExecutionContext jobEc = se.getJobExecution().getExecutionContext();
-				ExecutionContext stepEc = se.getExecutionContext();
-				JobParameters jp = se.getJobExecution().getJobParameters();
+				ExecutionContext jobEc = ctx.getStepContext()
+					.getStepExecution()
+					.getJobExecution()
+					.getExecutionContext();
 
-				// Google Trends 호출 + 지연(ms) 측정
-				long t0 = System.currentTimeMillis();
 				List<Keyword> keywords = trendsService.getTrendingKeywordsFromRss();
-				long latency = System.currentTimeMillis() - t0;
 
-				// JobExecutionContext 업데이트
+				// Update JobExecutionContext
 				List<Long> keywordIds = keywords.stream().map(Keyword::getId).toList();
-				jobEc.put(JC_TOP_IDS, keywordIds);
-				jobEc.putInt(JC_TOP_COUNT, keywordIds.size());
-
-				// StepExecutionContext 업데이트
-				stepEc.putLong(SC_RSS_LATENCY_MS, latency);
+				jobEc.put(JC_TOP_KEYWORD_IDS, keywordIds);
+				jobEc.putInt(JC_TOP_KEYWORD_COUNT, keywordIds.size());
 
 				return RepeatStatus.FINISHED;
 			}, transactionManager)

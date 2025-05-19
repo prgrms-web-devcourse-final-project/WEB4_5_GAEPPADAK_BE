@@ -46,7 +46,7 @@ public class CachePostStepConfig {
 				List<Long> newPostIds =
 					(List<Long>)se.getJobExecution().getExecutionContext().get(JC_NEW_POST_IDS);
 				@SuppressWarnings("unchecked")
-				List<Long> keywordIds = (List<Long>)jobEc.get(JC_POSTABLE_IDS);
+				List<Long> keywordIds = (List<Long>)jobEc.get(JC_POSTABLE_KEYWORD_IDS);
 
 				// 캐싱이 필요 없는 경우 빠른 종료
 				if (newPostIds == null || newPostIds.isEmpty()) {

@@ -23,7 +23,7 @@ public class NoveltyDeciderConfig {
 			// low-variation 키워드 유무 판정
 			@SuppressWarnings("unchecked")
 			List<Long> ids = (List<Long>)jobExec.getExecutionContext()
-				.get(JC_POSTABLE_IDS);
+				.get(JC_POSTABLE_KEYWORD_IDS);
 
 			boolean noPostNeeded = ids.isEmpty();
 

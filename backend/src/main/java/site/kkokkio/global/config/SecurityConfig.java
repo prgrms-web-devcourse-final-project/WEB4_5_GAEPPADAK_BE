@@ -106,10 +106,10 @@ public class SecurityConfig {
 		CorsConfiguration configuration = new CorsConfiguration();
 		// 모든 출처 허용 (운영 환경 배포 시 수정 필요)
 		configuration.setAllowedOriginPatterns(Arrays.asList(
-			"https://login.aleph.kr", // Todo: 임시 프론트 배포 URL1
-			"https://www.app4.qwas.shop", // Todo: 임시 프론트 배포 URL2
+			// "https://login.aleph.kr", // 임시 프론트 배포 URL1
+			// "https://www.app4.qwas.shop", // 임시 프론트 배포 URL2
 			"https://web.api.deploy.kkokkio.site:3000", // 프론트 API URL
-			"http://localhost:3000", // 로컬용
+			"https://web.kkokkio.site", // 프론트 배포 URL
 			"https://api.deploy.kkokkio.site", // 백엔드 dev API URL
 			"https://api.prd.kkokkio.site"// 백엔드 prod API URL
 		)); // 프론트 사이트 추가

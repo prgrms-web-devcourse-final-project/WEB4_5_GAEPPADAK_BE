@@ -18,8 +18,6 @@ import org.springframework.batch.test.JobLauncherTestUtils;
 import org.springframework.batch.test.context.SpringBatchTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -70,9 +68,6 @@ class TrendToPostJobConfigTest {
 	@Test
 	@DisplayName("trendToPostJob 성공")
 	void testTrendToPostJob_Success() throws Exception {
-		// given
-		jobLauncherTestUtils.setJob(trendToPostJob);
-
 		// when
 		JobExecution jobExecution = jobLauncherTestUtils.launchJob();
 
@@ -102,15 +97,5 @@ class TrendToPostJobConfigTest {
 		List<Long> topIds = (List<Long>)jobExecution.getExecutionContext().get(JC_TOP_KEYWORD_IDS);
 		assertThat(topIds).containsExactly(101L);
 
-	}
-
-	@TestConfiguration
-	static class BatchTestConfig {
-		@Bean
-		public JobLauncherTestUtils jobLauncherTestUtils(Job trendToPostJob) {
-			JobLauncherTestUtils utils = new JobLauncherTestUtils();
-			utils.setJob(trendToPostJob);
-			return utils;
-		}
 	}
 }

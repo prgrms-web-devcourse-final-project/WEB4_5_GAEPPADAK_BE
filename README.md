@@ -166,7 +166,7 @@ doppler setup
 npm run doppler
 ```
 
-**3️⃣ Run Server & Database **
+**3️⃣ Run Server & Database**
 
 ```bash
 # Start MySQL & SpringBoot container with Docker Compose
@@ -181,3 +181,14 @@ npm run docker:reset
 ```
 
 - Swagger Docs: http://localhost:8080/swagger-ui/index.html
+
+**4️⃣ Generate Test Coverage Report**
+✅JaCoCo를 사용하여 코드 테스트 커버리지 리포트를 생성합니다.
+
+```bash
+#자동으로 테스트를 실행 후 HTML 형식의 커버리지 리포트를 생성
+#/backend 경로에서 실행
+#build/jacocoHtml/index.html 경로에서 결과 확인 가능
+./gradlew jacocoTestReport
+
+```

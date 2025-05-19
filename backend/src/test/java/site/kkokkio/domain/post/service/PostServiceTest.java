@@ -367,9 +367,10 @@ public class PostServiceTest {
 		Long postId = 5L;
 		UUID reporterId = UUID.randomUUID();
 		ReportReason reportReason = ReportReason.ETC;
+		String etcReasonText = "기타 상세 사유";
 
 		// 신고 요청 DTO 객체 생성
-		PostReportRequest request = new PostReportRequest(reportReason, null);
+		PostReportRequest request = new PostReportRequest(reportReason, etcReasonText);
 
 		// 신고 대상 포스트 실제 객체 생성 및 필드 설정
 		Post post = Post.builder().build();
@@ -392,7 +393,7 @@ public class PostServiceTest {
 
 		/// when
 		// Service 메소드 호출 시 ReportReason Enum 값을 직접 전달
-		postService.reportPost(postId, any(), request);
+		postService.reportPost(postId, userDetails, request);
 
 		/// 검증
 		verify(postRepository).findById(postId);

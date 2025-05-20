@@ -24,16 +24,16 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
 	@Query(value = """
 		SELECT
 				c.comment_id AS commentId,
-				m.member_id AS memberId,
+				BIN_TO_UUID(m.member_id) AS memberId,
 				m.nickname AS nickname,
 				(m.deleted_at IS NOT NULL) AS isDeletedMember,
 				p.post_id AS postId,
 				p.title AS postTitle,
 				c.body AS commentBody,
-				cr.status AS status,
 				GROUP_CONCAT(cr.reason SEPARATOR ',') AS reportReasons,
-				MAX(cr.created_at) AS latestReportedAt,
-				COUNT(cr.comment_report_id) AS reportCount
+				DATE_FORMAT(MAX(cr.created_at), '%Y-%m-%d %H:%i') AS latestReportedAt,
+				COUNT(cr.comment_report_id) AS reportCount,
+				cr.status AS status
 			FROM comment_report cr
 			JOIN comment c ON cr.comment_id = c.comment_id
 			JOIN post p ON c.post_id = p.post_id

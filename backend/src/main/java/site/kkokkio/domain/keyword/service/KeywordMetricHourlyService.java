@@ -1,6 +1,7 @@
 package site.kkokkio.domain.keyword.service;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,8 +31,10 @@ public class KeywordMetricHourlyService {
 	@Transactional(readOnly = true)
 	public List<KeywordMetricHourlyDto> findHourlyMetrics() {
 
+		String formattedNow = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS"));
+
 		List<KeywordMetricHourly> metrics = keywordMetricHourlyRepository.findTop10HourlyMetricsClosestToNowNative(
-			LocalDateTime.now()
+			formattedNow
 		);
 		if (metrics == null || metrics.isEmpty()) {
 			throw new ServiceException("404", "키워드를 불러오지 못했습니다.");
@@ -101,19 +104,19 @@ public class KeywordMetricHourlyService {
 		return lowVariation;
 	}
 
-
 	// 점수 측정 함수
 	// 검색량 상승 폭이 클수록, 이전 fetch와의 시간폭이 클수록, Post 생성 제외 횟수가 많을수록 신규성 상승
 	private int calculateNoveltyScore(KeywordMetricHourly metric) {
 		int score = 0;
-		score += (int) (metric.getRankDelta() / 100);
-		score += (int) (metric.getWeightedNovelty());
+		score += (int)(metric.getRankDelta() / 100);
+		score += (int)(metric.getWeightedNovelty());
 		score += metric.getNoPostStreak();
 		return score;
 	}
 
 	// KeywordMetricHourly 업데이트
-	private void updateKeywordMetric(KeywordMetricHourly currentMetric, int noveltyScore, boolean lowVariation, int noPostStreak) {
+	private void updateKeywordMetric(KeywordMetricHourly currentMetric, int noveltyScore, boolean lowVariation,
+		int noPostStreak) {
 		KeywordMetricHourly updatedMetric = KeywordMetricHourly.builder()
 			.id(currentMetric.getId())
 			.keyword(currentMetric.getKeyword())

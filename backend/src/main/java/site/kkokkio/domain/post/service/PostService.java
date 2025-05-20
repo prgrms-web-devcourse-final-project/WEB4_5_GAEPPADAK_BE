@@ -3,6 +3,7 @@ package site.kkokkio.domain.post.service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -100,14 +101,17 @@ public class PostService {
 	@Transactional(readOnly = true)
 	public List<PostDto> getTopPostsWithKeyword() {
 		LocalDateTime now = LocalDateTime.now(ZoneId.of("UTC"));
+		String formattedNow = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS"));
 		List<KeywordMetricHourly> topKeywordMetrics =
-			keywordMetricHourlyRepository.findTop10HourlyMetricsClosestToNowNative(now);
+			keywordMetricHourlyRepository.findTop10HourlyMetricsClosestToNowNative(formattedNow);
 
 		return topKeywordMetrics.stream()
-			.peek(metric -> {
+			.filter(metric -> {
 				if (metric.getPost() == null) {
-					throw new ServiceException("500", "해당 키워드에 post가 존재하지 않습니다.");
+					log.error("keywordMetricHourlyId: {} 해당 키워드에 post가 존재하지 않습니다.", metric.getId());
+					return false;
 				}
+				return true;
 			}) // post_id가 null인 키워드 발견 시 서버 문제 예외처리
 			.map(metric -> PostDto.from(metric.getPost(), metric.getKeyword().getText()))
 			.toList();

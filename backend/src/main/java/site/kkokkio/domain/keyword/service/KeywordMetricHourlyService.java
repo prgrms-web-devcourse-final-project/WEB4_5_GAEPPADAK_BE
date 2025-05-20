@@ -59,52 +59,74 @@ public class KeywordMetricHourlyService {
 		List<Long> postableIds = new ArrayList<>();
 
 		for (Long keywordId : topKeywordIds) {
-			int score = 0;
-			boolean lowVariation = false;
-			int noPostStreak = 0;
+			// 해당 keywordId를 가진 모든 keywordMetricHourly를 추출
 			List<KeywordMetricHourly> allMetric = keywordMetricHourlyRepository
 				.findById_KeywordIdOrderById_BucketAtDesc(keywordId);
 
 			if (allMetric.size() >= 2) {
-				KeywordMetricHourly currentMetric = allMetric.get(0);
-
-				// rankDelta, weightedNovelty, getNoPostStreak를 종합으로 고려하여 score 작성
-				score += (int)(currentMetric.getRankDelta()/100);
-				score += (int)(currentMetric.getWeightedNovelty());
-				score += currentMetric.getNoPostStreak();
-
-				// 낮은 변동성 판단, 종합 10점 미만일 시 신규성이 낮다고 판단되어 포스트 생성 제외
-				if (score < 10) {
-					log.info("낮은 변동성 : 생성하지 않을 포스트의 키워드 id {}", keywordId);
-					lowVariation = true;
-					noPostStreak = currentMetric.getNoPostStreak() + 1;
+				KeywordMetricHourly currentMetric = allMetric.getFirst();
+				boolean lowVariation = scoreNoveltyEvaluation(currentMetric, postableIds);
+				if (lowVariation) {
 					lowVariationCount++;
-				} else {
-					log.info("높은 변동성 : 생성할 포스트의 키워드 id {}", keywordId);
-					postableIds.add(keywordId);
 				}
-
-				// 최종 스코어 (신규성 스코어 우선 / 신규성 스코어가 같을 시 검색량 우선하도록 score * 10000 삽입)
-				KeywordMetricHourly current = KeywordMetricHourly.builder()
-					.id(currentMetric.getId())
-					.keyword(currentMetric.getKeyword())
-					.post(currentMetric.getPost())
-					.volume(currentMetric.getVolume())
-					.score((score * 10000) + currentMetric.getVolume())
-					.rankDelta(currentMetric.getRankDelta())
-					.weightedNovelty(currentMetric.getWeightedNovelty())
-					.noPostStreak(noPostStreak)
-					.noveltyRatio(currentMetric.getNoveltyRatio())
-					.weightedNovelty(currentMetric.getWeightedNovelty())
-					.lowVariation(lowVariation).build();
-
-				keywordMetricHourlyRepository.save(current); // lowVariation 업데이트
 			} else {
-				// (데이터가 없는 경우) 포스팅 대상으로 추가
+				// 추출된 keywordMetricHourly가 2개 미만이면 (최초 작성된 keywordMetricHourly라면) 포스팅 대상으로 추가
 				postableIds.add(keywordId);
 			}
 		}
 
 		return new NoveltyStatsDto(lowVariationCount, postableIds);
+	}
+
+	// 점수 기반 신규성 판단 로직
+	private boolean scoreNoveltyEvaluation(KeywordMetricHourly currentMetric, List<Long> postableIds) {
+		int score = calculateNoveltyScore(currentMetric);
+		boolean lowVariation = false;
+		int noPostStreak = currentMetric.getNoPostStreak();
+
+		// 낮은 변동성 판단, 종합 10점 미만일 시 신규성이 낮다고 판단되어 포스트 생성 제외
+		if (score < 10) {
+			log.info("낮은 변동성 : 생성하지 않을 포스트의 키워드 id {}", currentMetric.getId().getKeywordId());
+			lowVariation = true;
+			noPostStreak++;
+		} else {
+			log.info("높은 변동성 : 생성할 포스트의 키워드 id {}", currentMetric.getId().getKeywordId());
+			postableIds.add(currentMetric.getId().getKeywordId());
+			noPostStreak = 0;
+		}
+
+		// 최종 스코어 (신규성 스코어 우선 / 신규성 스코어가 같을 시 검색량 우선하도록 score * 10000 삽입)
+		// 이후 변경된 필드 반영
+		updateKeywordMetric(currentMetric, score, lowVariation, noPostStreak);
+		return lowVariation;
+	}
+
+
+	// 점수 측정 함수
+	// 검색량 상승 폭이 클수록, 이전 fetch와의 시간폭이 클수록, Post 생성 제외 횟수가 많을수록 신규성 상승
+	private int calculateNoveltyScore(KeywordMetricHourly metric) {
+		int score = 0;
+		score += (int) (metric.getRankDelta() / 100);
+		score += (int) (metric.getWeightedNovelty());
+		score += metric.getNoPostStreak();
+		return score;
+	}
+
+	// KeywordMetricHourly 업데이트
+	private void updateKeywordMetric(KeywordMetricHourly currentMetric, int noveltyScore, boolean lowVariation, int noPostStreak) {
+		KeywordMetricHourly updatedMetric = KeywordMetricHourly.builder()
+			.id(currentMetric.getId())
+			.keyword(currentMetric.getKeyword())
+			.post(currentMetric.getPost())
+			.volume(currentMetric.getVolume())
+			.score((noveltyScore * 10000) + currentMetric.getVolume())
+			.rankDelta(currentMetric.getRankDelta())
+			.weightedNovelty(currentMetric.getWeightedNovelty())
+			.noPostStreak(noPostStreak)
+			.noveltyRatio(currentMetric.getNoveltyRatio())
+			.lowVariation(lowVariation)
+			.build();
+
+		keywordMetricHourlyRepository.save(updatedMetric);
 	}
 }

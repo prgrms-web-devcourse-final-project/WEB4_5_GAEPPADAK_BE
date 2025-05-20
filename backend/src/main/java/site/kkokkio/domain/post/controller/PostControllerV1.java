@@ -18,12 +18,12 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import site.kkokkio.domain.post.controller.dto.PostSearchSourceListResponse;
 import site.kkokkio.domain.keyword.service.KeywordService;
 import site.kkokkio.domain.post.controller.dto.PostDetailResponse;
+import site.kkokkio.domain.post.controller.dto.PostListResponse;
+import site.kkokkio.domain.post.controller.dto.PostSearchSourceListResponse;
 import site.kkokkio.domain.post.controller.dto.TopPostResponse;
 import site.kkokkio.domain.post.dto.PostDto;
-import site.kkokkio.domain.post.dto.PostListResponse;
 import site.kkokkio.domain.post.service.PostService;
 import site.kkokkio.domain.source.dto.SourceDto;
 import site.kkokkio.domain.source.service.SourceService;
@@ -43,7 +43,7 @@ public class PostControllerV1 {
 	@Operation(summary = "포스트 조회")
 	@ApiErrorCodeExamples({ErrorCode.POST_NOT_FOUND_2})
 	@GetMapping("/{postId}")
-	public RsData<PostDetailResponse> getPostById(@PathVariable Long postId) {
+	public RsData<PostDetailResponse> getPostById(@PathVariable("postId") Long postId) {
 		PostDto postDto = postService.getPostWithKeywordById(postId);
 		PostDetailResponse data = PostDetailResponse.builder()
 			.postId(postDto.postId())
@@ -66,11 +66,12 @@ public class PostControllerV1 {
 	public RsData<PostListResponse> getPostListByKeyword(
 		@RequestParam String keyword,
 		@RequestParam(value = "sort", required = false, defaultValue = "createdAt") String sortField, // 정렬할 필드
-		@RequestParam(value = "order", required = false, defaultValue = "DESC") Sort.Direction orderDirection, // 정렬 방향 필드 추가
+		@RequestParam(value = "order", required = false, defaultValue = "DESC") Sort.Direction orderDirection,
+		// 정렬 방향 필드 추가
 		@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable defaultPageable
 	) {
 		// 제목 정렬 시 PostKeyword 엔티티에 title이 없으므로 post.title로 접근
-		if(sortField.equals("title"))
+		if (sortField.equals("title"))
 			sortField = "post.title";
 
 		Sort sort = Sort.by(orderDirection, sortField);
@@ -98,26 +99,27 @@ public class PostControllerV1 {
 	public RsData<PostSearchSourceListResponse> getKeywordSearchSources(
 		@RequestParam String keyword,
 		@RequestParam(value = "sort", required = false, defaultValue = "createdAt") String sortField, // 정렬할 필드
-		@RequestParam(value = "order", required = false, defaultValue = "DESC") Sort.Direction orderDirection, // 정렬 방향 필드 추가
+		@RequestParam(value = "order", required = false, defaultValue = "DESC") Sort.Direction orderDirection,
+		// 정렬 방향 필드 추가
 		@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable defaultPageable
 	) {
-		if(sortField.equals("title"))
-		sortField = "post.title";
-		
+		if (sortField.equals("title"))
+			sortField = "post.title";
+
 		Sort sort = Sort.by(orderDirection, sortField);
 		Pageable customPaging = PageRequest.of(
 			defaultPageable.getPageNumber(),
 			defaultPageable.getPageSize(),
 			sort
 		);
-	    	Page<PostDto> postDtoList = keywordService.getPostListByKeyword(keyword, customPaging);
-	    	List<SourceDto> searchSourceList = sourceService.getTop5SourcesByPosts(postDtoList.toList());
-	    	PostSearchSourceListResponse response = PostSearchSourceListResponse.from(searchSourceList, postDtoList);
-	    	return new RsData<>(
-	      		"200",
-	      		"성공적으로 조회되었습니다.",
-	      		response
-	    	);
+		Page<PostDto> postDtoList = keywordService.getPostListByKeyword(keyword, customPaging);
+		List<SourceDto> searchSourceList = sourceService.getTop5SourcesByPosts(postDtoList.toList());
+		PostSearchSourceListResponse response = PostSearchSourceListResponse.from(searchSourceList, postDtoList);
+		return new RsData<>(
+			"200",
+			"성공적으로 조회되었습니다.",
+			response
+		);
 	}
 
 	@Operation(summary = "실시간 키워드에 해당하는 포스트 리스트 조회")

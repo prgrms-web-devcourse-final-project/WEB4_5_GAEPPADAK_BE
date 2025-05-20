@@ -1,6 +1,7 @@
 package site.kkokkio.domain.member.service;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -26,6 +27,7 @@ import jakarta.mail.internet.MimeMessage;
 import site.kkokkio.domain.member.controller.dto.EmailVerificationRequest;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.repository.MemberRepository;
+import site.kkokkio.global.exception.ServiceException;
 
 @ExtendWith(MockitoExtension.class)
 public class MailServiceTest {
@@ -176,15 +178,13 @@ public class MailServiceTest {
 		when(valueOperations.get("EMAIL_AUTH:" + testEmail)).thenReturn(testAuthCode);
 		when(memberRepository.findByEmail(testEmail)).thenReturn(Optional.of(testMember));
 
-		// when
-		boolean result = mailService.validationAuthCode(request);
-
-		// then
-		assertThat(result).isTrue();
+		// when & then
+		assertDoesNotThrow(() -> mailService.confirmSignup(request.getEmail(), request.getAuthCode()));
 		verify(valueOperations, times(1)).get("EMAIL_AUTH:" + testEmail);
 		verify(memberRepository, times(1)).findByEmail(testEmail);
 		verify(memberRepository, times(1)).save(testMember);
 		verify(redisTemplate, times(1)).delete("EMAIL_AUTH:" + testEmail);
+		verify(redisTemplate, times(1)).delete("EMAIL_VERIFIED:" + testEmail);
 		assertThat(testMember.isEmailVerified()).isTrue();
 	}
 
@@ -195,11 +195,10 @@ public class MailServiceTest {
 		EmailVerificationRequest request = new EmailVerificationRequest(testEmail, testAuthCode);
 		when(valueOperations.get("EMAIL_AUTH:" + testEmail)).thenReturn("WRONG123");
 
-		// when
-		boolean result = mailService.validationAuthCode(request);
-
-		// then
-		assertThat(result).isFalse();
+		// when & then
+		assertThatThrownBy(() -> mailService.confirmSignup(request.getEmail(), request.getAuthCode()))
+			.isInstanceOf(ServiceException.class)
+			.hasMessage("인증 코드가 유효하지 않습니다.");
 		verify(valueOperations, times(1)).get("EMAIL_AUTH:" + testEmail);
 		verify(memberRepository, times(0)).findByEmail(anyString());
 		verify(memberRepository, times(0)).save(any(Member.class));
@@ -213,11 +212,10 @@ public class MailServiceTest {
 		EmailVerificationRequest request = new EmailVerificationRequest(testEmail, testAuthCode);
 		when(valueOperations.get("EMAIL_AUTH:" + testEmail)).thenReturn(null);
 
-		// when
-		boolean result = mailService.validationAuthCode(request);
-
-		// then
-		assertThat(result).isFalse();
+		// when & then
+		assertThatThrownBy(() -> mailService.confirmSignup(request.getEmail(), request.getAuthCode()))
+			.isInstanceOf(ServiceException.class)
+			.hasMessage("인증 코드가 유효하지 않습니다.");
 		verify(valueOperations, times(1)).get("EMAIL_AUTH:" + testEmail);
 		verify(memberRepository, times(0)).findByEmail(anyString());
 		verify(memberRepository, times(0)).save(any(Member.class));

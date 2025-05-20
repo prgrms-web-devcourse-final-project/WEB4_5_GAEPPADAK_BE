@@ -33,9 +33,9 @@ import site.kkokkio.domain.post.dto.PostDto;
 import site.kkokkio.domain.post.service.PostService;
 import site.kkokkio.domain.source.dto.SourceDto;
 import site.kkokkio.domain.source.service.SourceService;
+import site.kkokkio.global.auth.CustomUserDetailsService;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
-import site.kkokkio.global.security.CustomUserDetailsService;
 import site.kkokkio.global.util.JwtUtils;
 
 @WebMvcTest(PostControllerV1.class)
@@ -255,7 +255,8 @@ public class PostControllerV1Test {
 		// given
 		List<SourceDto> mockSources = IntStream.range(0, 5)
 			.mapToObj(
-				i -> new SourceDto("commentId-" + i, "url-" + i, "thumb-" + i, "title-" + i, LocalDateTime.now(), Platform.NAVER_NEWS))
+				i -> new SourceDto("commentId-" + i, "url-" + i, "thumb-" + i, "title-" + i, LocalDateTime.now(),
+					Platform.NAVER_NEWS))
 			.toList();
 		when(keywordService.getPostListByKeyword(eq(keywordText), any(PageRequest.class)))
 			.thenReturn(new PageImpl<>(postDtos));

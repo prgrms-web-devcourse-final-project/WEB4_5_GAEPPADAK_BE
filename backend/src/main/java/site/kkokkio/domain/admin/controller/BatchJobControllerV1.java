@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import site.kkokkio.global.auth.annotations.IsAdmin;
 
 @Slf4j
 @RestController
@@ -28,12 +29,13 @@ public class BatchJobControllerV1 {
 	private final JobLauncher jobLauncher;
 	private final Job trendToPostJob;
 
+	@IsAdmin
 	@Operation(summary = "스케줄러 실행")
 	@PostMapping("/run/trend")
 	public ResponseEntity<String> runTrendToPostJob() {
 		try {
 			// 요청 시점 (현재 시각)
-			LocalDateTime bucketAt = LocalDateTime.now(ZoneId.of("Asia/Seoul")).withSecond(0).withNano(0);
+			LocalDateTime bucketAt = LocalDateTime.now(ZoneId.of("UTC")).withSecond(0).withNano(0);
 
 			// JobParameters는 항상 고유해야 실행됨
 			JobParameters params = new JobParametersBuilder()

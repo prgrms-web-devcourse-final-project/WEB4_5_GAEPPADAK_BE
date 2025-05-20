@@ -25,9 +25,9 @@ import site.kkokkio.domain.member.service.AuthService;
 import site.kkokkio.domain.member.service.MailService;
 import site.kkokkio.domain.member.service.MemberService;
 import site.kkokkio.global.aspect.ResponseAspect;
+import site.kkokkio.global.auth.CustomUserDetailsService;
 import site.kkokkio.global.enums.MemberRole;
 import site.kkokkio.global.exception.ServiceException;
-import site.kkokkio.global.security.CustomUserDetailsService;
 import site.kkokkio.global.util.JwtUtils;
 
 @WebMvcTest(AuthControllerV1.class)
@@ -172,52 +172,4 @@ public class AuthControllerV1Test {
 			.andExpect(jsonPath("$.code").value("500"))
 			.andExpect(jsonPath("$.message").value("인증 코드 전송이 실패하였습니다."));
 	}
-
-	// 이메일 인증 검사는 실제 메일로 검사 필요
-
-	// @Test
-	// @DisplayName("이메일 인증 검사 - 성공")
-	// void checkEmailSuccess() throws Exception {
-	// 	// given
-	// 	given(mailService.validationAuthCode(any(EmailVerificationRequest.class)))
-	// 		.willReturn(true);
-	//
-	// 	String checkJson = """
-	// 		{
-	// 		  "email":"test@example.com",
-	// 		  "code":"123456"
-	// 		}
-	// 		""";
-	//
-	// 	// when & then
-	// 	mockMvc.perform(post("/api/v1/auth/check-email")
-	// 			.contentType(MediaType.APPLICATION_JSON)
-	// 			.content(checkJson))
-	// 		.andExpect(status().isOk())
-	// 		.andExpect(jsonPath("$.code").value("200"))
-	// 		.andExpect(jsonPath("$.message").value("이메일 인증에 성공하였습니다."));
-	// }
-	//
-	// @Test
-	// @DisplayName("이메일 인증 검사 - 실패")
-	// void checkEmailFailure() throws Exception {
-	// 	// given
-	// 	given(mailService.validationAuthCode(any(EmailVerificationRequest.class)))
-	// 		.willReturn(false);
-	//
-	// 	String checkJson = """
-	// 		{
-	// 		  "email":"test@example.com",
-	// 		  "code":"000000"
-	// 		}
-	// 		""";
-	//
-	// 	// when & then
-	// 	mockMvc.perform(post("/api/v1/auth/check-email")
-	// 			.contentType(MediaType.APPLICATION_JSON)
-	// 			.content(checkJson))
-	// 		.andExpect(status().isBadRequest())
-	// 		.andExpect(jsonPath("$.code").value("400"))
-	// 		.andExpect(jsonPath("$.message").value("이메일 인증에 실패하였습니다."));
-	// }
 }

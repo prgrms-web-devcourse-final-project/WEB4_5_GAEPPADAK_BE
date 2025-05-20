@@ -1,0 +1,43 @@
+auth_enabled: false # 인증을 사용하지 않도록 설정
+
+server:
+  http_listen_port: 3100 # Loki 서버가 수신할 HTTP 포트 설정
+
+common:
+  ring:
+    instance_addr: 127.0.0.1 # Loki 인스턴스의 주소
+    kvstore:
+      store: inmemory # 키-값 스토어 설정 (여기서는 메모리 내에서 관리)
+  replication_factor: 1 # 복제 인스턴스 수 (기본값: 1)
+  path_prefix: /tmp/loki # Loki의 기본 경로 설정 (데이터를 저장할 디렉터리 경로)
+
+schema_config:
+  configs:
+    - from: 2020-05-15 # 스키마 버전 시작일 설정 (이 날짜 이후부터 적용)
+      store: tsdb # 저장소 유형 (TSDB 사용)
+      object_store: filesystem # 객체 스토어 유형 (파일 시스템 사용)
+      schema: v13 # 스키마 버전 설정
+      index:
+        prefix: index_ # 인덱스 파일의 접두사 (기본값: 'index_')
+        period: 24h # 인덱스 생성 주기 설정 (24시간마다 새로운 인덱스를 생성)
+
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100
+
+storage_config:
+  filesystem:
+    directory: /tmp/loki/chunks # 파일 시스템에 저장할 로그 청크 디렉터리 경로 설정
+
+limits_config:
+  volume_enabled: true
+  ingestion_rate_mb: 10 # 초당 최대 수집 속도 (기본값: 4MB, 이 값을 10MB로 설정)
+  ingestion_burst_size_mb: 20 # 버스트 모드에서 최대 수집량 (기본값: 6MB, 이 값을 20MB로 설정)
+  per_stream_rate_limit: 5MB # 스트림 당 최대 수집 속도 (기본값: 3MB, 이 값을 5MB로 설정)
+  per_stream_rate_limit_burst: 10MB # 스트림 당 버스트 모드에서 최대 수집량 (기본값: 15MB, 이 값을 10MB로 설정)
+
+# ruler:
+#   alertmanager_url: http://localhost:9093

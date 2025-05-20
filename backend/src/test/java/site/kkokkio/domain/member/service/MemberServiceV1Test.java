@@ -5,23 +5,28 @@ import static org.mockito.BDDMockito.*;
 
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import io.jsonwebtoken.Claims;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
+import site.kkokkio.domain.member.controller.dto.MemberUpdateRequest;
+import site.kkokkio.domain.member.controller.dto.PasswordResetRequest;
 import site.kkokkio.domain.member.entity.Member;
 import site.kkokkio.domain.member.repository.MemberRepository;
-import site.kkokkio.global.exception.CustomAuthException;
+import site.kkokkio.global.auth.CustomUserDetails;
+import site.kkokkio.global.enums.MemberRole;
 import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.global.util.JwtUtils;
 
@@ -39,6 +44,12 @@ class MemberServiceV1Test {
 
 	@Mock
 	private JwtUtils jwtUtils;
+
+	@Mock
+	private RedisTemplate<String, String> redisTemplate;
+
+	@Mock
+	private ValueOperations<String, String> valueOperations;
 
 	@Test
 	@DisplayName("회원가입 성공")
@@ -116,50 +127,165 @@ class MemberServiceV1Test {
 	@Test
 	@DisplayName("회원정보 조회 - 유효한 토큰")
 	void getMemberInfo_success() {
+		// given
+		String email = "user@example.com";
 
-		// given: HttpServletRequest에서 쿠키 리턴
-		HttpServletRequest req = mock(HttpServletRequest.class);
-		Cookie cookie = new Cookie("access-token", "valid.token");
-		given(jwtUtils.getJwtFromCookies(req)).willReturn(Optional.of("valid.token"));
-
-		// 토큰 검증 시 예외 없이 통과
-		given(jwtUtils.isValidToken("valid.token")).willReturn(true);
-
-		// 페이로드에서 email 추출
-		Claims claims = mock(Claims.class);
-		given(jwtUtils.getPayload("valid.token")).willReturn(claims);
-		given(claims.getSubject()).willReturn("user@example.com");
-
-		// MemberServiceV1 내부 findByEmail 호출
 		Member member = Member.builder()
-			.email("user@example.com")
+			.email(email)
 			.nickname("tester")
+			.birthDate(LocalDate.of(1990, 1, 1))
+			.role(MemberRole.USER)
 			.build();
-		given(memberRepository.findByEmail("user@example.com"))
+
+		given(memberRepository.findByEmail(email))
 			.willReturn(Optional.of(member));
 
 		// when
-		MemberResponse resp = memberService.getMemberInfo(req);
+		MemberResponse resp = memberService.getMemberInfo(email);
 
 		// then
 		assertThat(resp).isNotNull();
-		assertThat(resp.getEmail()).isEqualTo("user@example.com");
+		assertThat(resp.getEmail()).isEqualTo(email);
 		assertThat(resp.getNickname()).isEqualTo("tester");
-		then(jwtUtils).should().isValidToken("valid.token");
+		assertThat(resp.getBirthDate()).isEqualTo(LocalDate.of(1990, 1, 1));
+		assertThat(resp.getRole()).isEqualTo(MemberRole.USER);
 	}
 
 	@Test
 	@DisplayName("회원정보 조회 - 토큰 누락")
 	void getMemberInfo_noToken_throws() {
-		HttpServletRequest req = mock(HttpServletRequest.class);
-		given(jwtUtils.getJwtFromCookies(req)).willReturn(Optional.empty());
+		String email = "nonexistent@example.com";
 
-		assertThatThrownBy(() -> memberService.getMemberInfo(req))
-			.isInstanceOf(CustomAuthException.class)
-			.satisfies(ex -> {
-				CustomAuthException cae = (CustomAuthException)ex;
-				assertThat(cae.getAuthErrorType())
-					.isEqualTo(CustomAuthException.AuthErrorType.MISSING_TOKEN);
-			});
+		given(memberRepository.findByEmail(email))
+			.willReturn(Optional.empty());
+
+		assertThatThrownBy(() -> memberService.getMemberInfo(email))
+			.isInstanceOf(ServiceException.class)
+			.hasMessageContaining("존재하지 않는 이메일");
 	}
+
+	@Test
+	@DisplayName("회원정보 수정 성공")
+	void modifyMemberInfo_success() {
+		Member member = Member.builder()
+			.id(UUID.randomUUID())
+			.email("user@example.com")
+			.nickname("tester")
+			.passwordHash("encodedPassword")
+			.birthDate(LocalDate.of(1990, 1, 1))
+			.role(MemberRole.USER)
+			.emailVerified(true)
+			.build();
+
+		CustomUserDetails userDetails = new CustomUserDetails(
+			member.getEmail(), member.getRole().toString(), member.isEmailVerified());
+		when(memberRepository.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
+
+		MemberUpdateRequest request = new MemberUpdateRequest("password0000!", "change");
+
+		MemberResponse response = memberService.modifyMemberInfo(userDetails, request);
+
+		assertThat(response.getEmail()).isEqualTo("user@example.com");
+		assertThat(response.getNickname()).isEqualTo("change");
+	}
+
+	@Test
+	@DisplayName("회원정보 수정 실패 - 토큰 누락")
+	void modifyMemberInfo_fail_tokenExpired() {
+		// given
+		MemberUpdateRequest request = new MemberUpdateRequest("change", "newPassword");
+
+		// when & then
+		assertThatThrownBy(() -> memberService.modifyMemberInfo(null, request))
+			.isInstanceOf(NullPointerException.class)
+			.hasMessageContaining("userDetails");
+
+	}
+
+	@Test
+	@DisplayName("회원 탈퇴 성공")
+	void deleteMember_success() {
+		// given
+		Member member = Mockito.spy(Member.builder()
+			.id(UUID.randomUUID())
+			.email("test@example.com")
+			.nickname("사용자")
+			.build());
+		UserDetails userDetails = new CustomUserDetails(member.getEmail(), "USER", true);
+		when(memberRepository.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
+
+		// when
+		memberService.deleteMember(userDetails);
+
+		// then
+		verify(member).maskPersonalInfo();
+		verify(member).softDelete();
+		verify(memberRepository).save(member);
+	}
+
+	@Test
+	@DisplayName("비밀번호 초기화 - 성공")
+	void resetPassword_success() {
+		// given
+		String email = "user@example.com";
+		String key = "EMAIL_VERIFIED:" + email;
+		given(redisTemplate.opsForValue()).willReturn(valueOperations);
+		given(valueOperations.get(key)).willReturn("true"); // 인증 상태
+
+		String newPassword = "newPass123!";
+		String encryptedPassword = "encrypted-hash";
+		PasswordResetRequest req = new PasswordResetRequest(email, newPassword);
+
+		given(memberRepository.findByEmail(email)).willReturn(Optional.of(
+			Member.builder().email(email).nickname("nick").build()
+		));
+		given(passwordEncoder.encode(newPassword)).willReturn(encryptedPassword);
+
+		// when
+		memberService.resetPassword(req);
+
+		// then : 비밀번호 암호화되어 저장, Redis 키 삭제 여부 확인
+		assertThat(memberRepository.findByEmail(email).get().getPasswordHash()).isEqualTo(encryptedPassword);
+		verify(memberRepository).save(any(Member.class));
+		verify(redisTemplate).delete(key);
+	}
+
+	@Test
+	@DisplayName("비밀번호 초기화 - 인증 미완료")
+	void resetPassword_notVerified_fail() {
+		// given
+		String email = "user@example.com";
+		String key = "EMAIL_VERIFIED:" + email;
+		given(redisTemplate.opsForValue()).willReturn(valueOperations);
+		given(valueOperations.get(key)).willReturn(null); // 미인증 상태
+
+		// when
+		PasswordResetRequest req = new PasswordResetRequest(email, "password1!");
+
+		// then : 인증 미완료 예외 발생 여부 확인
+		assertThatThrownBy(() -> memberService.resetPassword(req))
+			.isInstanceOf(ServiceException.class)
+			.hasMessageContaining("인증코드가 유효하지 않습니다.");
+	}
+
+	@Test
+	@DisplayName("비밀번호 초기화 - 이메일 없음")
+	void resetPassword_emailNotFound_fail() {
+		// given
+		String email = "unknown@example.com";
+		String key = "EMAIL_VERIFIED:" + email;
+		given(redisTemplate.opsForValue()).willReturn(valueOperations);
+		given(valueOperations.get(key)).willReturn("true");
+
+		// when
+		PasswordResetRequest req = new PasswordResetRequest(email, "newPass1");
+
+		given(memberRepository.findByEmail(email)).willReturn(Optional.empty()); // 존재하지 않는 이메일 입력
+
+		// then
+		assertThatThrownBy(() -> memberService.resetPassword(req))
+			.isInstanceOf(ServiceException.class)
+			.hasMessageContaining("존재하지 않는 이메일입니다.");
+	}
+
 }

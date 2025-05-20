@@ -68,5 +68,4 @@ public class KeywordMetricHourly extends BaseTimeEntity {
     @Builder.Default
     @Column(name = "low_variation", nullable = false)
     private boolean lowVariation = false;
-
 }

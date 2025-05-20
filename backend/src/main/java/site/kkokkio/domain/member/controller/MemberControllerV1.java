@@ -1,7 +1,10 @@
 package site.kkokkio.domain.member.controller;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,27 +13,30 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import site.kkokkio.domain.member.controller.dto.MemberResponse;
 import site.kkokkio.domain.member.controller.dto.MemberSignUpRequest;
+import site.kkokkio.domain.member.controller.dto.MemberUpdateRequest;
+import site.kkokkio.domain.member.controller.dto.PasswordResetRequest;
 import site.kkokkio.domain.member.service.AuthService;
-import site.kkokkio.domain.member.service.MailService;
 import site.kkokkio.domain.member.service.MemberService;
+import site.kkokkio.global.auth.CustomUserDetails;
+import site.kkokkio.global.auth.annotations.IsActiveMember;
+import site.kkokkio.global.auth.annotations.IsSelf;
 import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.exception.doc.ApiErrorCodeExamples;
 import site.kkokkio.global.exception.doc.ErrorCode;
-import site.kkokkio.global.util.JwtUtils;
 
 @Tag(name = "Member API", description = "회원 관련 기능을 제공")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/member")
+@RequestMapping("/api/v1/members")
 public class MemberControllerV1 {
 
 	private final MemberService memberService;
 	private final AuthService authService;
-	private final JwtUtils jwtUtils;
-	private final MailService mailService;
 
 	// 회원가입
 	@Operation(summary = "회원가입")
@@ -47,12 +53,58 @@ public class MemberControllerV1 {
 	@ApiErrorCodeExamples({ErrorCode.MISSING_TOKEN, ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
 		ErrorCode.UNSUPPORTED_TOKEN, ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH})
 	@GetMapping("/me")
-	public RsData<MemberResponse> getMember(HttpServletRequest request) {
-		MemberResponse memberInfo = memberService.getMemberInfo(request);
+	@IsSelf
+	public RsData<MemberResponse> getMember(@AuthenticationPrincipal CustomUserDetails userDetails) {
+		MemberResponse memberInfo = memberService.getMemberInfo(userDetails.getUsername());
 		return new RsData<>(
 			"200",
 			"마이페이지 조회 성공",
 			memberInfo
 		);
+	}
+
+	// 회원 정보 수정
+	@Operation(summary = "회원수정")
+	@ApiErrorCodeExamples({ErrorCode.MISSING_TOKEN, ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
+		ErrorCode.UNSUPPORTED_TOKEN, ErrorCode.MALFORMED_TOKEN,
+		ErrorCode.CREDENTIALS_MISMATCH, ErrorCode.EMAIL_NOT_FOUND})
+	@PatchMapping("/me")
+	@IsSelf
+	public RsData<MemberResponse> modifyMember(
+		@AuthenticationPrincipal CustomUserDetails userDetails,
+		@RequestBody @Valid MemberUpdateRequest requestBody
+	) {
+		MemberResponse memberInfo = memberService.modifyMemberInfo(userDetails, requestBody);
+		return new RsData<>(
+			"200",
+			"회원정보가 정상적으로 수정되었습니다.",
+			memberInfo
+		);
+	}
+
+	// 회원 탈퇴
+	@Operation(summary = "회원 탈퇴")
+	@ApiErrorCodeExamples({ErrorCode.LOGOUT_BAD_REQUEST, ErrorCode.MISSING_TOKEN, ErrorCode.TOKEN_EXPIRED,
+		ErrorCode.UNSUPPORTED_TOKEN, ErrorCode.UNSUPPORTED_TOKEN, ErrorCode.MALFORMED_TOKEN,
+		ErrorCode.CREDENTIALS_MISMATCH, ErrorCode.EMAIL_NOT_FOUND})
+	@DeleteMapping("me")
+	@IsActiveMember
+	public RsData<Void> deleteMember(HttpServletRequest request, HttpServletResponse response,
+		@AuthenticationPrincipal CustomUserDetails userDetails) {
+		memberService.deleteMember(userDetails);
+		authService.logout(request, response);
+		return new RsData<>(
+			"200",
+			"회원이 삭제 되었습니다."
+		);
+	}
+
+	// 비빌번호 초기화
+	@Operation(summary = "비밀번호 초기화")
+	@PatchMapping("/password")
+	@ApiErrorCodeExamples({ErrorCode.EMAIL_NOT_FOUND, ErrorCode.AUTH_CODE_UNAUTHORIZED, ErrorCode.EMAIL_NOT_FOUND})
+	public RsData<Void> resetPassword(@RequestBody @Validated PasswordResetRequest request) {
+		memberService.resetPassword(request);
+		return new RsData<>("200", "비밀번호가 변경되었습니다.");
 	}
 }

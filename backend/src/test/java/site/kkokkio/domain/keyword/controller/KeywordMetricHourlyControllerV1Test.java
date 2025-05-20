@@ -19,9 +19,9 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.service.KeywordMetricHourlyService;
+import site.kkokkio.global.auth.CustomUserDetailsService;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
-import site.kkokkio.global.security.CustomUserDetailsService;
 import site.kkokkio.global.util.JwtUtils;
 
 @WebMvcTest(controllers = KeywordMetricHourlyControllerV1.class)

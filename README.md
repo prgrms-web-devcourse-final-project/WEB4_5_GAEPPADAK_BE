@@ -10,9 +10,9 @@
 
 ## 👥 Team Introduction
 
-| <img src="https://avatars.githubusercontent.com/u/84301295?v=4" width="100"> | <img src="https://avatars.githubusercontent.com/u/69628269?v=4" width="100"> | <img src="https://avatars.githubusercontent.com/u/15260002?v=4" width="100"> | <img src="https://avatars.githubusercontent.com/u/78626811?v=4" width="100"> | <img src="https://avatars.githubusercontent.com/u/70743878?v=4" width="100"> | <img src="https://avatars.githubusercontent.com/u/115456416?v=4" width="100"> |
-| :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------: | :---------------------------------------------------------------------------: |
-|   이하은 <br> [haeun9988](https://github.com/haeun9988) <br> Product Owner   |  이화영 <br> [2hwayoung](https://github.com/2hwayoung) <br> Backend Leader   |          김경래 <br> [godaos](https://github.com/godaos) <br> 비고           |          김하연 <br> [xaxeon](https://github.com/xaxeon) <br> 비고           |  이태경 <br> [dlfjsld1](https://github.com/dlfjsld1) <br> AWS Administrator  |       윤상민 <br> [skvhffpdyd](https://github.com/skvhffpdyd) <br> 비고       |
+| <img src="https://avatars.githubusercontent.com/u/84301295?v=4" width="100"> | <img src="https://avatars.githubusercontent.com/u/69628269?v=4" width="100"> | <img src="https://avatars.githubusercontent.com/u/15260002?v=4" width="100"> | <img src="https://avatars.githubusercontent.com/u/78626811?v=4" width="100"> | <img src="https://avatars.githubusercontent.com/u/70743878?v=4" width="100"> | <img src="https://avatars.githubusercontent.com/u/115456416?v=4" width="100">  |
+| :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------: | :----------------------------------------------------------------------------: |
+|   이하은 <br> [haeun9988](https://github.com/haeun9988) <br> Product Owner   |  이화영 <br> [2hwayoung](https://github.com/2hwayoung) <br> Backend Leader   |    김경래 <br> [godaos](https://github.com/godaos) <br> Backend Developer    |    김하연 <br> [xaxeon](https://github.com/xaxeon) <br> Backend Developer    |  이태경 <br> [dlfjsld1](https://github.com/dlfjsld1) <br> AWS Administrator  | 윤상민 <br> [skvhffpdyd](https://github.com/skvhffpdyd) <br> Backend Developer |
 
 <br>
 
@@ -22,7 +22,7 @@
 
 ### 프로젝트 이름: **꼬끼오(KKokkio)**
 
-다양한 뉴스 채널의 실시간 속보 데이터를 수집하고, 급상승 트렌드 키워드와 주요 이슈를 탐지하여 사용자에게 여론의 흐름을 시각화하고 요약·알림을 제공하는 서비스입니다.
+다양한 뉴스 채널의 실시간 속보 데이터를 수집하고, 급상승 트렌드 키워드와 주요 이슈를 탐지하여 사용자에게 여론의ㄴ 흐름을 시각화하고 AI 요약을 제공하는 서비스입니다.
 
 ### 기획 의도
 

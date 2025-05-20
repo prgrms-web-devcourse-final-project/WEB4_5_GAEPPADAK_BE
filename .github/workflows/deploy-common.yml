@@ -89,6 +89,7 @@ jobs:
       - name: Flyway Validate & Info
         env:
           DB_HOST: ${{ steps.fetch_doppler.outputs.DB_HOST }}
+          DB_TUNNER_HOST: ${{ steps.fetch_doppler.outputs.RDS_TUNNEL_HOST }}
           DB_PORT: ${{ steps.fetch_doppler.outputs.DB_PORT }}
           DB_NAME: ${{ steps.fetch_doppler.outputs.DB_NAME }}
           DB_USERNAME: ${{ steps.fetch_doppler.outputs.DB_USERNAME }}
@@ -97,7 +98,7 @@ jobs:
           docker run --rm --network host \
             -v "${{ github.workspace }}/backend/src/main/resources/db/migration:/flyway/sql:ro" \
             redgate/flyway:11 \
-            -url="jdbc:mysql://127.0.0.1:${DB_PORT}/${DB_NAME}?serverTimezone=UTC&characterEncoding=UTF-8" \
+            -url="jdbc:mysql://${DB_TUNNER_HOST}:${DB_PORT}/${DB_NAME}?serverTimezone=UTC&characterEncoding=UTF-8" \
             -user="${DB_USERNAME}" \
             -password="${DB_PASSWORD}" \
             validate -ignoreMigrationPatterns='*:pending'
@@ -244,6 +245,7 @@ jobs:
       - name: Flyway Validate & Info
         env:
           DB_HOST: ${{ steps.fetch_doppler.outputs.DB_HOST }}
+          DB_TUNNER_HOST: ${{ steps.fetch_doppler.outputs.RDS_TUNNEL_HOST }}
           DB_PORT: ${{ steps.fetch_doppler.outputs.DB_PORT }}
           DB_NAME: ${{ steps.fetch_doppler.outputs.DB_NAME }}
           DB_USERNAME: ${{ steps.fetch_doppler.outputs.DB_USERNAME }}
@@ -252,14 +254,14 @@ jobs:
           docker run --rm --network host \
             -v "${{ github.workspace }}/backend/src/main/resources/db/migration:/flyway/sql:ro" \
             redgate/flyway:11 \
-            -url="jdbc:mysql://127.0.0.1:${DB_PORT}/${DB_NAME}?serverTimezone=UTC&characterEncoding=UTF-8" \
+            -url="jdbc:mysql://${DB_TUNNER_HOST}:${DB_PORT}/${DB_NAME}?serverTimezone=UTC&characterEncoding=UTF-8" \
             -user="${DB_USERNAME}" \
             -password="${DB_PASSWORD}" \
             validate -ignoreMigrationPatterns='*:pending' && \
           docker run --rm --network host \
             -v "${{ github.workspace }}/backend/src/main/resources/db/migration:/flyway/sql:ro" \
             redgate/flyway:11 \
-            -url="jdbc:mysql://127.0.0.1:${DB_PORT}/${DB_NAME}?serverTimezone=UTC&characterEncoding=UTF-8" \
+            -url="jdbc:mysql://${DB_TUNNER_HOST}:${DB_PORT}/${DB_NAME}?serverTimezone=UTC&characterEncoding=UTF-8" \
             -user="${DB_USERNAME}" \
             -password="${DB_PASSWORD}" \
             info

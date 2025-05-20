@@ -48,6 +48,7 @@ public interface PostReportRepository extends JpaRepository<PostReport, Long> {
 				pk.keyword_id,
 				k.text,
 				pr.status
+		ORDER BY latestReportedAt DESC
 		""",
 		countQuery = """
 			SELECT COUNT(DISTINCT pr.post_id)

@@ -461,11 +461,11 @@ public class PostService {
 			repositoryPageable = PageRequest.of(
 				pageable.getPageNumber(),
 				pageable.getPageSize(),
-				repositorySort
+				Sort.unsorted()
 			);
 		} else {
 			// 입력 Pageable이 페이징 정보를 가지고 있지 않다면 (Unpaged)
-			repositoryPageable = PageRequest.of(0, Integer.MAX_VALUE, repositorySort);
+			repositoryPageable = PageRequest.of(0, Integer.MAX_VALUE, Sort.unsorted());
 		}
 
 		// 2. 검색 조건 검증 및 Repository 쿼리 파라미터에 맞게 매핑

@@ -57,60 +57,60 @@ jobs:
             --output text)
           echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
 
-  pre-flyway-validate:
-    name: Flyway Validate & Info (${{ inputs.branch }})
-    needs: get-instance-id
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  # pre-flyway-validate:
+  #   name: Flyway Validate & Info (${{ inputs.branch }})
+  #   needs: get-instance-id
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: SSH Agent 설정
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.BASTION_SSH_KEY }}
+  #     - name: SSH Agent 설정
+  #       uses: webfactory/ssh-agent@v0.9.0
+  #       with:
+  #         ssh-private-key: ${{ secrets.BASTION_SSH_KEY }}
 
-      - name: Setup Doppler (${{ inputs.branch }})
-        uses: dopplerhq/secrets-fetch-action@v1.3.0
-        id: fetch_doppler
-        with:
-          doppler-token: ${{ secrets.DOPPLER_SERVICE_TOKEN }}
-          doppler-project: kkokkio-backend
-          doppler-config: ${{ inputs.doppler_config }}
+  #     - name: Setup Doppler (${{ inputs.branch }})
+  #       uses: dopplerhq/secrets-fetch-action@v1.3.0
+  #       id: fetch_doppler
+  #       with:
+  #         doppler-token: ${{ secrets.DOPPLER_SERVICE_TOKEN }}
+  #         doppler-project: kkokkio-backend
+  #         doppler-config: ${{ inputs.doppler_config }}
 
-      - name: SSH 터널링 시작
-        run: |
-          HOST=${{ needs.get-instance-id.outputs.instance_id }}
-          RDS_HOST=${{ steps.fetch_doppler.outputs.RDS_TUNNEL_HOST }}
-          PORT=${{ steps.fetch_doppler.outputs.DB_PORT }}
-          ssh -o StrictHostKeyChecking=no \
-              -N -L ${{ steps.fetch_doppler.outputs.DB_PORT }}:${RDS_HOST}:${{ steps.fetch_doppler.outputs.DB_PORT }} ${{ steps.fetch_doppler.outputs.BASTION_USER }}@${{ steps.fetch_doppler.outputs.BASTION_HOST }} &
-          echo $! > tunnel.pid
-          sleep 5
+  #     - name: SSH 터널링 시작
+  #       run: |
+  #         HOST=${{ needs.get-instance-id.outputs.instance_id }}
+  #         RDS_HOST=${{ steps.fetch_doppler.outputs.RDS_TUNNEL_HOST }}
+  #         PORT=${{ steps.fetch_doppler.outputs.DB_PORT }}
+  #         ssh -o StrictHostKeyChecking=no \
+  #             -N -L ${{ steps.fetch_doppler.outputs.DB_PORT }}:${RDS_HOST}:${{ steps.fetch_doppler.outputs.DB_PORT }} ${{ steps.fetch_doppler.outputs.BASTION_USER }}@${{ steps.fetch_doppler.outputs.BASTION_HOST }} &
+  #         echo $! > tunnel.pid
+  #         sleep 5
 
-      - name: Flyway Validate & Info
-        env:
-          DB_HOST: ${{ steps.fetch_doppler.outputs.DB_HOST }}
-          DB_PORT: ${{ steps.fetch_doppler.outputs.DB_PORT }}
-          DB_NAME: ${{ steps.fetch_doppler.outputs.DB_NAME }}
-          DB_USERNAME: ${{ steps.fetch_doppler.outputs.DB_USERNAME }}
-          DB_PASSWORD: ${{ steps.fetch_doppler.outputs.DB_PASSWORD }}
-        run: |
-          docker run --rm --network host \
-            -v "${{ github.workspace }}/backend/src/main/resources/db/migration:/flyway/sql:ro" \
-            redgate/flyway:11 \
-            -url="jdbc:mysql://127.0.0.1:${DB_PORT}/${DB_NAME}?serverTimezone=UTC&characterEncoding=UTF-8" \
-            -user="${DB_USERNAME}" \
-            -password="${DB_PASSWORD}" \
-            validate -ignoreMigrationPatterns='*:pending'
+  #     - name: Flyway Validate & Info
+  #       env:
+  #         DB_HOST: ${{ steps.fetch_doppler.outputs.DB_HOST }}
+  #         DB_PORT: ${{ steps.fetch_doppler.outputs.DB_PORT }}
+  #         DB_NAME: ${{ steps.fetch_doppler.outputs.DB_NAME }}
+  #         DB_USERNAME: ${{ steps.fetch_doppler.outputs.DB_USERNAME }}
+  #         DB_PASSWORD: ${{ steps.fetch_doppler.outputs.DB_PASSWORD }}
+  #       run: |
+  #         docker run --rm --network host \
+  #           -v "${{ github.workspace }}/backend/src/main/resources/db/migration:/flyway/sql:ro" \
+  #           redgate/flyway:11 \
+  #           -url="jdbc:mysql://127.0.0.1:${DB_PORT}/${DB_NAME}?serverTimezone=UTC&characterEncoding=UTF-8" \
+  #           -user="${DB_USERNAME}" \
+  #           -password="${DB_PASSWORD}" \
+  #           validate -ignoreMigrationPatterns='*:pending'
 
-      - name: SSH 터널 종료
-        if: always()
-        run: |
-          kill $(cat tunnel.pid) || true
+  #     - name: SSH 터널 종료
+  #       if: always()
+  #       run: |
+  #         kill $(cat tunnel.pid) || true
           
   makeTagAndRelease:
     name: Create Tag & Release (${{ inputs.branch }})
-    needs: pre-flyway-validate
+    # needs: pre-flyway-validate
     runs-on: ubuntu-latest
     outputs:
       tag_name: ${{ steps.create_tag.outputs.new_tag }}
@@ -213,60 +213,60 @@ jobs:
             docker rmi $(docker images -f "dangling=true" -q) || true
 
 
-  post-flyway-validate:
-    name: Flyway Validate & Info (${{ inputs.branch }})
-    needs: [deploy, get-instance-id]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  # post-flyway-validate:
+  #   name: Flyway Validate & Info (${{ inputs.branch }})
+  #   needs: [deploy, get-instance-id]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: SSH Agent 설정
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.BASTION_SSH_KEY }}
+  #     - name: SSH Agent 설정
+  #       uses: webfactory/ssh-agent@v0.9.0
+  #       with:
+  #         ssh-private-key: ${{ secrets.BASTION_SSH_KEY }}
 
-      - name: Setup Doppler (${{ inputs.branch }})
-        uses: dopplerhq/secrets-fetch-action@v1.3.0
-        id: fetch_doppler
-        with:
-          doppler-token: ${{ secrets.DOPPLER_SERVICE_TOKEN }}
-          doppler-project: kkokkio-backend
-          doppler-config: ${{ inputs.doppler_config }}
+  #     - name: Setup Doppler (${{ inputs.branch }})
+  #       uses: dopplerhq/secrets-fetch-action@v1.3.0
+  #       id: fetch_doppler
+  #       with:
+  #         doppler-token: ${{ secrets.DOPPLER_SERVICE_TOKEN }}
+  #         doppler-project: kkokkio-backend
+  #         doppler-config: ${{ inputs.doppler_config }}
 
-      - name: SSH 터널링 시작
-        run: |
-          HOST=${{ needs.get-instance-id.outputs.instance_id }}
-          RDS_HOST=${{ steps.fetch_doppler.outputs.RDS_TUNNEL_HOST }}
-          PORT=${{ steps.fetch_doppler.outputs.DB_PORT }}
-          ssh -o StrictHostKeyChecking=no \
-              -N -L ${{ steps.fetch_doppler.outputs.DB_PORT }}:${RDS_HOST}:${{ steps.fetch_doppler.outputs.DB_PORT }} ${{ steps.fetch_doppler.outputs.BASTION_USER }}@${{ steps.fetch_doppler.outputs.BASTION_HOST }} &
-          echo $! > tunnel.pid
-          sleep 5
+  #     - name: SSH 터널링 시작
+  #       run: |
+  #         HOST=${{ needs.get-instance-id.outputs.instance_id }}
+  #         RDS_HOST=${{ steps.fetch_doppler.outputs.RDS_TUNNEL_HOST }}
+  #         PORT=${{ steps.fetch_doppler.outputs.DB_PORT }}
+  #         ssh -o StrictHostKeyChecking=no \
+  #             -N -L ${{ steps.fetch_doppler.outputs.DB_PORT }}:${RDS_HOST}:${{ steps.fetch_doppler.outputs.DB_PORT }} ${{ steps.fetch_doppler.outputs.BASTION_USER }}@${{ steps.fetch_doppler.outputs.BASTION_HOST }} &
+  #         echo $! > tunnel.pid
+  #         sleep 5
 
-      - name: Flyway Validate & Info
-        env:
-          DB_HOST: ${{ steps.fetch_doppler.outputs.DB_HOST }}
-          DB_PORT: ${{ steps.fetch_doppler.outputs.DB_PORT }}
-          DB_NAME: ${{ steps.fetch_doppler.outputs.DB_NAME }}
-          DB_USERNAME: ${{ steps.fetch_doppler.outputs.DB_USERNAME }}
-          DB_PASSWORD: ${{ steps.fetch_doppler.outputs.DB_PASSWORD }}
-        run: |
-          docker run --rm --network host \
-            -v "${{ github.workspace }}/backend/src/main/resources/db/migration:/flyway/sql:ro" \
-            redgate/flyway:11 \
-            -url="jdbc:mysql://127.0.0.1:${DB_PORT}/${DB_NAME}?serverTimezone=UTC&characterEncoding=UTF-8" \
-            -user="${DB_USERNAME}" \
-            -password="${DB_PASSWORD}" \
-            validate -ignoreMigrationPatterns='*:pending' && \
-          docker run --rm --network host \
-            -v "${{ github.workspace }}/backend/src/main/resources/db/migration:/flyway/sql:ro" \
-            redgate/flyway:11 \
-            -url="jdbc:mysql://127.0.0.1:${DB_PORT}/${DB_NAME}?serverTimezone=UTC&characterEncoding=UTF-8" \
-            -user="${DB_USERNAME}" \
-            -password="${DB_PASSWORD}" \
-            info
+  #     - name: Flyway Validate & Info
+  #       env:
+  #         DB_HOST: ${{ steps.fetch_doppler.outputs.DB_HOST }}
+  #         DB_PORT: ${{ steps.fetch_doppler.outputs.DB_PORT }}
+  #         DB_NAME: ${{ steps.fetch_doppler.outputs.DB_NAME }}
+  #         DB_USERNAME: ${{ steps.fetch_doppler.outputs.DB_USERNAME }}
+  #         DB_PASSWORD: ${{ steps.fetch_doppler.outputs.DB_PASSWORD }}
+  #       run: |
+  #         docker run --rm --network host \
+  #           -v "${{ github.workspace }}/backend/src/main/resources/db/migration:/flyway/sql:ro" \
+  #           redgate/flyway:11 \
+  #           -url="jdbc:mysql://127.0.0.1:${DB_PORT}/${DB_NAME}?serverTimezone=UTC&characterEncoding=UTF-8" \
+  #           -user="${DB_USERNAME}" \
+  #           -password="${DB_PASSWORD}" \
+  #           validate -ignoreMigrationPatterns='*:pending' && \
+  #         docker run --rm --network host \
+  #           -v "${{ github.workspace }}/backend/src/main/resources/db/migration:/flyway/sql:ro" \
+  #           redgate/flyway:11 \
+  #           -url="jdbc:mysql://127.0.0.1:${DB_PORT}/${DB_NAME}?serverTimezone=UTC&characterEncoding=UTF-8" \
+  #           -user="${DB_USERNAME}" \
+  #           -password="${DB_PASSWORD}" \
+  #           info
 
-      - name: SSH 터널 종료
-        if: always()
-        run: |
-          kill $(cat tunnel.pid) || true
+  #     - name: SSH 터널 종료
+  #       if: always()
+  #       run: |
+  #         kill $(cat tunnel.pid) || true

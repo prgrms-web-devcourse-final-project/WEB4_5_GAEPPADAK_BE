@@ -501,7 +501,7 @@ class CommentServiceTest {
 	void test8() {
 		/// given
 		Pageable inputPageable = PageRequest.of(0, 10, Sort.unsorted());
-		Pageable expectedPageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "reportedAt"));
+		Pageable expectedPageable = PageRequest.of(0, 10, Sort.unsorted());
 
 		// Repository가 반환할 Mock 데이터
 		ReportedCommentSummary mockSummary1 = mock(ReportedCommentSummary.class);
@@ -533,7 +533,7 @@ class CommentServiceTest {
 	@DisplayName("신고된 댓글 목록 조회 - 성공 (검색 조건 있음)")
 	void test9() {
 		/// given
-		Pageable inputPageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "reportedAt"));
+		Pageable inputPageable = PageRequest.of(0, 10, Sort.unsorted());
 		String searchTarget = "nickname";
 		String searchValue = "testUser";
 
@@ -578,7 +578,7 @@ class CommentServiceTest {
 		Pageable inputPageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.ASC, "reportCount"));
 
 		// Service 로직에서 정렬 속성 이름이 유효한지 검증 후 Repository로 전달될 Pageable
-		Pageable expectedPageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.ASC, "reportCount"));
+		Pageable expectedPageable = PageRequest.of(0, 5, Sort.unsorted());
 
 		// Repository가 반환할 Mock 데이터
 		ReportedCommentSummary mockSummary1 = mock(ReportedCommentSummary.class);

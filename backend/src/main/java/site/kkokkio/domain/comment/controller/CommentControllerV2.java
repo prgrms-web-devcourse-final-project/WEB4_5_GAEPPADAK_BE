@@ -88,11 +88,9 @@ public class CommentControllerV2 {
 			sort = "reportedAt",
 			direction = Sort.Direction.DESC
 		) Pageable pageable,
-
-		@Parameter(description = "검색 대상 필드", example = "nickname")
+		@Parameter(description = "검색 대상 필드")
 		@RequestParam(value = "searchTarget", required = false) String searchTarget,
-
-		@Parameter(description = "검색어", example = "ETC")
+		@Parameter(description = "검색어")
 		@RequestParam(value = "searchValue", required = false) String searchValue
 	) {
 		// 서비스 레이어의 신고된 댓글 목록 조회 메서드 호출

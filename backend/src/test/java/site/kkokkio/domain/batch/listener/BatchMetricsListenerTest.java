@@ -17,7 +17,6 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
@@ -61,30 +60,25 @@ class BatchMetricsListenerTest {
 			io.micrometer.core.instrument.Tag.of("application", "trend-batch-test"),
 			io.micrometer.core.instrument.Tag.of("instance", "test"),
 			io.micrometer.core.instrument.Tag.of("job", "myJob"),
-			io.micrometer.core.instrument.Tag.of("step", "myStep"),
-			io.micrometer.core.instrument.Tag.of("bucket", "bucket1")
+			io.micrometer.core.instrument.Tag.of("step", "myStep")
 		);
-		DistributionSummary newsSum = registry.find(BATCH_NEWS_FETCHED)
-			.tags(baseTags).summary();
-		assertThat(newsSum.count()).isOne();
-		assertThat(newsSum.totalAmount()).isEqualTo(5.0);
-
-		DistributionSummary videoSum = registry.find(BATCH_VIDEO_FETCHED)
-			.tags(baseTags).summary();
-		assertThat(videoSum.count()).isOne();
-		assertThat(videoSum.totalAmount()).isEqualTo(3.0);
-
-		DistributionSummary lowVarSum = registry.find(BATCH_NOVELTY_LOWVAR)
-			.tags(baseTags).summary();
-		assertThat(lowVarSum.count()).isOne();
-		assertThat(lowVarSum.totalAmount()).isEqualTo(2.0);
-
-		DistributionSummary postSum = registry.find(BATCH_POST_CREATED)
-			.tags(baseTags).summary();
-		assertThat(postSum.count()).isOne();
-		assertThat(postSum.totalAmount()).isEqualTo(4.0);
-
 		// Counter metrics
+		Counter newsSum = registry.find(BATCH_NEWS_FETCHED)
+			.tags(baseTags).counter();
+		assertThat(newsSum.count()).isEqualTo(5.0);
+
+		Counter videoSum = registry.find(BATCH_VIDEO_FETCHED)
+			.tags(baseTags).counter();
+		assertThat(videoSum.count()).isEqualTo(3.0);
+
+		Counter lowVarSum = registry.find(BATCH_NOVELTY_LOWVAR)
+			.tags(baseTags).counter();
+		assertThat(lowVarSum.count()).isEqualTo(2.0);
+
+		Counter postSum = registry.find(BATCH_POST_CREATED)
+			.tags(baseTags).counter();
+		assertThat(postSum.count()).isEqualTo(4.0);
+
 		Counter newsFail = registry.find(BATCH_NEWS_API_FAIL_TOTAL)
 			.tags(baseTags).counter();
 		assertThat(newsFail.count()).isEqualTo(1.0);
@@ -93,10 +87,9 @@ class BatchMetricsListenerTest {
 			.tags(baseTags).counter();
 		assertThat(videoFail.count()).isEqualTo(0.0);
 
-		// Gauge metrics
-		Gauge cacheGauge = registry.find(BATCH_CACHE_SIZE)
-			.tags(baseTags).gauge();
-		assertThat(cacheGauge.value()).isEqualTo(7.0);
+		Counter cacheGauge = registry.find(BATCH_CACHE_SIZE)
+			.tags(baseTags).counter();
+		assertThat(cacheGauge.count()).isEqualTo(7.0);
 	}
 
 	@Test

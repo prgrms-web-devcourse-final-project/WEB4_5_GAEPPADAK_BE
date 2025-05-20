@@ -80,9 +80,10 @@ jobs:
       - name: SSH 터널링 시작
         run: |
           HOST=${{ needs.get-instance-id.outputs.instance_id }}
+          RDS_HOST=${{ steps.fetch_doppler.outputs.RDS_TUNNEL_HOST }}
           PORT=${{ steps.fetch_doppler.outputs.DB_PORT }}
           ssh -o StrictHostKeyChecking=no \
-              -N -L ${{ steps.fetch_doppler.outputs.DB_PORT }}:localhost:${{ steps.fetch_doppler.outputs.DB_PORT }} ${{ steps.fetch_doppler.outputs.BASTION_USER }}@${{ steps.fetch_doppler.outputs.BASTION_HOST }} &
+              -N -L ${{ steps.fetch_doppler.outputs.DB_PORT }}:${RDS_HOST}:${{ steps.fetch_doppler.outputs.DB_PORT }} ${{ steps.fetch_doppler.outputs.BASTION_USER }}@${{ steps.fetch_doppler.outputs.BASTION_HOST }} &
           echo $! > tunnel.pid
           sleep 5
 
@@ -236,9 +237,10 @@ jobs:
       - name: SSH 터널링 시작
         run: |
           HOST=${{ needs.get-instance-id.outputs.instance_id }}
+          RDS_HOST=${{ steps.fetch_doppler.outputs.RDS_TUNNEL_HOST }}
           PORT=${{ steps.fetch_doppler.outputs.DB_PORT }}
           ssh -o StrictHostKeyChecking=no \
-              -N -L ${{ steps.fetch_doppler.outputs.DB_PORT }}:localhost:${{ steps.fetch_doppler.outputs.DB_PORT }} ${{ steps.fetch_doppler.outputs.BASTION_USER }}@${{ steps.fetch_doppler.outputs.BASTION_HOST }} &
+              -N -L ${{ steps.fetch_doppler.outputs.DB_PORT }}:${RDS_HOST}:${{ steps.fetch_doppler.outputs.DB_PORT }} ${{ steps.fetch_doppler.outputs.BASTION_USER }}@${{ steps.fetch_doppler.outputs.BASTION_HOST }} &
           echo $! > tunnel.pid
           sleep 5
 

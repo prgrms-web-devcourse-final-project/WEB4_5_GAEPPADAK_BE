@@ -51,19 +51,19 @@ public class KeywordMetricHourly extends BaseTimeEntity {
 
     @Builder.Default
     @Column(name = "rank_delta", nullable = false)
-    private double rankDelta = -1.0;
+    private double rankDelta = 0.0;
 
     @Builder.Default
     @Column(name = "novelty_ratio", nullable = false)
-    private double noveltyRatio = -1.0;
+    private double noveltyRatio = 1.0;
 
     @Builder.Default
     @Column(name = "weighted_novelty", nullable = false)
-    private double weightedNovelty = -1.0;
+    private double weightedNovelty = 10;
 
     @Builder.Default
     @Column(name = "no_post_streak", nullable = false)
-    private int noPostStreak = -1;
+    private int noPostStreak = 0;
 
     @Builder.Default
     @Column(name = "low_variation", nullable = false)

@@ -199,33 +199,40 @@ public class CommentService {
 
 		// 1. 정렬 옵션 검증 및 매핑
 		Sort apiSort = pageable.getSort();
-		Sort repositorySort = Sort.unsorted();
 
 		// 정렬 속성 및 기본 정렬 방향 정의
 		List<String> sortProperties = Arrays.asList("reportedAt", "reportCount");
-		Sort.Direction defaultDirection = Sort.Direction.DESC;
+		List<String> repositorySortProperties = Arrays.asList("latestReportedAt", "reportCount");
 
-		// Pageable의 Sort 객체 순회
+		Sort.Direction defaultDirection = Sort.Direction.ASC;
+		String defaultSortProperty = "reportedAt";
+
+		// Pageable의 Sort 객체 순회하며 개별 정렬 Order 처리
 		for (Sort.Order order : apiSort) {
 			String property = order.getProperty();
+			Sort.Direction direction = order.getDirection();
 
 			// 정렬 속성 이름이 허용된 목록에 있는지 확인
-			if (!sortProperties.contains(property)) {
-				// 허용되지 않은 정렬 속성이면 오류 발생
+			int propertyIndex = sortProperties.indexOf(property);
+
+			// 허용되지 않은 정렬 속성이면 오류 발생
+			if (propertyIndex == -1) {
 				throw new ServiceException("400", "부적절한 정렬 옵션입니다.");
 			}
-
-			// 정렬 속성 이름을 CommentRepositoryRepository 쿼리의 별칭과 연결
-			repositorySort = repositorySort.and(Sort.by(order.getDirection(), property));
 		}
 
-		// 만약 Pageable에 정렬 정보가 전혀 없었다면 기본 정렬 적용
-		if (repositorySort.isEmpty()) {
-			repositorySort = Sort.by(defaultDirection, "reportedAt");
-		}
+		// Repository에 전달할 최종 Pageable 객체 생성
+		Pageable repositoryPageable;
 
-		// Pageable 객체 재생성 (원본 Pageable의 다른 정보(page, size)를 유지하고 정렬만 대체
-		Pageable repositoryPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), repositorySort);
+		if (pageable.isPaged()) {
+			repositoryPageable = PageRequest.of(
+				pageable.getPageNumber(),
+				pageable.getPageSize(),
+				Sort.unsorted()
+			);
+		} else {
+			repositoryPageable = PageRequest.of(0, Integer.MAX_VALUE, Sort.unsorted());
+		}
 
 		// 2. 검색 조건 매핑
 		String searchNickname = null;

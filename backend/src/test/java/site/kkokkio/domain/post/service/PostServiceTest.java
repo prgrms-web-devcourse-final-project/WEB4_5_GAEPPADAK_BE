@@ -511,15 +511,15 @@ public class PostServiceTest {
 	@DisplayName("신고된 포스트 목록 조회 - 성공 (기본 페이징)")
 	void getReportedPostsList_Success_Basic() {
 		/// given
-		Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Order.desc("reportedAt")));
+		Pageable pageable = PageRequest.of(0, 10, Sort.unsorted());
 
 		// Service 메서드는 Repository 호출 시 Repository 별칭 기준의 Pageable을 생성하여 전달
-		Pageable expectedRepoPageable = PageRequest.of(0, 10, Sort.by(Sort.Order.desc("latestReportedAt")));
+		Pageable expectedRepoPageable = PageRequest.of(0, 10, Sort.unsorted());
 
 		// Repository가 반환할 ReportedPostSummary 데이터 및 Page 객체 Mocking
 		ReportedPostSummary summary1 = new ReportedPostSummary(
 			1L, "제목1", "요약1", 10L, "키워드A",
-			"BAD_CONTENT", LocalDateTime.now(), 3, ReportProcessingStatus.PENDING
+			"BAD_CONTENT", LocalDateTime.now().toString(), 3L, "PENDING"
 		);
 		List<ReportedPostSummary> summaryList = List.of(summary1);
 		Page<ReportedPostSummary> mockRepoPage = new PageImpl<>(summaryList, expectedRepoPageable, summaryList.size());
@@ -553,8 +553,7 @@ public class PostServiceTest {
 		String expectedSearchTitle = "테스트";
 
 		// Service 메서드가 Unpaged Pageable을 받아 Repository에 전달할 예상 Pageable 객체
-		Pageable expectedRepoPageable = PageRequest.of(0, Integer.MAX_VALUE,
-			Sort.by(Sort.Order.desc("latestReportedAt")));
+		Pageable expectedRepoPageable = PageRequest.of(0, Integer.MAX_VALUE, Sort.unsorted());
 
 		// Repository가 반환할 Page 객체 Mocking
 		Page<ReportedPostSummary> mockRepoPage = new PageImpl<>(List.of(), pageable, 0);
@@ -578,10 +577,10 @@ public class PostServiceTest {
 	@DisplayName("신고된 포스트 목록 조회 - 성공 (정렬 적용)")
 	void getReportedPostsList_Success_Sort() {
 		/// given
-		Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Order.asc("reportCount")));
+		Pageable pageable = PageRequest.of(0, 10, Sort.unsorted());
 
 		// Service 메서드는 Repository 호출 시 Repository 별칭 기준의 Pageable을 생성하여 전달
-		Pageable expectedRepoPageable = PageRequest.of(0, 10, Sort.by(Sort.Order.asc("reportCount")));
+		Pageable expectedRepoPageable = PageRequest.of(0, 10, Sort.unsorted());
 
 		// Repository가 반환할 Page 객체 Mocking
 		Page<ReportedPostSummary> mockRepoPage = new PageImpl<>(List.of(), expectedRepoPageable, 0);

@@ -93,6 +93,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		filterChain.doFilter(request, response);
 	}
 
+	@Override
+	protected boolean shouldNotFilter(HttpServletRequest request) {
+		return request.getRequestURI().equals("/api/v1/auth/logout");
+	}
+
 	// 쿠키에서 토큰 추출하는 메서드
 	private String extractTokenFromCookie(HttpServletRequest request) {
 		Cookie[] cookies = request.getCookies();

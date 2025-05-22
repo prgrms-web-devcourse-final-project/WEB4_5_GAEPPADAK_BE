@@ -25,6 +25,7 @@ import site.kkokkio.domain.keyword.entity.Keyword;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourly;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourlyId;
 import site.kkokkio.domain.keyword.repository.KeywordMetricHourlyRepository;
+import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.global.enums.Platform;
 import site.kkokkio.global.exception.ServiceException;
 
@@ -127,16 +128,28 @@ public class KeywordMetricHourlyServiceTest {
 			.volume(100)
 			.noveltyRatio(0.5)
 			.build();
+
+		// PreviousMetric Mock 설정: lowVariation일 때 post를 유지해야 하므로 previousMetric에 post를 설정
+		Post dummyPost = Post.builder().id(99L).title("Dummy Post").build();
+		KeywordMetricHourly previousMetric = KeywordMetricHourly.builder()
+			.id(KeywordMetricHourlyId.builder().keywordId(keywordId).bucketAt(LocalDateTime.now(ZoneId.of("UTC")).withHour(9)).platform(Platform.GOOGLE_TREND).build())
+			.keyword(keyword)
+			.post(dummyPost) // 낮은 변동성일 때 유지될 포스트
+			.volume(50) // previousMetric의 volume은 rankDelta 계산에 영향을 미치므로 설정
+			.noPostStreak(1)
+			.build();
+
 		List<Long> postableIds = new ArrayList<>();
 		ArgumentCaptor<KeywordMetricHourly> metricCaptor = ArgumentCaptor.forClass(KeywordMetricHourly.class);
 		when(keywordMetricHourlyRepository.save(metricCaptor.capture())).thenReturn(currentMetric);
 
+
 		// when
 		Method scoreNoveltyEvaluationMethod = KeywordMetricHourlyService.class.getDeclaredMethod(
-			"scoreNoveltyEvaluation", KeywordMetricHourly.class, List.class);
+			"scoreNoveltyEvaluation", KeywordMetricHourly.class, KeywordMetricHourly.class, List.class);
 		scoreNoveltyEvaluationMethod.setAccessible(true);
 		boolean lowVariationResult = (boolean)scoreNoveltyEvaluationMethod.invoke(keywordMetricHourlyService,
-			currentMetric, postableIds);
+			currentMetric, previousMetric, postableIds);
 
 		// then
 		assertThat(lowVariationResult).isTrue();
@@ -166,16 +179,25 @@ public class KeywordMetricHourlyServiceTest {
 			.volume(200)
 			.noveltyRatio(0.8)
 			.build();
+
+		KeywordMetricHourly previousMetric = KeywordMetricHourly.builder()
+			.id(KeywordMetricHourlyId.builder().keywordId(keywordId).bucketAt(LocalDateTime.now(ZoneId.of("UTC")).withHour(9)).platform(Platform.GOOGLE_TREND).build())
+			.keyword(keyword)
+			.post(Post.builder().id(88L).title("Old Post").build()) // 이전 Post가 있어도 무시되어야 함
+			.volume(100)
+			.noPostStreak(2)
+			.build();
+
 		List<Long> postableIds = new ArrayList<>();
 		ArgumentCaptor<KeywordMetricHourly> metricCaptor = ArgumentCaptor.forClass(KeywordMetricHourly.class);
 		when(keywordMetricHourlyRepository.save(metricCaptor.capture())).thenReturn(currentMetric);
 
 		// when
 		Method scoreNoveltyEvaluationMethod = KeywordMetricHourlyService.class.getDeclaredMethod(
-			"scoreNoveltyEvaluation", KeywordMetricHourly.class, List.class);
+			"scoreNoveltyEvaluation", KeywordMetricHourly.class, KeywordMetricHourly.class, List.class);
 		scoreNoveltyEvaluationMethod.setAccessible(true);
 		boolean lowVariationResult = (boolean)scoreNoveltyEvaluationMethod.invoke(keywordMetricHourlyService,
-			currentMetric, postableIds);
+			currentMetric, previousMetric, postableIds);
 
 		// then
 		assertThat(lowVariationResult).isFalse();
@@ -250,14 +272,22 @@ public class KeywordMetricHourlyServiceTest {
 		boolean lowVariation = true;
 		int noPostStreak = 1;
 
+		KeywordMetricHourly previousMetric = KeywordMetricHourly.builder()
+			.id(KeywordMetricHourlyId.builder().keywordId(keyword.getId()).bucketAt(LocalDateTime.now(ZoneId.of("UTC")).withHour(9)).platform(Platform.GOOGLE_TREND).build())
+			.keyword(keyword)
+			.post(Post.builder().id(88L).title("Old Post").build())
+			.volume(100)
+			.noPostStreak(2)
+			.build();
+
 		ArgumentCaptor<KeywordMetricHourly> metricCaptor = ArgumentCaptor.forClass(KeywordMetricHourly.class);
 		when(keywordMetricHourlyRepository.save(metricCaptor.capture())).thenReturn(currentMetric);
 
 		// when
 		Method updateKeywordMetricMethod = KeywordMetricHourlyService.class.getDeclaredMethod("updateKeywordMetric",
-			KeywordMetricHourly.class, int.class, boolean.class, int.class);
+			KeywordMetricHourly.class, KeywordMetricHourly.class, int.class, boolean.class, int.class);
 		updateKeywordMetricMethod.setAccessible(true);
-		updateKeywordMetricMethod.invoke(keywordMetricHourlyService, currentMetric, noveltyScore, lowVariation,
+		updateKeywordMetricMethod.invoke(keywordMetricHourlyService, currentMetric, previousMetric, noveltyScore, lowVariation,
 			noPostStreak);
 
 		// then

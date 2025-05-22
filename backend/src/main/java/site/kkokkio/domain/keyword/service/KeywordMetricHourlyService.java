@@ -14,6 +14,7 @@ import site.kkokkio.domain.keyword.dto.KeywordMetricHourlyDto;
 import site.kkokkio.domain.keyword.dto.NoveltyStatsDto;
 import site.kkokkio.domain.keyword.entity.KeywordMetricHourly;
 import site.kkokkio.domain.keyword.repository.KeywordMetricHourlyRepository;
+import site.kkokkio.domain.post.entity.Post;
 import site.kkokkio.global.exception.ServiceException;
 
 @Service
@@ -68,7 +69,8 @@ public class KeywordMetricHourlyService {
 
 			if (allMetric.size() >= 2) {
 				KeywordMetricHourly currentMetric = allMetric.getFirst();
-				boolean lowVariation = scoreNoveltyEvaluation(currentMetric, postableIds);
+				KeywordMetricHourly previousMetric = allMetric.get(1);
+				boolean lowVariation = scoreNoveltyEvaluation(currentMetric, previousMetric, postableIds);
 				if (lowVariation) {
 					lowVariationCount++;
 				}
@@ -82,7 +84,7 @@ public class KeywordMetricHourlyService {
 	}
 
 	// 점수 기반 신규성 판단 로직
-	private boolean scoreNoveltyEvaluation(KeywordMetricHourly currentMetric, List<Long> postableIds) {
+	private boolean scoreNoveltyEvaluation(KeywordMetricHourly currentMetric, KeywordMetricHourly previousMetric, List<Long> postableIds) {
 		int score = calculateNoveltyScore(currentMetric);
 		boolean lowVariation = false;
 		int noPostStreak = currentMetric.getNoPostStreak();
@@ -100,7 +102,7 @@ public class KeywordMetricHourlyService {
 
 		// 최종 스코어 (신규성 스코어 우선 / 신규성 스코어가 같을 시 검색량 우선하도록 score * 10000 삽입)
 		// 이후 변경된 필드 반영
-		updateKeywordMetric(currentMetric, score, lowVariation, noPostStreak);
+		updateKeywordMetric(currentMetric, previousMetric, score, lowVariation, noPostStreak);
 		return lowVariation;
 	}
 
@@ -115,12 +117,18 @@ public class KeywordMetricHourlyService {
 	}
 
 	// KeywordMetricHourly 업데이트
-	private void updateKeywordMetric(KeywordMetricHourly currentMetric, int noveltyScore, boolean lowVariation,
+	private void updateKeywordMetric(KeywordMetricHourly currentMetric, KeywordMetricHourly previousMetric, int noveltyScore, boolean lowVariation,
 		int noPostStreak) {
+		Post updateMetricPost = currentMetric.getPost();
+
+		// 만약 포스트가 생성되지 않을 경우, 이전 실시간 키워드의 포스트를 이어받음.
+		if(lowVariation) {
+			updateMetricPost = previousMetric.getPost();
+		}
 		KeywordMetricHourly updatedMetric = KeywordMetricHourly.builder()
 			.id(currentMetric.getId())
 			.keyword(currentMetric.getKeyword())
-			.post(currentMetric.getPost())
+			.post(updateMetricPost)
 			.volume(currentMetric.getVolume())
 			.score((noveltyScore * 10000) + currentMetric.getVolume())
 			.rankDelta(currentMetric.getRankDelta())

@@ -157,7 +157,7 @@ public class KeywordMetricHourlyServiceTest {
 		KeywordMetricHourly savedMetric = metricCaptor.getValue();
 		assertThat(savedMetric.isLowVariation()).isTrue();
 		assertThat(savedMetric.getNoPostStreak()).isEqualTo(2);
-		assertThat(savedMetric.getScore()).isEqualTo(((int)(50.0 / 100) + (int)(3.0) + 1) * 10000 + 100);
+		assertThat(savedMetric.getScore()).isEqualTo(((int)(50.0 / 100) + (int)(3.0) + 1) * 1000 + 100);
 	}
 
 	@Test
@@ -205,7 +205,7 @@ public class KeywordMetricHourlyServiceTest {
 		KeywordMetricHourly savedMetric = metricCaptor.getValue();
 		assertThat(savedMetric.isLowVariation()).isFalse();
 		assertThat(savedMetric.getNoPostStreak()).isZero();
-		assertThat(savedMetric.getScore()).isEqualTo(((int)(500.0 / 100) + (int)(7.0) + 3) * 10000 + 200);
+		assertThat(savedMetric.getScore()).isEqualTo(((int)(500.0 / 100) + (int)(7.0) + 3) * 1000 + 200);
 	}
 
 	@Test
@@ -293,7 +293,7 @@ public class KeywordMetricHourlyServiceTest {
 		// then
 		verify(keywordMetricHourlyRepository, times(1)).save(any(KeywordMetricHourly.class));
 		KeywordMetricHourly savedMetric = metricCaptor.getValue();
-		assertThat(savedMetric.getScore()).isEqualTo((noveltyScore * 10000) + 150);
+		assertThat(savedMetric.getScore()).isEqualTo((noveltyScore * 1000) + 150);
 		assertThat(savedMetric.isLowVariation()).isTrue();
 		assertThat(savedMetric.getNoPostStreak()).isEqualTo(1);
 	}

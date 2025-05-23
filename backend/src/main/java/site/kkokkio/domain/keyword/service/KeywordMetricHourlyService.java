@@ -110,7 +110,9 @@ public class KeywordMetricHourlyService {
 	// 검색량 상승 폭이 클수록, 이전 fetch와의 시간폭이 클수록, Post 생성 제외 횟수가 많을수록 신규성 상승
 	private int calculateNoveltyScore(KeywordMetricHourly metric) {
 		int score = 0;
-		score += (int)(metric.getRankDelta() / 100);
+		int rankDeltaContribution = (int) (metric.getRankDelta() / 100);
+
+		score += Math.max(0, rankDeltaContribution);
 		score += (int)(metric.getWeightedNovelty());
 		score += metric.getNoPostStreak();
 		return score;
@@ -130,7 +132,7 @@ public class KeywordMetricHourlyService {
 			.keyword(currentMetric.getKeyword())
 			.post(updateMetricPost)
 			.volume(currentMetric.getVolume())
-			.score((noveltyScore * 10000) + currentMetric.getVolume())
+			.score((noveltyScore * 1000) + currentMetric.getVolume())
 			.rankDelta(currentMetric.getRankDelta())
 			.weightedNovelty(currentMetric.getWeightedNovelty())
 			.noPostStreak(noPostStreak)

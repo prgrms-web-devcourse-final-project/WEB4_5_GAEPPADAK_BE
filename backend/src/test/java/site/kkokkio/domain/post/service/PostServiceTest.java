@@ -692,13 +692,8 @@ public class PostServiceTest {
 		ReflectionTestUtils.setField(post3, "id", 3L);
 		ReflectionTestUtils.setField(post3, "deletedAt", null);
 
-		when(postRepository.findById(1L)).thenReturn(Optional.of(post1));
-
-		// 존재하지 않는 ID (999L)에 대해서는 Optional.empty() 반환
-		when(postRepository.findById(999L)).thenReturn(Optional.empty());
-
-		// PostRepository의 save 메서드 Mocking
-		when(postRepository.save(any(Post.class))).thenAnswer(invocation -> invocation.getArgument(0));
+		when(postRepository.findAllById(eq(postIdsToHide)))
+			.thenReturn(Arrays.asList(post1, post3));
 
 		/// when & then
 		assertThatThrownBy(() -> postService.hideReportedPost(postIdsToHide))
@@ -706,14 +701,15 @@ public class PostServiceTest {
 			.hasMessageContaining("존재하지 않는 포스트가 포함되어 있습니다.");
 
 		// PostRepository의 findById 메서드가 예외가 발생하기 전까지 호출되었는지 검증
-		verify(postRepository).findById(1L);
-		verify(postRepository).findById(999L);
+		verify(postRepository).findAllById(eq(postIdsToHide));
+		verify(postRepository, never()).findById(1L);
+		verify(postRepository, never()).findById(999L);
 		verify(postRepository, never()).findById(3L);
 
-		verify(postRepository).save(eq(post1));
+		verify(postRepository, never()).save(eq(post1));
 		verify(postRepository, never()).save(eq(post3));
 		verify(postReportRepository, never()).updateStatusByPostIdIn(anyList(), any(ReportProcessingStatus.class));
-		assertThat(post1.isDeleted()).isTrue();
+		assertThat(post1.isDeleted()).isFalse();
 		assertThat(post3.isDeleted()).isFalse();
 	}
 
@@ -733,20 +729,25 @@ public class PostServiceTest {
 		ReflectionTestUtils.setField(post2, "id", 2L);
 		ReflectionTestUtils.setField(post2, "deletedAt", LocalDateTime.now());
 
+		when(postRepository.findAllById(eq(postIdsToHide)))
+			.thenReturn(Arrays.asList(post1, post2));
 		when(postRepository.findById(1L)).thenReturn(Optional.of(post1));
 		when(postRepository.findById(deletedPostId)).thenReturn(Optional.of(post2));
+		when(postReportRepository.countByPostIdIn(eq(postIdsToHide)))
+			.thenReturn((long)postIdsToHide.size());
 
 		/// when & then
 		assertThatThrownBy(() -> postService.hideReportedPost(postIdsToHide))
 			.isInstanceOf(ServiceException.class)
 			.hasMessageContaining("ID [" + deletedPostId + "]포스트는 이미 삭제되었습니다.");
 
+		verify(postRepository).findAllById(eq(postIdsToHide));
+		verify(postReportRepository).countByPostIdIn(eq(postIdsToHide));
 		verify(postRepository).findById(1L);
-		verify(postRepository).findById(deletedPostId);
+		verify(postRepository).save(any(Post.class));
+		verify(postReportRepository, never())
+			.updateStatusByPostIdIn(anyList(), any(ReportProcessingStatus.class));
 		assertThat(post1.isDeleted()).isTrue();
-		verify(postRepository).save(eq(post1));
-		verify(postRepository, never()).save(eq(post2));
-		verify(postReportRepository, never()).updateStatusByPostIdIn(anyList(), any(ReportProcessingStatus.class));
 	}
 
 	@Test

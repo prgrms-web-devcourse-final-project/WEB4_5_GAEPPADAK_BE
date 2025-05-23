@@ -80,7 +80,7 @@ public class TrendsService {
 				noveltyRatio = 0.3;
 		}
 
-		int score = (((int)(noveltyRatio * 10) + noPostStreak) * 10000) + keywordInfo.getVolume();
+		int score = (((int)(noveltyRatio * 10) + noPostStreak) * 1000) + keywordInfo.getVolume();
 
 		KeywordMetricHourly metric = KeywordMetricHourly.builder()
 			.id(id)

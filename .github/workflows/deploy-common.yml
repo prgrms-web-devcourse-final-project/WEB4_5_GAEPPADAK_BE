@@ -209,6 +209,7 @@ jobs:
               -e TZ=UTC \
               -e DOPPLER_TOKEN=${{ secrets.DOPPLER_SERVICE_TOKEN }} \
               -d --name app1 -p 8080:8080 --network common \
+              -v /dockerProjects/logs:/app/logs \
               ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest && \
             docker rmi $(docker images -f "dangling=true" -q) || true
 

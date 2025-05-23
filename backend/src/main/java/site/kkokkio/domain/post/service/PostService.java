@@ -492,20 +492,37 @@ public class PostService {
 	 */
 	@Transactional
 	public void hideReportedPost(List<Long> postIds) {
-		for (Long postId : postIds) {
-			// 1. 포스트 조회 (소프트 삭제 여부와 상관없이 일단 존재하면 가져옴)
-			Post post = postRepository.findById(postId)
-				.orElseThrow(() -> new ServiceException("404", "존재하지 않는 포스트가 포함되어 있습니다."));
+		// 1. 요청된 ID 목록이 비어있는지 확인
+		if (postIds == null || postIds.isEmpty()) {
+			throw new ServiceException("400", "삭제할 포스트 ID가 제공되지 않았습니다.");
+		}
 
-			// 2. 이미 삭제(숨김)된 포스트인지 확인
+		// 2. 요청된 모든 포스트 ID에 해당하는 Post 엔티티들이 실제로 존재하는지 확인
+		List<Post> existingPosts = postRepository.findAllById(postIds);
+		if (existingPosts.size() != postIds.size()) {
+			throw new ServiceException("404", "존재하지 않는 포스트가 포함되어 있습니다.");
+		}
+
+		// 3. 요청된 postIds 중 실제로 신고된 포스트의 개수를 확인
+		long reportedPostCount = postReportRepository.countByPostIdIn(postIds);
+
+		// 4. 요청된 postIds의 개수와 실제로 신고된 포스트의 개수가 다르면 에러 처리
+		if (reportedPostCount != postIds.size()) {
+			throw new ServiceException("400", "신고되지 않은 포스트가 요청에 포함되어 있습니다.");
+		}
+
+		// 5. 각 포스트를 숨김 처리 및 신고 상태 변경
+		for (Long postId : postIds) {
+			Post post = postRepository.findById(postId)
+				.orElseThrow(() -> new ServiceException("404", "내부 오류: 포스트를 찾을 수 없습니다."));
+
+			// 이미 삭제된 포스트인지 확인
 			if (post.isDeleted()) {
 				throw new ServiceException("400", "ID [" + postId + "]포스트는 이미 삭제되었습니다.");
 			}
 
-			// 3. 포스트를 소프트 딜리트
+			// 포스트를 숨김 처리
 			post.softDelete();
-
-			// 4. 변경사항 저장
 			postRepository.save(post);
 		}
 

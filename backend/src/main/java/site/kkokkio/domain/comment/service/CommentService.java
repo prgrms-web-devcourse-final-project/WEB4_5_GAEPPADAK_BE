@@ -265,21 +265,36 @@ public class CommentService {
 	@Transactional
 	public void hideReportedComment(List<Long> commentIds) {
 
+		// 1. 요청된 ID 목록이 비어있는지 확인
+		if (commentIds == null || commentIds.isEmpty()) {
+			throw new ServiceException("400", "삭제할 댓글 ID가 제공되지 않았습니다.");
+		}
+
+		// 2. 이미 삭제(숨김)된 댓글인지 확인
+		List<Comment> existingComments = commentRepository.findAllById(commentIds);
+
+		if (existingComments.size() != commentIds.size()) {
+			throw new ServiceException("404", "존재하지 않는 댓글이 포함되어 있습니다.");
+		}
+		// 3. 요청된 commentIds 중 실제로 신고된 댓글의 개수를 확인
+		long reportedCommentCount = commentReportRepository.countByCommentIdIn(commentIds);
+
+		// 4. 요청된 commentIds의 개수와 실제로 신고된 댓글의 개수가 다르면 에러 처리
+		if (reportedCommentCount != existingComments.size()) {
+			throw new ServiceException("400", "신고되지 않은 댓글이 요청에 포함되어 있습니다.");
+		}
+
+		// 5. 각 댓글을 숨김 처리 및 신고 상태 변경
 		for (Long commentId : commentIds) {
-
-			// 1. 댓글 조회 (소프트 삭제 여부와 상관없이 일단 존재하면 가져옴)
 			Comment comment = commentRepository.findById(commentId)
-				.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글이 포함되어 있습니다."));
+				.orElseThrow(() -> new ServiceException("404", "내부 오류: 댓글을 찾을 수 없습니다."));
 
-			// 2. 이미 삭제(숨김)된 댓글인지 확인
+			// 이미 삭제된 댓글인지 확인
 			if (comment.isDeleted()) {
 				throw new ServiceException("400", "ID [" + commentId + "] 댓글은 이미 삭제되었습니다.");
 			}
 
-			// 3. 댓글을 숨김 처리
 			comment.softDelete();
-
-			// 4. 변경사항 저장
 			commentRepository.save(comment);
 		}
 

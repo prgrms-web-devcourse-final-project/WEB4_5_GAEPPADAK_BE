@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -514,12 +515,12 @@ public class PostServiceTest {
 		Pageable pageable = PageRequest.of(0, 10, Sort.unsorted());
 
 		// Service 메서드는 Repository 호출 시 Repository 별칭 기준의 Pageable을 생성하여 전달
-		Pageable expectedRepoPageable = PageRequest.of(0, 10, Sort.unsorted());
+		Pageable expectedRepoPageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "latestReportedAt"));
 
 		// Repository가 반환할 ReportedPostSummary 데이터 및 Page 객체 Mocking
 		ReportedPostSummary summary1 = new ReportedPostSummary(
 			1L, "제목1", "요약1", 10L, "키워드A",
-			"BAD_CONTENT", LocalDateTime.now().toString(), 3L, "PENDING"
+			"BAD_CONTENT", Timestamp.valueOf(LocalDateTime.now()), 3L, "PENDING"
 		);
 		List<ReportedPostSummary> summaryList = List.of(summary1);
 		Page<ReportedPostSummary> mockRepoPage = new PageImpl<>(summaryList, expectedRepoPageable, summaryList.size());
@@ -553,7 +554,8 @@ public class PostServiceTest {
 		String expectedSearchTitle = "테스트";
 
 		// Service 메서드가 Unpaged Pageable을 받아 Repository에 전달할 예상 Pageable 객체
-		Pageable expectedRepoPageable = PageRequest.of(0, Integer.MAX_VALUE, Sort.unsorted());
+		Pageable expectedRepoPageable = PageRequest.of(0, Integer.MAX_VALUE,
+			Sort.by(Sort.Direction.DESC, "latestReportedAt"));
 
 		// Repository가 반환할 Page 객체 Mocking
 		Page<ReportedPostSummary> mockRepoPage = new PageImpl<>(List.of(), pageable, 0);
@@ -580,7 +582,7 @@ public class PostServiceTest {
 		Pageable pageable = PageRequest.of(0, 10, Sort.unsorted());
 
 		// Service 메서드는 Repository 호출 시 Repository 별칭 기준의 Pageable을 생성하여 전달
-		Pageable expectedRepoPageable = PageRequest.of(0, 10, Sort.unsorted());
+		Pageable expectedRepoPageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "latestReportedAt"));
 
 		// Repository가 반환할 Page 객체 Mocking
 		Page<ReportedPostSummary> mockRepoPage = new PageImpl<>(List.of(), expectedRepoPageable, 0);
@@ -644,6 +646,11 @@ public class PostServiceTest {
 		Post post2 = Post.builder().build();
 		ReflectionTestUtils.setField(post2, "id", 2L);
 		ReflectionTestUtils.setField(post2, "deletedAt", null);
+
+		when(postRepository.findAllById(eq(postIdsToHide)))
+			.thenReturn(List.of(post1, post2));
+		when(postReportRepository.countByPostIdIn(eq(postIdsToHide)))
+			.thenReturn((long)postIdsToHide.size());
 
 		when(postRepository.findById(1L)).thenReturn(Optional.of(post1));
 		when(postRepository.findById(2L)).thenReturn(Optional.of(post2));
@@ -750,16 +757,18 @@ public class PostServiceTest {
 
 		// 신고 거부될 Post 엔티티 Mocking
 		Post post1 = Post.builder().build();
-		ReflectionTestUtils.setField(post1, "id", 1L);
+		ReflectionTestUtils.setField(post1, "id", 4L);
 
 		Post post2 = Post.builder().build();
-		ReflectionTestUtils.setField(post2, "id", 2L);
+		ReflectionTestUtils.setField(post2, "id", 5L);
 
 		List<Post> foundPosts = Arrays.asList(post1, post2);
 
 		// PostRepository의 findAllById 메서드 Mocking
 		when(postRepository.findAllById(eq(postIdsToReject))).thenReturn(foundPosts);
 
+		when(postReportRepository.countByPostIdIn(eq(postIdsToReject)))
+			.thenReturn((long)postIdsToReject.size());
 		// PostReportRepository의 updateStatusByPostIdIn 메서드 Mocking
 		doNothing().when(postReportRepository)
 			.updateStatusByPostIdIn(eq(postIdsToReject), eq(ReportProcessingStatus.REJECTED));

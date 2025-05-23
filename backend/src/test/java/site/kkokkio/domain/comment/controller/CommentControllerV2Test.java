@@ -7,6 +7,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -243,16 +244,18 @@ class CommentControllerV2Test {
 		LocalDateTime now = LocalDateTime.now();
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-		String formattedtTime1 = now.minusHours(1).format(formatter);
+		Timestamp reportedTime1 = Timestamp.valueOf(now.minusHours(1));
+		String reportedTime1Formatted = reportedTime1.toLocalDateTime().format(formatter);
 		ReportedCommentSummary summary1 = new ReportedCommentSummary(
 			1L, UUID.randomUUID().toString(), "신고자", 0, 10L, "포스트 제목 1",
-			"댓글 내용 1", "BAD_CONTENT,SPAM", formattedtTime1, 5L, "PENDING"
+			"댓글 내용 1", "BAD_CONTENT,SPAM", reportedTime1, 5L, "PENDING"
 		);
 
-		String formattedtTime2 = now.minusHours(2).format(formatter);
+		Timestamp reportedTime2 = Timestamp.valueOf(now.minusHours(2));
+		String reportedTime2Formatted = reportedTime2.toLocalDateTime().format(formatter);
 		ReportedCommentSummary summary2 = new ReportedCommentSummary(
 			2L, UUID.randomUUID().toString(), "탈퇴 예정자", 1, 11L, "포스트 제목 2",
-			"댓글 내용 2", "RUDE_LANGUAGE", formattedtTime2, 3L, "ACCEPTED"
+			"댓글 내용 2", "RUDE_LANGUAGE", reportedTime2, 3L, "ACCEPTED"
 		);
 
 		List<ReportedCommentSummary> summaryList = Arrays.asList(summary1, summary2);
@@ -287,7 +290,7 @@ class CommentControllerV2Test {
 			.andExpect(jsonPath("$.data.list[0].reportReason.length()").value(2))
 			.andExpect(jsonPath("$.data.list[0].reportReason[0]").value("BAD_CONTENT"))
 			.andExpect(jsonPath("$.data.list[0].reportReason[1]").value("SPAM"))
-			.andExpect(jsonPath("$.data.list[0].reportedAt").value(formattedtTime1))
+			.andExpect(jsonPath("$.data.list[0].reportedAt").value(reportedTime1Formatted))
 			.andExpect(jsonPath("$.data.list[0].status").value(summary1.status()))
 
 			// summary2 데이터 검증
@@ -299,7 +302,7 @@ class CommentControllerV2Test {
 			.andExpect(jsonPath("$.data.list[1].reportReason").isArray())
 			.andExpect(jsonPath("$.data.list[1].reportReason.length()").value(1))
 			.andExpect(jsonPath("$.data.list[1].reportReason[0]").value("RUDE_LANGUAGE"))
-			.andExpect(jsonPath("$.data.list[1].reportedAt").value(formattedtTime2))
+			.andExpect(jsonPath("$.data.list[1].reportedAt").value(reportedTime2Formatted))
 			.andExpect(jsonPath("$.data.list[1].status").value(summary2.status()))
 
 			// data.meta 검증

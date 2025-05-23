@@ -6,6 +6,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -191,13 +192,15 @@ public class PostControllerV2Test {
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 		LocalDateTime now = LocalDateTime.now(ZoneId.of("UTC"));
 
-		String formattedDateTime1 = now.minusDays(5).format(formatter);
+		Timestamp formattedDateTime1 = Timestamp.valueOf(now.minusDays(5));
+		String reportedTime1Formated = formattedDateTime1.toLocalDateTime().format(formatter);
 		ReportedPostSummary summary1 = new ReportedPostSummary(
 			1L, "제목1", "요약1", 10L, "키워드1", "BAD_CONTENT",
 			formattedDateTime1, 3L, "PENDING"
 		);
 
-		String formattedDateTime2 = now.minusDays(1).format(formatter);
+		Timestamp formattedDateTime2 = Timestamp.valueOf(now.minusDays(1));
+		String reportedTime2Formated = formattedDateTime2.toLocalDateTime().format(formatter);
 		ReportedPostSummary summary2 = new ReportedPostSummary(
 			2L, "제목2", "요약2", 11L, "키워드2", "BAD_CONTENT,FALSE_INFO",
 			formattedDateTime2, 5L, "PENDING"
@@ -233,7 +236,7 @@ public class PostControllerV2Test {
 			.andExpect(jsonPath("$.data.list[0].keyword").value(summary1.keyword()))
 			.andExpect(jsonPath("$.data.list[0].reportReason").isArray())
 			.andExpect(jsonPath("$.data.list[0].reportReason.length()").value(1))
-			.andExpect(jsonPath("$.data.list[0].reportedAt").value(formattedDateTime1))
+			.andExpect(jsonPath("$.data.list[0].reportedAt").value(reportedTime1Formated))
 			.andExpect(jsonPath("$.data.list[0].reportCount").value(summary1.reportCount()))
 			.andExpect(jsonPath("$.data.list[0].status").value(summary1.status()))
 
@@ -245,7 +248,7 @@ public class PostControllerV2Test {
 			.andExpect(jsonPath("$.data.list[1].keyword").value(summary2.keyword()))
 			.andExpect(jsonPath("$.data.list[1].reportReason").isArray())
 			.andExpect(jsonPath("$.data.list[1].reportReason.length()").value(2))
-			.andExpect(jsonPath("$.data.list[1].reportedAt").value(formattedDateTime2))
+			.andExpect(jsonPath("$.data.list[1].reportedAt").value(reportedTime2Formated))
 			.andExpect(jsonPath("$.data.list[1].reportCount").value(summary2.reportCount()))
 			.andExpect(jsonPath("$.data.list[1].status").value(summary2.status()))
 

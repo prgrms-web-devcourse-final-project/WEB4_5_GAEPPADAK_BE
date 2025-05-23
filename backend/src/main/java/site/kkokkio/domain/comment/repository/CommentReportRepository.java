@@ -41,14 +41,18 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
 			WHERE (:searchNickname IS NULL OR LOWER(m.nickname) LIKE LOWER(CONCAT('%', :searchNickname, '%')))
 				AND (:searchPostTitle IS NULL OR LOWER(p.title) LIKE LOWER(CONCAT('%', :searchPostTitle, '%')))
 				AND (:searchCommentBody IS NULL OR LOWER(c.body) LIKE LOWER(CONCAT('%', :searchCommentBody, '%')))
-				AND (:searchReportReason IS NULL OR LOWER(cr.reason) LIKE LOWER(CONCAT('%', :searchReportReason, '%')))
 				AND (c.deleted_at IS NULL)
 				AND (c.is_hidden = FALSE)
+				AND (:searchReportReason IS NULL OR c.comment_id IN (
+					SELECT sub_cr.comment_id
+					FROM comment_report sub_cr
+					WHERE sub_cr.comment_id = c.comment_id AND LOWER(sub_cr.reason)
+					LIKE LOWER(CONCAT('%', :searchReportReason, '%'))
+				))
 			GROUP BY
 					c.comment_id, m.member_id, m.nickname, m.deleted_at, p.post_id, p.title, c.body, cr.status
 		""",
 		countQuery = """
-			
 				SELECT COUNT(DISTINCT cr.comment_id)
 			FROM comment_report cr
 			JOIN comment c ON cr.comment_id = c.comment_id
@@ -57,9 +61,14 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
 			WHERE (:searchNickname IS NULL OR LOWER(m.nickname) LIKE LOWER(CONCAT('%', :searchNickname, '%')))
 				AND (:searchPostTitle IS NULL OR LOWER(p.title) LIKE LOWER(CONCAT('%', :searchPostTitle, '%')))
 				AND (:searchCommentBody IS NULL OR LOWER(c.body) LIKE LOWER(CONCAT('%', :searchCommentBody, '%')))
-				AND (:searchReportReason IS NULL OR LOWER(cr.reason) LIKE LOWER(CONCAT('%', :searchReportReason, '%')))
 				AND (c.deleted_at IS NULL)
 				AND (c.is_hidden = FALSE)
+				AND (:searchReportReason IS NULL OR c.comment_id IN (
+					SELECT sub_cr.comment_id
+					FROM comment_report sub_cr
+					WHERE sub_cr.comment_id = c.comment_id AND LOWER(sub_cr.reason)
+					LIKE LOWER(CONCAT('%', :searchReportReason, '%'))
+				))
 			""",
 		nativeQuery = true
 	)

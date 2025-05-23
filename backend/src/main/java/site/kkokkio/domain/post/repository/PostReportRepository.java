@@ -39,8 +39,13 @@ public interface PostReportRepository extends JpaRepository<PostReport, Long> {
 		WHERE (:searchTitle IS NULL OR LOWER(p.title) LIKE LOWER(CONCAT('%', :searchTitle, '%')))
 			AND (:searchSummary IS NULL OR LOWER(p.summary) LIKE LOWER(CONCAT('%', :searchSummary, '%')))
 			AND (:searchKeyword IS NULL OR LOWER(k.text) LIKE LOWER(CONCAT('%', :searchKeyword, '%')))
-			AND (:searchReportReason IS NULL OR LOWER(pr.reason) LIKE LOWER(CONCAT('%', :searchReportReason, '%')))
 			AND (p.deleted_at IS NULL)
+			AND (:searchReportReason IS NULL OR p.post_id IN (
+					SELECT sub_pr.post_id
+					FROM post_report sub_pr
+					WHERE sub_pr.post_id = p.post_id AND LOWER(sub_pr.reason)
+					LIKE LOWER(CONCAT('%', :searchReportReason, '%'))
+				))
 		GROUP BY
 				p.post_id,
 				p.title,
@@ -58,8 +63,13 @@ public interface PostReportRepository extends JpaRepository<PostReport, Long> {
 			WHERE (:searchTitle IS NULL OR LOWER(p.title) LIKE LOWER(CONCAT('%', :searchTitle, '%')))
 			AND (:searchSummary IS NULL OR LOWER(p.summary) LIKE LOWER(CONCAT('%', :searchSummary, '%')))
 			AND (:searchKeyword IS NULL OR LOWER(k.text) LIKE LOWER(CONCAT('%', :searchKeyword, '%')))
-			AND (:searchReportReason IS NULL OR LOWER(pr.reason) LIKE LOWER(CONCAT('%', :searchReportReason, '%')))
 			AND (p.deleted_at IS NULL)
+			AND (:searchReportReason IS NULL OR p.post_id IN (
+					SELECT sub_pr.post_id
+					FROM post_report sub_pr
+					WHERE sub_pr.post_id = p.post_id AND LOWER(sub_pr.reason)
+					LIKE LOWER(CONCAT('%', :searchReportReason, '%'))
+				))
 			""",
 		nativeQuery = true
 	)

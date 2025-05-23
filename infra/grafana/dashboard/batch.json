@@ -35,10 +35,10 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "red"
               },
               {
-                "color": "red",
+                "color": "green",
                 "value": 80
               }
             ]
@@ -76,7 +76,7 @@
         "sizing": "auto",
         "valueMode": "color"
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -103,8 +103,12 @@
                 "color": "green"
               },
               {
+                "color": "#EAB839",
+                "value": 15000
+              },
+              {
                 "color": "red",
-                "value": 80
+                "value": 30000
               }
             ]
           },
@@ -134,11 +138,11 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
-          "expr": "avg_over_time(spring_batch_job_seconds_sum{spring_batch_job_status=\"COMPLETED\",spring_batch_job_name=~\"$job\"}[6h]) * 1000",
+          "expr": "avg_over_time(spring_batch_job_seconds_sum{spring_batch_job_status=\"COMPLETED\",spring_batch_job_name=~\"$job\"}[6h])\n/ avg_over_time(spring_batch_job_seconds_count{spring_batch_job_status=\"COMPLETED\",spring_batch_job_name=~\"$job\"}[6h]) * 1000",
           "range": true,
           "refId": "A"
         }
@@ -191,7 +195,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -248,7 +252,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -315,7 +319,7 @@
         "sizing": "auto",
         "valueMode": "color"
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -356,7 +360,7 @@
       },
       "gridPos": {
         "h": 7,
-        "w": 5,
+        "w": 7,
         "x": 0,
         "y": 7
       },
@@ -376,7 +380,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -417,8 +421,8 @@
       },
       "gridPos": {
         "h": 7,
-        "w": 5,
-        "x": 5,
+        "w": 7,
+        "x": 7,
         "y": 7
       },
       "id": 3,
@@ -437,7 +441,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -477,8 +481,8 @@
       },
       "gridPos": {
         "h": 7,
-        "w": 7,
-        "x": 10,
+        "w": 5,
+        "x": 14,
         "y": 7
       },
       "id": 5,
@@ -504,7 +508,7 @@
         "sizing": "auto",
         "valueMode": "color"
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -544,8 +548,8 @@
       },
       "gridPos": {
         "h": 7,
-        "w": 7,
-        "x": 17,
+        "w": 5,
+        "x": 19,
         "y": 7
       },
       "id": 6,
@@ -571,7 +575,7 @@
         "sizing": "auto",
         "valueMode": "color"
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -663,7 +667,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -756,7 +760,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -848,7 +852,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -940,7 +944,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -967,8 +971,12 @@
                 "color": "green"
               },
               {
+                "color": "#EAB839",
+                "value": 5
+              },
+              {
                 "color": "red",
-                "value": 80
+                "value": 9
               }
             ]
           }
@@ -989,7 +997,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": ["mean"],
           "fields": "",
           "values": false
         },
@@ -997,7 +1005,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -1026,7 +1034,7 @@
               },
               {
                 "color": "red",
-                "value": 50
+                "value": 1
               }
             ]
           }
@@ -1047,7 +1055,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": ["mean"],
           "fields": "",
           "values": false
         },
@@ -1055,7 +1063,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -1076,6 +1084,7 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [],
+          "max": 3,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -1084,7 +1093,7 @@
               },
               {
                 "color": "red",
-                "value": 80
+                "value": 1
               }
             ]
           }
@@ -1105,7 +1114,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": ["max"],
           "fields": "",
           "values": false
         },
@@ -1113,7 +1122,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -1171,7 +1180,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -1262,7 +1271,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -1353,7 +1362,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -1444,7 +1453,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -1536,7 +1545,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "expr": "avg(system_cpu_usage) * 100",
@@ -1625,16 +1634,20 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
+          "editorMode": "code",
           "expr": "jvm_memory_used_bytes{area=\"heap\"}",
-          "legendFormat": "used",
+          "legendFormat": "{{id}} used",
+          "range": true,
           "refId": "A"
         },
         {
+          "editorMode": "code",
           "expr": "jvm_memory_committed_bytes{area=\"heap\"}",
-          "legendFormat": "committed",
+          "legendFormat": "{{id}} committed",
+          "range": true,
           "refId": "B"
         }
       ],
@@ -1686,7 +1699,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -1777,7 +1790,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "expr": "hikaricp_connections_active",
@@ -1832,7 +1845,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -1892,7 +1905,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
@@ -1984,11 +1997,12 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
           "expr": "increase(jvm_gc_pause_seconds_sum[3h]) * 1000",
+          "legendFormat": "{{cause}}",
           "range": true,
           "refId": "A"
         }
@@ -2012,14 +2026,10 @@
           },
           "mappings": [],
           "thresholds": {
-            "mode": "absolute",
+            "mode": "percentage",
             "steps": [
               {
                 "color": "green"
-              },
-              {
-                "color": "red",
-                "value": 80
               }
             ]
           }
@@ -2041,7 +2051,7 @@
           "reducer": ["sum"],
           "show": false
         },
-        "frameIndex": 0,
+        "frameIndex": 2,
         "showHeader": true,
         "sortBy": [
           {
@@ -2050,11 +2060,14 @@
           }
         ]
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "12.0.0+security-01",
       "targets": [
         {
           "editorMode": "code",
+          "exemplar": false,
           "expr": "last_over_time({__name__=~\"spring_batch_(news|video|post)_(.*)_total\"}[6h])",
+          "instant": false,
+          "interval": "1h",
           "legendFormat": "{{__name__}}",
           "range": true,
           "refId": "A"
@@ -2115,6 +2128,5 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Trend-Batch Overview",
-  "version": 63
+  "title": "Trend-Batch Overview"
 }

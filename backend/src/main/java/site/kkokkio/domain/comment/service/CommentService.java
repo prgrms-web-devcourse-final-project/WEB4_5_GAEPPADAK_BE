@@ -1,7 +1,8 @@
 package site.kkokkio.domain.comment.service;
 
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -198,41 +199,32 @@ public class CommentService {
 		Pageable pageable, String searchTarget, String searchValue) {
 
 		// 1. 정렬 옵션 검증 및 매핑
-		Sort apiSort = pageable.getSort();
+		Map<String, String> sortPropertyMapping = new HashMap<>();
+		sortPropertyMapping.put("reportedAt", "latestReportedAt");
+		sortPropertyMapping.put("reportCount", "reportCount");
 
-		// 정렬 속성 및 기본 정렬 방향 정의
-		List<String> sortProperties = Arrays.asList("reportedAt", "reportCount");
-		List<String> repositorySortProperties = Arrays.asList("latestReportedAt", "reportCount");
-
-		Sort.Direction defaultDirection = Sort.Direction.ASC;
-		String defaultSortProperty = "reportedAt";
+		Sort newSort = Sort.unsorted();
 
 		// Pageable의 Sort 객체 순회하며 개별 정렬 Order 처리
-		for (Sort.Order order : apiSort) {
+		for (Sort.Order order : pageable.getSort()) {
 			String property = order.getProperty();
 			Sort.Direction direction = order.getDirection();
 
-			// 정렬 속성 이름이 허용된 목록에 있는지 확인
-			int propertyIndex = sortProperties.indexOf(property);
+			String sqlProperty = sortPropertyMapping.get(property);
 
 			// 허용되지 않은 정렬 속성이면 오류 발생
-			if (propertyIndex == -1) {
+			if (sqlProperty == null) {
 				throw new ServiceException("400", "부적절한 정렬 옵션입니다.");
 			}
+			newSort = newSort.and(Sort.by(direction, sqlProperty));
 		}
 
-		// Repository에 전달할 최종 Pageable 객체 생성
-		Pageable repositoryPageable;
-
-		if (pageable.isPaged()) {
-			repositoryPageable = PageRequest.of(
-				pageable.getPageNumber(),
-				pageable.getPageSize(),
-				Sort.unsorted()
-			);
-		} else {
-			repositoryPageable = PageRequest.of(0, Integer.MAX_VALUE, Sort.unsorted());
-		}
+		// 최종 Pageable 객체 생성
+		Pageable repositoryPageable = PageRequest.of(
+			pageable.getPageNumber(),
+			pageable.getPageSize(),
+			newSort
+		);
 
 		// 2. 검색 조건 매핑
 		String searchNickname = null;

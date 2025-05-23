@@ -46,9 +46,9 @@ public record ReportedCommentResponse(
 
 		// 신고 시각 형식화
 		String formattedReportedAt = null;
-		if (service.latestReportedAt() != null && !service.latestReportedAt().trim().isEmpty()) {
-			LocalDateTime parsedReportedAt = LocalDateTime.parse(service.latestReportedAt(), FORMATTER);
-			formattedReportedAt = parsedReportedAt.format(FORMATTER);
+		if (service.latestReportedAt() != null) {
+			LocalDateTime convertedReportedAt = service.latestReportedAt().toLocalDateTime();
+			formattedReportedAt = convertedReportedAt.format(FORMATTER);
 		}
 
 		// status 변환 로직

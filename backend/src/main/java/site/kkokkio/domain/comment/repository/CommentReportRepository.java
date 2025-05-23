@@ -31,7 +31,7 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
 				p.title AS postTitle,
 				c.body AS commentBody,
 				GROUP_CONCAT(cr.reason SEPARATOR ',') AS reportReasons,
-				DATE_FORMAT(MAX(cr.created_at), '%Y-%m-%d %H:%i') AS latestReportedAt,
+				MAX(cr.created_at) AS latestReportedAt,
 				COUNT(cr.comment_report_id) AS reportCount,
 				cr.status AS status
 			FROM comment_report cr
@@ -46,7 +46,6 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
 				AND (c.is_hidden = FALSE)
 			GROUP BY
 					c.comment_id, m.member_id, m.nickname, m.deleted_at, p.post_id, p.title, c.body, cr.status
-			ORDER BY latestReportedAt DESC
 		""",
 		countQuery = """
 			

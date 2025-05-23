@@ -106,6 +106,7 @@ public class SecurityConfig {
 		CorsConfiguration configuration = new CorsConfiguration();
 		// 모든 출처 허용 (운영 환경 배포 시 수정 필요)
 		configuration.setAllowedOrigins(List.of(
+			"http://localhost:3000", //TODO : remove
 			// "https://login.aleph.kr", // 임시 프론트 배포 URL1
 			// "https://www.app4.qwas.shop", // 임시 프론트 배포 URL2
 			"https://web.api.deploy.kkokkio.site:3000", // 프론트 API URL

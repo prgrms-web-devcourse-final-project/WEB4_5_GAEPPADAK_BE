@@ -519,15 +519,26 @@ public class PostService {
 	 */
 	@Transactional
 	public void rejectReportedPost(List<Long> postIds) {
-		// 1. 요청된 모든 포스트 ID에 해당하는 Post 엔티티들을 한 번에 조회
-		List<Post> posts = postRepository.findAllById(postIds);
+		// 1. 요청된 ID 목록이 비어있는지 확인
+		if (postIds == null || postIds.isEmpty()) {
+			throw new ServiceException("400", "신고 거부할 포스트 ID가 제공되지 않았습니다.");
+		}
 
-		// 2. 조회된 포스트 개수와 요청된 ID 개수를 비교하여, 누락된 포스트가 있는지 확인
-		if (posts.size() != postIds.size()) {
+		// 2. 요청된 모든 포스트 ID에 해당하는 Post 엔티티들이 실제로 존재하는지 확인
+		List<Post> existingPosts = postRepository.findAllById(postIds);
+		if (existingPosts.size() != postIds.size()) {
 			throw new ServiceException("404", "존재하지 않는 포스트가 포함되어 있습니다.");
 		}
 
-		// 3. 요청된 포스트 ID들에 해당하는 모든 신고 엔티티 삭제
+		// 3. 요청된 postIds 중 실제로 신고된 포스트의 개수를 확인
+		long reportedPostCount = postReportRepository.countByPostIdIn(postIds);
+
+		// 4. 요청된 postIds의 개수와 실제로 신고된 포스트의 개수가 다르면 에러 처리
+		if (reportedPostCount != postIds.size()) {
+			throw new ServiceException("400", "신고되지 않은 포스트가 요청에 포함되어 있습니다. 신고된 포스트만 거부할 수 있습니다.");
+		}
+
+		// 5. 모든 검증을 통과했다면, 요청된 포스트 ID들에 해당하는 모든 신고 엔티티의 상태를 변경
 		postReportRepository.updateStatusByPostIdIn(postIds, ReportProcessingStatus.REJECTED);
 	}
 }

@@ -86,4 +86,8 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
 	void updateStatusByCommentIdIn(
 		@Param("commentIds") Collection<Long> commentIds,
 		@Param("status") ReportProcessingStatus status);
+
+	// 주어진 댓글 ID 목록 중 신고된 댓글의 개수를 세는 메서드
+	@Query("SELECT COUNT(DISTINCT cr.comment.id) FROM CommentReport cr WHERE cr.comment.id IN :commentIds")
+	long countByCommentIdIn(@Param("commentIds") Collection<Long> commentIds);
 }

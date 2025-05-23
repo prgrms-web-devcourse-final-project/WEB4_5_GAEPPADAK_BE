@@ -87,4 +87,8 @@ public interface PostReportRepository extends JpaRepository<PostReport, Long> {
 	void updateStatusByPostIdIn(
 		@Param("postIds") Collection<Long> postIds,
 		@Param("status") ReportProcessingStatus status);
+
+	// 주어진 포스트 ID 목록 중 신고된 포스트의 개수를 세는 메서드
+	@Query("SELECT COUNT(DISTINCT pr.post.id) FROM PostReport pr WHERE pr.post.id IN :postIds")
+	long countByPostIdIn(@Param("postIds") Collection<Long> postIds);
 }

@@ -294,15 +294,26 @@ public class CommentService {
 	@Transactional
 	public void rejectReportedComment(List<Long> commentIds) {
 
-		// 1. 요청된 모든 댓글 ID에 해당하는 Comment 엔티티 조회
-		List<Comment> comments = commentRepository.findAllById(commentIds);
+		// 1. 요청된 ID 목록이 비어있는지 확인
+		if (commentIds == null || commentIds.isEmpty()) {
+			throw new ServiceException("400", "신고 거부할 댓글 ID가 제공되지 않았습니다.");
+		}
+		// 2. 요청된 모든 댓글 ID에 해당하는 Comment 엔티티들이 실제로 존재하는지 확인
+		List<Comment> existingComments = commentRepository.findAllById(commentIds);
 
-		// 2. 조회된 댓글 개수와 요청된 ID 개수를 비교하여, 누락된 댓글(존재하지 않는 댓글)이 있는지 확인
-		if (comments.size() != commentIds.size()) {
+		if (existingComments.size() != commentIds.size()) {
 			throw new ServiceException("404", "존재하지 않는 댓글이 포함되어 있습니다.");
 		}
 
-		// 3. 요청된 댓글 ID들에 해당하는 모든 신고 엔티티 삭제
+		// 3. 요청된 commentIds 중 실제로 신고된 댓글의 개수를 확인
+		long reportedCommentCount = commentReportRepository.countByCommentIdIn(commentIds);
+
+		// 4. 요청된 commentIds의 개수와 실제로 신고된 댓글의 개수가 다르면 에러 처리
+		if (reportedCommentCount != existingComments.size()) {
+			throw new ServiceException("400", "신고되지 않은 댓글이 요청에 포함되어 있습니다. 신고된 댓글만 거부할 수 있습니다.");
+		}
+
+		// 5. 모든 검증을 통과했다면, 요청된 댓글 ID들에 해당하는 모든 신고 엔티티의 상태를 변경
 		commentReportRepository.updateStatusByCommentIdIn(commentIds, ReportProcessingStatus.REJECTED);
 	}
 }

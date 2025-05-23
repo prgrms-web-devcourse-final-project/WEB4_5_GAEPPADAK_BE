@@ -25,9 +25,3 @@ logging:
 
 swagger:
   url: https://api.deploy.kkokkio.site
-
-mock:
-  enabled: false # TODO(fix)
-
-schedule:
-  cron: 0 0 * * * * # TODO(fix)

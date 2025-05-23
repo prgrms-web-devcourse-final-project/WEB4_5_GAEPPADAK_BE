@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -415,43 +415,30 @@ public class PostService {
 		Pageable pageable, String searchTarget, String searchValue
 	) {
 		// 1. 정렬 옵션 검증 및 Repository 쿼리 별칭에 맞게 매핑
-		Sort apisort = pageable.getSort();
-		Sort repositorySort = Sort.unsorted();
+		Map<String, String> sortPropertyMapping = new HashMap<>();
+		sortPropertyMapping.put("reportedAt", "latestReportedAt");
+		sortPropertyMapping.put("reportCount", "reportCount");
 
-		// 정렬 속성 이름
-		List<String> sortProperty = Arrays.asList("reportedAt", "reportCount");
-
-		// Reporitory 쿼리의 SELECT 절 별칭과 일치해야 하는 정렬 속성 이름
-		List<String> repositorySortProperty = Arrays.asList("latestReportedAt", "reportCount");
-
-		// 기본 정렬: 최신순 내림차순
-		String defaultSortProperty = "reportedAt";
-		Sort.Direction defaultDirection = Sort.Direction.DESC;
+		Sort newSort = Sort.unsorted();
 
 		// Pageable의 Sort 객체 순회하며 개별 정렬 Order 처리
-		for (Sort.Order order : apisort) {
+		for (Sort.Order order : pageable.getSort()) {
 			String property = order.getProperty();
 			Sort.Direction direction = order.getDirection();
 
-			// 정렬 속성 이름이 허용된 목록에 있는지 확인
-			int propertyIndex = sortProperty.indexOf(property);
+			String sqlProperty = sortPropertyMapping.get(property);
 
 			// 허용되지 않은 정렬 속성이면 오류 발생
-			if (propertyIndex == -1) {
+			if (sqlProperty == null) {
 				throw new ServiceException("400", "부적절한 정렬 옵션입니다.");
 			}
 
-			// 속성 이름을 Repository 쿼리의 별칭과 연결하여 repositorySort에 추가
-			String repositoryProperty = repositorySortProperty.get(propertyIndex);
-			repositorySort = repositorySort.and(Sort.by(direction, repositoryProperty));
+			newSort = newSort.and(Sort.by(direction, sqlProperty));
 		}
 
 		// 만약 Pageable에 정렬 정보가 전혀 없었다면 기본 정렬 적용
-		if (repositorySort.isEmpty()) {
-			// 기본 정렬 reportedAt 내림차순
-			int defaultPropertyIndex = sortProperty.indexOf(defaultSortProperty);
-			String defaultRepositoryProperty = repositorySortProperty.get(defaultPropertyIndex);
-			repositorySort = Sort.by(defaultDirection, defaultRepositoryProperty);
+		if (!newSort.isSorted()) {
+			newSort = Sort.by(Sort.Direction.DESC, "latestReportedAt");
 		}
 
 		// Repository에 전달할 최종 Pageable 객체 생성 시 Unpaged Pageable 처리
@@ -461,11 +448,11 @@ public class PostService {
 			repositoryPageable = PageRequest.of(
 				pageable.getPageNumber(),
 				pageable.getPageSize(),
-				Sort.unsorted()
+				newSort
 			);
 		} else {
 			// 입력 Pageable이 페이징 정보를 가지고 있지 않다면 (Unpaged)
-			repositoryPageable = PageRequest.of(0, Integer.MAX_VALUE, Sort.unsorted());
+			repositoryPageable = PageRequest.of(0, Integer.MAX_VALUE, newSort);
 		}
 
 		// 2. 검색 조건 검증 및 Repository 쿼리 파라미터에 맞게 매핑
@@ -485,25 +472,18 @@ public class PostService {
 				case "post_summary" -> searchSummary = trimmedSearchValue;
 				case "keyword" -> searchKeyword = trimmedSearchValue;
 				case "report_reason" -> searchReportReason = trimmedSearchValue;
-				default -> {
-					throw new ServiceException("400", "부적절한 검색 옵션입니다.");
-				}
+				default -> throw new ServiceException("400", "부적절한 검색 옵션입니다.");
 			}
 		}
 
-		// 3. PostReportRepository 메서드 호출
-		// 매핑된 검색 인자들과 Repository용 Pageable 객체를 넘겨 호출
-		Page<ReportedPostSummary> reportedPostPage =
-			postReportRepository.findReportedPostSummary(
-				searchTitle,
-				searchSummary,
-				searchKeyword,
-				searchReportReason,
-				repositoryPageable
-			);
-
-		// 4. 결과 반환
-		return reportedPostPage;
+		// 3. PostReportRepository 메서드 호출 및 반환
+		return postReportRepository.findReportedPostSummary(
+			searchTitle,
+			searchSummary,
+			searchKeyword,
+			searchReportReason,
+			repositoryPageable
+		);
 	}
 
 	/**

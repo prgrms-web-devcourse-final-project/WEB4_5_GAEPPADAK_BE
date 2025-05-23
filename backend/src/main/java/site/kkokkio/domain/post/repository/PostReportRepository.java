@@ -29,7 +29,7 @@ public interface PostReportRepository extends JpaRepository<PostReport, Long> {
 				pk.keyword_id AS keywordId,
 				k.text AS keyword,
 				GROUP_CONCAT(pr.reason SEPARATOR ',') AS reportReasons,
-				DATE_FORMAT(MAX(pr.created_at), '%Y-%m-%d %H:%i') AS latestReportedAt,
+				MAX(pr.created_at) AS latestReportedAt,
 				COUNT(pr.post_report_id) AS reportCount,
 				pr.status AS status
 		FROM post_report pr
@@ -48,7 +48,6 @@ public interface PostReportRepository extends JpaRepository<PostReport, Long> {
 				pk.keyword_id,
 				k.text,
 				pr.status
-		ORDER BY latestReportedAt DESC
 		""",
 		countQuery = """
 			SELECT COUNT(DISTINCT pr.post_id)

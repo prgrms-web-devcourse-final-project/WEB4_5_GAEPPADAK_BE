@@ -113,6 +113,7 @@ public class AuthService {
 	}
 
 	public boolean checkPassword(PasswordVerificationRequest request, CustomUserDetails userDetails) {
-		return passwordEncoder.matches(request.getPassword(), userDetails.getPassword());
+		Member member = memberService.findByEmail(userDetails.getUsername());
+		return passwordEncoder.matches(request.getPassword(), member.getPasswordHash());
 	}
 }

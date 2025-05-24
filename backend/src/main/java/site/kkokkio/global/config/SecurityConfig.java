@@ -154,7 +154,7 @@ public class SecurityConfig {
 		return new JwtAuthenticationFilter(jwtUtils, redisTemplate);
 	}
 
-	// 인증 안 된 상태로 보호된 엔드포인트에 접근했을 때 (401)
+	// 미 로그인 상태로 보호된 엔드포인트에 접근했을 때 (401)
 	@Bean
 	public AuthenticationEntryPoint customAuthEntryPoint() {
 		return (request, response, authException) -> {
@@ -162,7 +162,7 @@ public class SecurityConfig {
 			response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 			response.setContentType(MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8");
 
-			RsData<Void> body = new RsData<>("401", "로그인이 필요합니다.");
+			RsData<Void> body = new RsData<>("401", "로그인 상태가 아닙니다.");
 			response.getWriter().write(objectMapper.writeValueAsString(body));
 		};
 	}

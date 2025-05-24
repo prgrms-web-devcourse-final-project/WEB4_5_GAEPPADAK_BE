@@ -31,7 +31,7 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
 				p.title AS postTitle,
 				c.body AS commentBody,
 				GROUP_CONCAT(cr.reason SEPARATOR ',') AS reportReasons,
-				DATE_FORMAT(MAX(cr.created_at), '%Y-%m-%d %H:%i') AS latestReportedAt,
+				MAX(cr.created_at) AS latestReportedAt,
 				COUNT(cr.comment_report_id) AS reportCount,
 				cr.status AS status
 			FROM comment_report cr
@@ -41,15 +41,18 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
 			WHERE (:searchNickname IS NULL OR LOWER(m.nickname) LIKE LOWER(CONCAT('%', :searchNickname, '%')))
 				AND (:searchPostTitle IS NULL OR LOWER(p.title) LIKE LOWER(CONCAT('%', :searchPostTitle, '%')))
 				AND (:searchCommentBody IS NULL OR LOWER(c.body) LIKE LOWER(CONCAT('%', :searchCommentBody, '%')))
-				AND (:searchReportReason IS NULL OR LOWER(cr.reason) LIKE LOWER(CONCAT('%', :searchReportReason, '%')))
 				AND (c.deleted_at IS NULL)
 				AND (c.is_hidden = FALSE)
+				AND (:searchReportReason IS NULL OR c.comment_id IN (
+					SELECT sub_cr.comment_id
+					FROM comment_report sub_cr
+					WHERE sub_cr.comment_id = c.comment_id AND LOWER(sub_cr.reason)
+					LIKE LOWER(CONCAT('%', :searchReportReason, '%'))
+				))
 			GROUP BY
 					c.comment_id, m.member_id, m.nickname, m.deleted_at, p.post_id, p.title, c.body, cr.status
-			ORDER BY latestReportedAt DESC
 		""",
 		countQuery = """
-			
 				SELECT COUNT(DISTINCT cr.comment_id)
 			FROM comment_report cr
 			JOIN comment c ON cr.comment_id = c.comment_id
@@ -58,9 +61,14 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
 			WHERE (:searchNickname IS NULL OR LOWER(m.nickname) LIKE LOWER(CONCAT('%', :searchNickname, '%')))
 				AND (:searchPostTitle IS NULL OR LOWER(p.title) LIKE LOWER(CONCAT('%', :searchPostTitle, '%')))
 				AND (:searchCommentBody IS NULL OR LOWER(c.body) LIKE LOWER(CONCAT('%', :searchCommentBody, '%')))
-				AND (:searchReportReason IS NULL OR LOWER(cr.reason) LIKE LOWER(CONCAT('%', :searchReportReason, '%')))
 				AND (c.deleted_at IS NULL)
 				AND (c.is_hidden = FALSE)
+				AND (:searchReportReason IS NULL OR c.comment_id IN (
+					SELECT sub_cr.comment_id
+					FROM comment_report sub_cr
+					WHERE sub_cr.comment_id = c.comment_id AND LOWER(sub_cr.reason)
+					LIKE LOWER(CONCAT('%', :searchReportReason, '%'))
+				))
 			""",
 		nativeQuery = true
 	)
@@ -78,4 +86,8 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
 	void updateStatusByCommentIdIn(
 		@Param("commentIds") Collection<Long> commentIds,
 		@Param("status") ReportProcessingStatus status);
+
+	// 주어진 댓글 ID 목록 중 신고된 댓글의 개수를 세는 메서드
+	@Query("SELECT COUNT(DISTINCT cr.comment.id) FROM CommentReport cr WHERE cr.comment.id IN :commentIds")
+	long countByCommentIdIn(@Param("commentIds") Collection<Long> commentIds);
 }

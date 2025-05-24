@@ -1,5 +1,7 @@
 package site.kkokkio.domain.comment.dto;
 
+import java.sql.Timestamp;
+
 public record ReportedCommentSummary(
 	Long commentId,
 	String memberId,
@@ -9,7 +11,7 @@ public record ReportedCommentSummary(
 	String postTitle,
 	String commentBody,
 	String reportReasons,
-	String latestReportedAt,
+	Timestamp latestReportedAt,
 	Long reportCount,
 	String status
 ) {

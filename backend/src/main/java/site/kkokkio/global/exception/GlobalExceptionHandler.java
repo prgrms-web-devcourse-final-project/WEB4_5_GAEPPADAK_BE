@@ -1,14 +1,18 @@
 package site.kkokkio.global.exception;
 
+import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 
 import jakarta.mail.MessagingException;
 import site.kkokkio.global.dto.RsData;
@@ -112,6 +116,41 @@ public class GlobalExceptionHandler {
 		return ResponseEntity
 			.status(ex.getStatusCode())
 			.body(new RsData<>(ex.getCode(), ex.getMessage()));
+	}
+
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	public ResponseEntity<RsData<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+		String errorMessage = "요청 본문 형식이 잘못되었거나, 필수 필드의 값이 올바르지 않습니다.";
+
+		// Enum 값 매핑 실패인 경우 상세 메시지 제공
+		if (ex.getMostSpecificCause() instanceof InvalidFormatException) {
+			InvalidFormatException ife = (InvalidFormatException)ex.getMostSpecificCause();
+
+			// 대상 타입이 Enum인 경우
+			if (ife.getTargetType() != null && ife.getTargetType().isEnum()) {
+				String validEnumValues = Arrays.stream(ife.getTargetType().getEnumConstants())
+					.map(Object::toString)
+					.collect(Collectors.joining(","));
+
+				errorMessage = String.format("'%s'은(는) 유효하지 않은 %s 값입니다. 유효한 값: [%s]",
+					ife.getValue(), ife.getTargetType().getSimpleName(), validEnumValues);
+			} else {
+				// Enum이 아닌 다른 타입의 InvalidFormatException
+				errorMessage = String.format("'%s'은(는) 올바른 형식의 값이 아닙니다. 예상된 형식: %s",
+					ife.getValue(), ife.getTargetType() != null ? ife.getTargetType().getSimpleName() : "알 수 없음");
+			}
+		} else if (ex.getMessage() != null && ex.getMessage().contains("리퀘스트 바디가 없습니다.")) {
+			errorMessage = "요청 본문이 누락되었습니다.";
+		}
+
+		return ResponseEntity
+			.status(HttpStatus.BAD_REQUEST)
+			.body(
+				new RsData<>(
+					"400",
+					errorMessage
+				)
+			);
 	}
 
 }

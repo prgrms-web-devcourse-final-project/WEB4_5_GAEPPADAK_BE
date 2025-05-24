@@ -29,7 +29,7 @@ public interface PostReportRepository extends JpaRepository<PostReport, Long> {
 				pk.keyword_id AS keywordId,
 				k.text AS keyword,
 				GROUP_CONCAT(pr.reason SEPARATOR ',') AS reportReasons,
-				DATE_FORMAT(MAX(pr.created_at), '%Y-%m-%d %H:%i') AS latestReportedAt,
+				MAX(pr.created_at) AS latestReportedAt,
 				COUNT(pr.post_report_id) AS reportCount,
 				pr.status AS status
 		FROM post_report pr
@@ -39,8 +39,13 @@ public interface PostReportRepository extends JpaRepository<PostReport, Long> {
 		WHERE (:searchTitle IS NULL OR LOWER(p.title) LIKE LOWER(CONCAT('%', :searchTitle, '%')))
 			AND (:searchSummary IS NULL OR LOWER(p.summary) LIKE LOWER(CONCAT('%', :searchSummary, '%')))
 			AND (:searchKeyword IS NULL OR LOWER(k.text) LIKE LOWER(CONCAT('%', :searchKeyword, '%')))
-			AND (:searchReportReason IS NULL OR LOWER(pr.reason) LIKE LOWER(CONCAT('%', :searchReportReason, '%')))
 			AND (p.deleted_at IS NULL)
+			AND (:searchReportReason IS NULL OR p.post_id IN (
+					SELECT sub_pr.post_id
+					FROM post_report sub_pr
+					WHERE sub_pr.post_id = p.post_id AND LOWER(sub_pr.reason)
+					LIKE LOWER(CONCAT('%', :searchReportReason, '%'))
+				))
 		GROUP BY
 				p.post_id,
 				p.title,
@@ -48,7 +53,6 @@ public interface PostReportRepository extends JpaRepository<PostReport, Long> {
 				pk.keyword_id,
 				k.text,
 				pr.status
-		ORDER BY latestReportedAt DESC
 		""",
 		countQuery = """
 			SELECT COUNT(DISTINCT pr.post_id)
@@ -59,8 +63,13 @@ public interface PostReportRepository extends JpaRepository<PostReport, Long> {
 			WHERE (:searchTitle IS NULL OR LOWER(p.title) LIKE LOWER(CONCAT('%', :searchTitle, '%')))
 			AND (:searchSummary IS NULL OR LOWER(p.summary) LIKE LOWER(CONCAT('%', :searchSummary, '%')))
 			AND (:searchKeyword IS NULL OR LOWER(k.text) LIKE LOWER(CONCAT('%', :searchKeyword, '%')))
-			AND (:searchReportReason IS NULL OR LOWER(pr.reason) LIKE LOWER(CONCAT('%', :searchReportReason, '%')))
 			AND (p.deleted_at IS NULL)
+			AND (:searchReportReason IS NULL OR p.post_id IN (
+					SELECT sub_pr.post_id
+					FROM post_report sub_pr
+					WHERE sub_pr.post_id = p.post_id AND LOWER(sub_pr.reason)
+					LIKE LOWER(CONCAT('%', :searchReportReason, '%'))
+				))
 			""",
 		nativeQuery = true
 	)
@@ -78,4 +87,8 @@ public interface PostReportRepository extends JpaRepository<PostReport, Long> {
 	void updateStatusByPostIdIn(
 		@Param("postIds") Collection<Long> postIds,
 		@Param("status") ReportProcessingStatus status);
+
+	// 주어진 포스트 ID 목록 중 신고된 포스트의 개수를 세는 메서드
+	@Query("SELECT COUNT(DISTINCT pr.post.id) FROM PostReport pr WHERE pr.post.id IN :postIds")
+	long countByPostIdIn(@Param("postIds") Collection<Long> postIds);
 }

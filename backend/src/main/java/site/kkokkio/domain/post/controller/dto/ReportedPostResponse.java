@@ -42,7 +42,7 @@ public record ReportedPostResponse(
 		String formmattedReportedAt = null;
 		if (postSummary.latestReportedAt() != null) {
 			// String으로 받은 것을 LocalDateTime으로 파싱 후, 다시 원하는 포맷으로 변환
-			LocalDateTime parsedDateTime = LocalDateTime.parse(postSummary.latestReportedAt(), FORMATTER);
+			LocalDateTime parsedDateTime = postSummary.latestReportedAt().toLocalDateTime();
 			formmattedReportedAt = parsedDateTime.format(FORMATTER);
 		}
 

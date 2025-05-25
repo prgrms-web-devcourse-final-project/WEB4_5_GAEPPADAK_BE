@@ -26,7 +26,7 @@ public class AuthChecker {
 		UserDetails currentUser = (CustomUserDetails)auth.getPrincipal();
 
 		return switch (resource) {
-			case "comment" -> commentRepository.findById(id)
+			case "comment" -> commentRepository.findByIdWithMember(id)
 				.filter(comment -> comment.getMember().getEmail().equals(currentUser.getUsername()))
 				.isPresent();
 			default -> false;

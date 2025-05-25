@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -22,7 +23,6 @@ import site.kkokkio.domain.comment.controller.dto.CommentCreateRequest;
 import site.kkokkio.domain.comment.controller.dto.CommentListResponse;
 import site.kkokkio.domain.comment.dto.CommentDto;
 import site.kkokkio.domain.comment.service.CommentService;
-import site.kkokkio.global.auth.CustomUserDetails;
 import site.kkokkio.global.auth.annotations.IsActiveMember;
 import site.kkokkio.global.auth.annotations.IsCommentActiveOwner;
 import site.kkokkio.global.auth.annotations.IsCommentOwner;
@@ -43,9 +43,10 @@ public class CommentControllerV1 {
 	@GetMapping("/posts/{postId}/comments")
 	public RsData<CommentListResponse> getCommentList(
 		@PathVariable("postId") Long postId,
+		@AuthenticationPrincipal UserDetails userDetails,
 		@ParameterObject @PageableDefault(sort = "likeCount") Pageable pageable
 	) {
-		Page<CommentDto> comments = commentService.getCommentListByPostId(postId, pageable);
+		Page<CommentDto> comments = commentService.getCommentListByPostId(postId, userDetails, pageable);
 
 		CommentListResponse commentListResponse = CommentListResponse.from(comments);
 
@@ -63,7 +64,7 @@ public class CommentControllerV1 {
 	@IsActiveMember
 	public RsData<CommentDto> createComment(
 		@PathVariable("postId") Long postId,
-		@AuthenticationPrincipal CustomUserDetails userDetails,
+		@AuthenticationPrincipal UserDetails userDetails,
 		@Valid @RequestBody CommentCreateRequest request) {
 		CommentDto comment = commentService.createComment(postId, userDetails, request);
 		return new RsData<>(
@@ -116,7 +117,7 @@ public class CommentControllerV1 {
 	@IsActiveMember
 	public RsData<CommentDto> likeComment(
 		@PathVariable("commentId") Long commentId,
-		@AuthenticationPrincipal CustomUserDetails userDetails
+		@AuthenticationPrincipal UserDetails userDetails
 	) {
 		CommentDto comment = commentService.likeComment(commentId, userDetails);
 		return new RsData<>(
@@ -134,7 +135,7 @@ public class CommentControllerV1 {
 	@IsActiveMember
 	public RsData<CommentDto> unlikeComment(
 		@PathVariable("commentId") Long commentId,
-		@AuthenticationPrincipal CustomUserDetails userDetails
+		@AuthenticationPrincipal UserDetails userDetails
 	) {
 		CommentDto comment = commentService.unlikeComment(commentId, userDetails);
 		return new RsData<>(

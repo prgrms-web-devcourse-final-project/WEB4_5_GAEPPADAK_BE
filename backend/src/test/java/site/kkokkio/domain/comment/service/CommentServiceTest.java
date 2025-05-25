@@ -78,7 +78,7 @@ class CommentServiceTest {
 		when(postRepository.findById(1L)).thenReturn(Optional.of(post));
 		when(commentRepository.findAllByPostAndDeletedAtIsNull(eq(post), any())).thenReturn(comments);
 
-		Page<CommentDto> result = commentService.getCommentListByPostId(1L, PageRequest.of(0, 10));
+		Page<CommentDto> result = commentService.getCommentListByPostId(1L, null, PageRequest.of(0, 10));
 
 		assertEquals(1, result.getTotalElements());
 	}
@@ -88,7 +88,8 @@ class CommentServiceTest {
 	void test1_1() {
 		when(postRepository.findById(1L)).thenReturn(Optional.empty());
 
-		assertThrows(ServiceException.class, () -> commentService.getCommentListByPostId(1L, PageRequest.of(0, 10)));
+		assertThrows(ServiceException.class,
+			() -> commentService.getCommentListByPostId(1L, null, PageRequest.of(0, 10)));
 	}
 
 	@Test
@@ -205,7 +206,7 @@ class CommentServiceTest {
 		ReflectionTestUtils.setField(comment, "createdAt", LocalDateTime.now());
 
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
-		when(commentLikeRepository.existsByComment(comment)).thenReturn(false);
+		when(commentLikeRepository.existsByCommentAndMember(comment, member1)).thenReturn(false);
 		when(userDetails.getUsername()).thenReturn(member1.getEmail());
 		when(memberService.findByEmail(any())).thenReturn(member1);
 
@@ -236,7 +237,7 @@ class CommentServiceTest {
 
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
 		when(memberService.findByEmail(any())).thenReturn(member);
-		when(commentLikeRepository.existsByComment(comment)).thenReturn(true);
+		when(commentLikeRepository.existsByCommentAndMember(comment, member)).thenReturn(true);
 
 		assertThrows(ServiceException.class, () -> commentService.likeComment(1L, userDetails));
 	}
@@ -255,7 +256,7 @@ class CommentServiceTest {
 		ReflectionTestUtils.setField(comment, "createdAt", LocalDateTime.now());
 
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
-		when(commentLikeRepository.existsByComment(comment)).thenReturn(true);
+		when(commentLikeRepository.existsByCommentAndMember(any(), any())).thenReturn(true);
 
 		CommentDto result = commentService.unlikeComment(1L, member1);
 

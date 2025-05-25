@@ -15,6 +15,7 @@ public record CommentDto(
 	@NonNull String nickname,
 	@NonNull String body,
 	@NonNull Integer likeCount,
+	Boolean likedByMe,
 	@NonNull LocalDateTime createdAt
 ) {
 	public static CommentDto from(Comment comment) {
@@ -28,6 +29,23 @@ public record CommentDto(
 			.nickname(nickname)
 			.body(comment.getBody())
 			.likeCount(comment.getLikeCount())
+			.likedByMe(null)
+			.createdAt(comment.getCreatedAt())
+			.build();
+	}
+
+	public static CommentDto from(Comment comment, Boolean likedByMe) {
+		String nickname = comment.getMember().getDeletedAt() != null
+			? "탈퇴한 회원"
+			: comment.getMember().getNickname();
+		return CommentDto.builder()
+			.commentId(comment.getId())
+			.memberId(comment.getMember().getId())
+			.profileUrl("https://i.sstatic.net/l60Hf.png")
+			.nickname(nickname)
+			.body(comment.getBody())
+			.likeCount(comment.getLikeCount())
+			.likedByMe(likedByMe)
 			.createdAt(comment.getCreatedAt())
 			.build();
 	}

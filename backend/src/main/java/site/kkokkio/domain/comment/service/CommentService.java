@@ -46,7 +46,7 @@ public class CommentService {
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 포스트입니다."));
 
 		return commentRepository.findAllByPostAndDeletedAtIsNull(post, pageable)
-			.map(CommentDto::from);
+			.map(comment -> CommentDto.from(comment, isLikedByMe(userDetails, comment)));
 	}
 
 	public Boolean isLikedByMe(UserDetails userDetails, Comment comment) {

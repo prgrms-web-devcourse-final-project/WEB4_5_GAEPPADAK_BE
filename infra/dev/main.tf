@@ -188,28 +188,28 @@ resource "aws_security_group" "sg_1" {
     from_port = 3000
     to_port   = 3000
     protocol  = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # 필요시 제한 가능
+    cidr_blocks = ["0.0.0.0/0"] # 그라파나 필요시 특정 관리자 제한 가능
   }
 
   ingress {
     from_port = 9090
     to_port   = 9090
     protocol  = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    self      = true # Prometheus는 EC2 인스턴스 내부에서만 접근
   }
 
   ingress {
     from_port = 3100
     to_port   = 3100
     protocol  = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    self      = true # Loki는 EC2 인스턴스 내부에서만 접근
   }
 
   ingress {
     from_port = 9100
     to_port   = 9100
     protocol  = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    self      = true # Node Exporter는 EC2 인스턴스 내부에서만 접근
   }
 
   egress {
@@ -273,6 +273,191 @@ resource "aws_iam_instance_profile" "instance_profile_1" {
 }
 
 locals {
+  docker_compose_content = <<-EOT
+version: '3.8'
+services:
+  app1:
+    container_name: app1
+    image: ghcr.io/prgrms-web-devcourse-final-project/team04-kkokkio-${var.env}:latest
+    restart: always
+    environment:
+      - DOPPLER_TOKEN=${var.DOPPLER_SERVICE_TOKEN}
+      - DB_HOST=mysql
+      - DB_USERNAME=${var.DB_USERNAME}
+      - DB_PASSWORD=${var.DB_PASSWORD}
+      - DB_NAME=${var.DB_NAME}
+      - DB_PORT=${var.DB_PORT}
+    ports:
+      - "8080:8080" # 외부에서 접근해야 할 경우만 포트 매핑 유지
+    volumes:
+      - /dockerProjects/logs:/app/logs
+    networks:
+      - common
+    depends_on:
+      redis:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+
+  redis:
+    container_name: redis
+    image: redis:alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - /dockerProjects/redis_data:/data
+    command: ["redis-server", "--notify-keyspace-events", "Ex"]
+    networks:
+      - common
+
+  npm_1:
+    container_name: npm_1
+    image: jc21/nginx-proxy-manager:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "81:81"
+    environment:
+      - TZ=UTC
+    volumes:
+      - /dockerProjects/npm_1/volumes/data:/data
+      - /dockerProjects/npm_1/volumes/etc/letsencrypt:/etc/letsencrypt
+    networks:
+      - common
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - /dockerProjects/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - common
+
+  loki:
+    container_name: loki
+    image: grafana/loki:latest
+    restart: always
+    ports:
+      - "3100:3100"
+    volumes:
+      - /dockerProjects/loki-config.yaml:/etc/loki/local-config.yaml
+      - /dockerProjects/tmp/loki:/tmp/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - common
+
+  promtail:
+    container_name: promtail
+    image: grafana/promtail:latest
+    restart: always
+    volumes:
+      - /dockerProjects/logs:/app/logs:ro
+      - /dockerProjects/promtail-config.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - common
+    depends_on:
+      loki:
+        condition: service_started
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - /dockerProjects/grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=${var.DB_USERNAME}
+      - GF_SECURITY_ADMIN_PASSWORD=${var.DB_PASSWORD}
+    networks:
+      - common
+    depends_on:
+      prometheus:
+        condition: service_started
+      loki:
+        condition: service_started
+
+  node-exporter:
+    container_name: node-exporter
+    image: prom/node-exporter:latest
+    restart: always
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - common
+
+  mysql: # MySQL 컨테이너 서비스 정의 추가
+    container_name: mysql
+    image: mysql:8.0
+    restart: always
+    ports:
+      - "${var.DB_PORT}:${var.DB_PORT}"
+    volumes:
+      - /dockerProjects/db_data:/var/lib/mysql
+      - /dockerProjects/mysql_logs:/logs # MySQL 일반 로그를 호스트에 저장
+      # MySQL 초기화 스크립트를 볼륨 마운트
+      - /dockerProjects/mysql_init:/docker-entrypoint-initdb.d
+    environment:
+      MYSQL_ROOT_PASSWORD: ${var.DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${var.DB_NAME}
+      MYSQL_USER: ${var.DB_USERNAME}
+      MYSQL_PASSWORD: ${var.DB_PASSWORD}
+      TZ: UTC
+    command: ["mysqld", "--general-log=1", "--general-log-file=/logs/general.log"] # /logs 볼륨에 로그 저장
+    networks:
+      - common
+    healthcheck: # MySQL 컨테이너 헬스체크 추가
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u${var.DB_USERNAME}", "-p${var.DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mysql-exporter:
+    container_name: mysql-exporter
+    image: prom/mysqld-exporter:latest
+    restart: always
+    command:
+      - "--mysqld.username=${var.DB_USERNAME}:${var.DB_PASSWORD}"
+      - "--mysqld.address=mysql:${var.DB_PORT}"
+    networks:
+      - common
+    healthcheck: # MySQL exporter 컨테이너 헬스체크 추가
+      test: ["CMD", "curl", "-f", "http://mysql-exporter:9104/metrics"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on: # mysql-exporter는 mysql 컨테이너에 의존성을 가짐
+      mysql:
+        condition: service_healthy
+
+networks:
+  common:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
+EOT
+}
+
+locals {
   ec2_user_data_base = <<-END_OF_FILE
 #!/bin/bash
 
@@ -295,6 +480,13 @@ yum install docker -y
 systemctl enable docker
 systemctl start docker
 
+# docker-compose 설치
+curl -L "https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+# docker-compose 명령을 /usr/bin에서 바로 실행되도록 심볼릭 링크 생성
+ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+
+
 # gnupg2 설치 (doppler CLI용)
 yum install -y --allowerasing gnupg2
 
@@ -302,34 +494,39 @@ yum install -y --allowerasing gnupg2
 curl -Ls https://cli.doppler.com/install.sh | sudo DOPPLER_INSTALL_DIR=/usr/local/bin sh
 
 # 프로젝트 디렉토리 및 권한 생성
-for d in tmp/loki logs grafana_data npm_1/volumes/data npm_1/volumes/etc/letsencrypt redis_data db_data mysql_logs; do
+for d in tmp/loki logs grafana_data npm_1/volumes/data npm_1/volumes/etc/letsencrypt redis_data db_data mysql_logs mysql_init; do
   mkdir -p "/dockerProjects/$d" || { echo "디렉토리 생성 실패: $d"; exit 1; }
 done
 
 chown -R 10001:10001 /dockerProjects/tmp/loki
 chown -R 10001:10001 /dockerProjects/logs
 chown -R 472:472 /dockerProjects/grafana_data
-chown -R 999:999 /dockerProjects/db_data
+chown -R 999:999 /dockerProjects/db_data # MySQL 데이터 볼륨 소유자
+chown -R 999:999 /dockerProjects/mysql_logs # MySQL 로그 볼륨 소유자
+chown -R 999:999 /dockerProjects/mysql_init # MySQL 초기화 스크립트 볼륨 소유자
+
 chmod -R 755 /dockerProjects
+chmod 777 /dockerProjects/logs
 
-# 도커 네트워크 생성
-docker network create common
+# MySQL 초기화 SQL 스크립트 생성
+cat <<EOF > /dockerProjects/mysql_init/init_db.sql
+CREATE USER '${var.MYSQL_USER_1}'@'127.0.0.1' IDENTIFIED WITH caching_sha2_password BY '${var.PASSWORD_3}';
+CREATE USER '${var.MYSQL_USER_1}'@'172.18.%.%' IDENTIFIED WITH caching_sha2_password BY '${var.PASSWORD_2}';
+CREATE USER '${var.MYSQL_USER_2}'@'%' IDENTIFIED WITH caching_sha2_password BY '${var.PASSWORD_1}';
 
-# mysqld-exporter 설정 디렉토리 및 .my.cnf 파일 생성
-mkdir -p /dockerProjects/mysql-exporter
-cat <<EOF > /dockerProjects/mysql-exporter/.my.cnf
-[client]
-user=${var.DB_USERNAME} # '%'로 그랜트된 사용자 이름
-password=${var.DB_PASSWORD} # 해당 사용자의 비밀번호 (여기에 직접 변수 사용)
-host=mysql # MySQL 컨테이너의 서비스 이름 사용
-port=3306
+GRANT ALL PRIVILEGES ON *.* TO '${var.MYSQL_USER_1}'@'127.0.0.1';
+GRANT ALL PRIVILEGES ON *.* TO '${var.MYSQL_USER_1}'@'172.18.%.%';
+GRANT ALL PRIVILEGES ON *.* TO '${var.MYSQL_USER_2}'@'%';
+
+CREATE DATABASE IF NOT EXISTS ${var.DB_NAME};
+
+FLUSH PRIVILEGES;
 EOF
 
-# .my.cnf 파일 권한 설정 (소유자 외 읽기 금지)
-chmod 644 /dockerProjects/mysql-exporter/.my.cnf
+chmod 644 /dockerProjects/mysql_init/init_db.sql # 초기화 스크립트 권한 설정
+
 
 # Loki 설정 파일 작성
-mkdir -p /dockerProjects/tmp/loki /dockerProjects/logs /dockerProjects/grafana_data
 cat <<EOL > /dockerProjects/loki-config.yaml
 auth_enabled: false
 server:
@@ -367,8 +564,6 @@ limits_config:
   per_stream_rate_limit_burst: 10MB
 EOL
 
-sleep 1
-
 # Promtail 설정 파일 작성
 cat <<EOL > /dockerProjects/promtail-config.yml
 server:
@@ -387,204 +582,45 @@ scrape_configs:
           __path__: /app/logs/*.log
     pipeline_stages:
       - multiline:
-          firstline: '^\\[ls\\] \\['
-          separator: '\\] \\[le\\]'
+          firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} \['
 EOL
-
-sleep 1
 
 # Prometheus 설정 파일 작성
 cat <<EOL > /dockerProjects/prometheus.yml
 global:
   scrape_interval: 15s
+  # evaluation_interval: 15s # rule evaluation 주기
+
 scrape_configs:
   - job_name: "app"
     metrics_path: "/api/actuator/prometheus"
-    honor_labels: true
+    honor_labels: true # ← 우리가 붙인 tag 우선
     static_configs:
       - targets:
           - "app1:8080"
         labels:
           instance: "app"
+  - job_name: "mysql_exporter"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["mysql-exporter:9104"]
   - job_name: "node_exporter"
     scrape_interval: 5s
     static_configs:
       - targets: ["node-exporter:9100"]
-# --- MySQL Exporter 메트릭 수집 설정 추가 ---
-  - job_name: "mysql" # MySQL 메트릭을 위한 새로운 Job 이름
-    scrape_interval: 60s # MySQL 메트릭은 보통 1분 간격으로도 충분
-    static_configs:
-      - targets: ["mysql-exporter:9104"] # <--- mysqld_exporter 컨테이너의 서비스 이름과 포트를 지정 (기본 포트는 9104)
 EOL
 
-sleep 1
-
-# nginx-proxy-manager
-docker run -d \
-  --name npm_1 \
-  --restart unless-stopped \
-  --network common \
-  -p 80:80 \
-  -p 443:443 \
-  -p 81:81 \
-  -e TZ=UTC \
-  -v /dockerProjects/npm_1/volumes/data:/data \
-  -v /dockerProjects/npm_1/volumes/etc/letsencrypt:/etc/letsencrypt \
-  jc21/nginx-proxy-manager:latest
-
-sleep 1
-
-# redis 컨테이너 (도커컴포즈 맞춤)
-docker run -d \
-  --name redis \
-  --restart always \
-  --network common \
-  -p 6379:6379 \
-  -v /dockerProjects/redis_data:/data \
-  -e TZ=UTC \
-  redis:alpine \
-  redis-server --notify-keyspace-events Ex --dir /data
-
-sleep 1
-
-# mysql 컨테이너 (도커컴포즈 맞춤)
-docker run -d \
-  --name mysql \
-  --restart always \
-  --network common \
-  -p 3306:3306 \
-  -v /dockerProjects/db_data:/var/lib/mysql \
-  -v /dockerProjects/mysql_logs:/logs \
-  -e MYSQL_ROOT_PASSWORD=${var.DB_ROOT_PASSWORD} \
-  -e MYSQL_DATABASE=${var.DB_NAME} \
-  -e MYSQL_USER=${var.DB_USERNAME} \
-  -e MYSQL_PASSWORD=${var.DB_PASSWORD} \
-  -e TZ=UTC \
-  mysql:8.0 --general-log=1 --general-log-file=/var/lib/mysql/general.log
-
-# MySQL 컨테이너가 준비될 때까지 대기
-echo "MySQL이 기동될 때까지 대기 중..."
-until docker exec mysql mysql -uroot -p${var.DB_ROOT_PASSWORD} -e "SELECT 1" &> /dev/null; do
-  echo "MySQL이 아직 준비되지 않음. 5초 후 재시도..."
-  sleep 5
-done
-echo "MySQL이 준비됨. 초기화 스크립트 실행 중..."
-
-docker exec mysql mysql -uroot -p${var.DB_ROOT_PASSWORD} -e "
-CREATE USER '${var.MYSQL_USER_1}'@'127.0.0.1' IDENTIFIED WITH caching_sha2_password BY '${var.PASSWORD_3}';
-CREATE USER '${var.MYSQL_USER_1}'@'172.18.%.%' IDENTIFIED WITH caching_sha2_password BY '${var.PASSWORD_2}';
-CREATE USER '${var.MYSQL_USER_2}'@'%' IDENTIFIED WITH caching_sha2_password BY '${var.PASSWORD_1}';
-
-GRANT ALL PRIVILEGES ON *.* TO '${var.MYSQL_USER_1}'@'127.0.0.1';
-GRANT ALL PRIVILEGES ON *.* TO '${var.MYSQL_USER_1}'@'172.18.%.%';
-GRANT ALL PRIVILEGES ON *.* TO '${var.MYSQL_USER_2}'@'%';
-
-CREATE DATABASE ${var.DB_NAME};
-
-FLUSH PRIVILEGES;
-"
-
+# GitHub Container Registry 로그인
 echo "${var.GITHUB_ACCESS_TOKEN_1}" | docker login ghcr.io -u ${var.GITHUB_ACCESS_TOKEN_1_OWNER} --password-stdin
 
-# app1 컨테이너 실행 (Doppler 사용)
-# docker run --restart always -e DOPPLER_TOKEN=${var.DOPPLER_SERVICE_TOKEN} -d --name app1 --network common -p 8080:8080 ghcr.io/prgrms-web-devcourse-final-project/team04-kkokkio-${var.env}:latest
-docker run --restart always \
-  -e DOPPLER_TOKEN=${var.DOPPLER_SERVICE_TOKEN} \
-  -d \
-  --name app1 \
-  --network common \
-  -p 8080:8080 \
-  -v /dockerProjects/logs:/app/logs \
-  ghcr.io/prgrms-web-devcourse-final-project/team04-kkokkio-${var.env}:latest
+# Docker Compose 파일 생성 (local.docker_compose_content를 여기에 추가)
+cat <<EOT_DOCKER_COMPOSE > /dockerProjects/docker-compose.yml
+${local.docker_compose_content}
+EOT_DOCKER_COMPOSE
 
-#Prometheus 실행
-docker run -d \
---name prometheus \
---restart always \
---network common \
--p 9090:9090 \
---add-host=host.docker.internal:host-gateway \
--v /dockerProjects/prometheus.yml:/etc/prometheus/prometheus.yml \
-prom/prometheus:latest \
---config.file=/etc/prometheus/prometheus.yml
-
-# Loki 컨테이너 실행
-docker run -d \
-  --name loki \
-  --restart always \
-  --network common \
-  -p 3100:3100 \
-  -v /dockerProjects/loki-config.yaml:/etc/loki/local-config.yaml \
-  -v /dockerProjects/tmp/loki:/tmp/loki \
-  grafana/loki:latest \
-  -config.file=/etc/loki/local-config.yaml
-
-sleep 1
-
-# Promtail 컨테이너 실행
-docker run -d \
-  --name promtail \
-  --restart always \
-  --network common \
-  -v /dockerProjects/logs:/app/logs \
-  -v /dockerProjects/promtail-config.yml:/etc/promtail/config.yml \
-  grafana/promtail:latest \
-  -config.file=/etc/promtail/config.yml
-
-sleep 1
-
-# Grafana 컨테이너 실행
-docker run -d \
-  --name grafana \
-  --restart always \
-  --network common \
-  -p 3000:3000 \
-  -v /dockerProjects/grafana_data:/var/lib/grafana \
-  -e GF_SECURITY_ADMIN_USER=${var.DB_USERNAME} \
-  -e GF_SECURITY_ADMIN_PASSWORD=${var.DB_PASSWORD} \
-  grafana/grafana:latest
-
-sleep 1
-
-# Node Exporter
-cat <<'EOF' > /usr/local/bin/start_node_exporter.sh
-#!/bin/bash
-docker run -d \
-  --name node-exporter \
-  --restart always \
-  --network common \
-  -p 9100:9100 \
-  -v /proc:/host/proc:ro \
-  -v /sys:/host/sys:ro \
-  -v /:/rootfs:ro \
-  prom/node-exporter:latest \
-  --path.procfs=/host/proc \
-  --path.sysfs=/host/sys \
-  --collector.filesystem.ignored-mount-points='^/(sys|proc|dev|host|etc)($|/)'
-EOF
-
-sleep 1
-
-chmod +x /usr/local/bin/start_node_exporter.sh
-/usr/local/bin/start_node_exporter.sh
-
-# mysql-exporter 컨테이너 실행 명령어 (찾아서 수정해야 하는 명령어)
-# docker run -d \
-#   --name mysql-exporter \
-#   --restart always \
-#   --network common \
-#   -p 9104:9104 \
-#   -e DATA_SOURCE_NAME="${var.MYSQL_USER_2}:${var.PASSWORD_1}@tcp(mysql:3306)/${var.DB_NAME}" \ # <--- 이 라인을 사용하세요! 변수와 인코딩 포함
-#   prom/mysqld-exporter:latest # 사용하는 이미지 이름
-
-docker run -d \
-  --name mysql-exporter \
-  --restart always \
-  --network common \ # MySQL 컨테이너와 같은 네트워크 사용
-  -p 9104:9104 \ # Prometheus가 접근할 포트
-  -v /dockerProjects/mysql-exporter/.my.cnf:/etc/mysql/my.cnf:ro \ # <-- .my.cnf 파일 마운트 (읽기 전용)
-  prom/mysqld-exporter:latest \
-  --config.my-cnf=/etc/mysql/my.cnf
+# Docker Compose 실행
+cd /dockerProjects
+docker-compose up -d
 
 END_OF_FILE
 }

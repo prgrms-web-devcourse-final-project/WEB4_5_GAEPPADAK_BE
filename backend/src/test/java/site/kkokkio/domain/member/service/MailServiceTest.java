@@ -136,6 +136,7 @@ public class MailServiceTest {
 	@DisplayName("인증 코드 발송 성공 테스트")
 	void sendAuthCodeSuccessTest() throws MessagingException {
 		// given
+		when(memberRepository.existsByEmail(testEmail)).thenReturn(true); // 회원으로 가정
 		when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
 
 		// when
@@ -156,6 +157,7 @@ public class MailServiceTest {
 	@DisplayName("인증 코드 발송 실패 테스트")
 	void sendAuthCodeFailTest() throws MessagingException {
 		// given
+		when(memberRepository.existsByEmail(testEmail)).thenReturn(true); // 회원으로 가정
 		when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
 		doThrow(new MailException("Mail sending failed") {
 		}).when(mailSender).send(any(MimeMessage.class));

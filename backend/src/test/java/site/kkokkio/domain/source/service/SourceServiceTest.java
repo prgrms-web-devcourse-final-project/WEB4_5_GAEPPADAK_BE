@@ -2,10 +2,6 @@ package site.kkokkio.domain.source.service;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.anyInt;
-import static org.mockito.BDDMockito.anyString;
-import static org.mockito.BDDMockito.eq;
 import static org.mockito.BDDMockito.*;
 
 import java.time.LocalDateTime;
@@ -187,8 +183,8 @@ class SourceServiceTest {
 	@Test
 	@DisplayName("키워드 검색 소스 조회 - 성공")
 	void getTop10VideoSourcesByPostId_Success() {
-		PostDto post1 = new PostDto(1L, "키워드", "제목1", "설명1", "url1");
-		PostDto post2 = new PostDto(2L, "키워드", "제목2", "설명2", "url2");
+		PostDto post1 = new PostDto(1L, "키워드", "제목1", "설명1", "url1", null);
+		PostDto post2 = new PostDto(2L, "키워드", "제목2", "설명2", "url2", null);
 
 		List<PostDto> postDtos = List.of(post1, post2);
 
@@ -243,12 +239,10 @@ class SourceServiceTest {
 
 		// then
 		then(sourceRepository).should().insertIgnoreAll(argThat(sources ->
-			sources.size() == 1 &&
-				sources.getFirst().getTitle().equals("뉴스 제목")
+			sources.size() == 1 && sources.getFirst().getTitle().equals("뉴스 제목")
 		));
 		then(keywordSourceRepository).should().insertIgnoreAll(argThat(ksList ->
-			ksList.size() == 1 &&
-				ksList.getFirst().getKeyword().getId().equals(keywordId)
+			ksList.size() == 1 && ksList.getFirst().getKeyword().getId().equals(keywordId)
 		));
 		then(openGraphService).should().enrichAsync(any(Source.class));
 	}

@@ -71,9 +71,9 @@ public class PostControllerV1Test {
 	@BeforeEach
 	void setUp() {
 		postDtos = Arrays.asList(
-			new PostDto(3L, keywordText, "제목3", "요약3", ""),
-			new PostDto(1L, keywordText, "제목1", "요약1", ""),
-			new PostDto(2L, keywordText, "제목2", "요약2", "")
+			new PostDto(3L, keywordText, "제목3", "요약3", "", null),
+			new PostDto(1L, keywordText, "제목1", "요약1", "", null),
+			new PostDto(2L, keywordText, "제목2", "요약2", "", null)
 		);
 	}
 
@@ -89,7 +89,7 @@ public class PostControllerV1Test {
 			.thumbnailUrl("https://image.url")
 			.build();
 
-		given(postService.getPostWithKeywordById(1L)).willReturn(postDto);
+		given(postService.getPostWithKeywordById(1L, null)).willReturn(postDto);
 
 		// when & then
 		mockMvc.perform(get("/api/v1/posts/{postId}", 1L))
@@ -107,7 +107,7 @@ public class PostControllerV1Test {
 	@DisplayName("포스트 단건 조회 - 실패 (포스트 없음)")
 	void test2() throws Exception {
 		// given
-		given(postService.getPostWithKeywordById(1L))
+		given(postService.getPostWithKeywordById(1L, null))
 			.willThrow(new ServiceException("404", "포스트를 불러오지 못했습니다."));
 
 		// when & then

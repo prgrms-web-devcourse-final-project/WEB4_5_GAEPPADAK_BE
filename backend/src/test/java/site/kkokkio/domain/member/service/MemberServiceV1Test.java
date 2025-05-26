@@ -203,6 +203,95 @@ class MemberServiceV1Test {
 	}
 
 	@Test
+	@DisplayName("회원정보 수정 실패 - 닉네임 중복")
+	void modifyMemberInfo_fail_nicknameDuplicate() {
+		// given
+		Member member = Member.builder()
+			.id(UUID.randomUUID())
+			.email("user@example.com")
+			.nickname("originalNickname")
+			.passwordHash("encodedPassword")
+			.build();
+
+		CustomUserDetails userDetails = new CustomUserDetails(
+			member.getEmail(), member.getRole().toString(), member.isEmailVerified());
+		when(memberRepository.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
+		// 새로운 닉네임이 이미 존재한다고 Mock
+		when(memberRepository.existsByNickname("existingNickname")).thenReturn(true);
+
+		MemberUpdateRequest request = new MemberUpdateRequest(null, "existingNickname"); // 닉네임만 변경 요청
+
+		// when & then
+		assertThatThrownBy(() -> memberService.modifyMemberInfo(userDetails, request))
+			.isInstanceOf(ServiceException.class)
+			.hasMessageContaining("이미 사용중인 닉네임입니다.")
+			.extracting("code").isEqualTo("409");
+
+		// verify that save was not called
+		verify(memberRepository, never()).save(any(Member.class));
+		verify(memberRepository, times(1)).existsByNickname("existingNickname");
+	}
+
+	@Test
+	@DisplayName("회원정보 수정 실패 - 현재 닉네임과 동일")
+	void modifyMemberInfo_fail_nicknameSameAsCurrent() {
+		// given
+		Member member = Member.builder()
+			.id(UUID.randomUUID())
+			.email("user@example.com")
+			.nickname("tester")
+			.passwordHash("encodedPassword")
+			.build();
+
+		CustomUserDetails userDetails = new CustomUserDetails(
+			member.getEmail(), member.getRole().toString(), member.isEmailVerified());
+		when(memberRepository.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
+
+		MemberUpdateRequest request = new MemberUpdateRequest(null, "tester"); // 현재 닉네임과 동일한 닉네임으로 변경 요청
+
+		// when & then
+		assertThatThrownBy(() -> memberService.modifyMemberInfo(userDetails, request))
+			.isInstanceOf(ServiceException.class)
+			.hasMessageContaining("현재 닉네임과 동일한 닉네임입니다.")
+			.extracting("code").isEqualTo("400");
+
+		// verify
+		verify(memberRepository, never()).existsByNickname(anyString());
+		verify(memberRepository, never()).save(any(Member.class));
+	}
+
+	@Test
+	@DisplayName("회원정보 수정 실패 - 현재 비밀번호와 동일")
+	void modifyMemberInfo_fail_passwordSameAsCurrent() {
+		// given
+		Member member = Member.builder()
+			.id(UUID.randomUUID())
+			.email("user@example.com")
+			.nickname("tester")
+			.passwordHash("encodedPassword") // Mocking에서 사용할 해시된 비밀번호
+			.build();
+
+		CustomUserDetails userDetails = new CustomUserDetails(
+			member.getEmail(), member.getRole().toString(), member.isEmailVerified());
+		when(memberRepository.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
+		// passwordEncoder.matches가 현재 비밀번호와 동일하다고 Mock
+		when(passwordEncoder.matches("currentPassword", "encodedPassword")).thenReturn(true);
+
+		MemberUpdateRequest request = new MemberUpdateRequest("currentPassword", null); // 현재 비밀번호와 동일한 비밀번호로 변경 요청
+
+		// when & then
+		assertThatThrownBy(() -> memberService.modifyMemberInfo(userDetails, request))
+			.isInstanceOf(ServiceException.class)
+			.hasMessageContaining("현재 비밀번호와 동일한 비밀번호입니다.")
+			.extracting("code").isEqualTo("400");
+
+		// verify that save was not called
+		verify(memberRepository, never()).save(any(Member.class));
+		verify(passwordEncoder, times(1)).matches("currentPassword", "encodedPassword");
+		verify(passwordEncoder, never()).encode(anyString());
+	}
+
+	@Test
 	@DisplayName("회원 탈퇴 성공")
 	void deleteMember_success() {
 		// given

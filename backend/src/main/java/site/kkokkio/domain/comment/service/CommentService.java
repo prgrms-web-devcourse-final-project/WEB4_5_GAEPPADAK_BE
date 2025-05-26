@@ -41,12 +41,21 @@ public class CommentService {
 	private final CommentReportRepository commentReportRepository;
 	private final MemberService memberService;
 
-	public Page<CommentDto> getCommentListByPostId(Long postId, Pageable pageable) {
+	public Page<CommentDto> getCommentListByPostId(Long postId, UserDetails userDetails, Pageable pageable) {
 		Post post = postRepository.findById(postId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 포스트입니다."));
 
 		return commentRepository.findAllByPostAndDeletedAtIsNull(post, pageable)
-			.map(CommentDto::from);
+			.map(comment -> CommentDto.from(comment, isLikedByMe(userDetails, comment)));
+	}
+
+	public Boolean isLikedByMe(UserDetails userDetails, Comment comment) {
+		if (userDetails == null) {
+			return null;
+		}
+
+		Member member = memberService.findByEmail(userDetails.getUsername());
+		return commentLikeRepository.existsByCommentAndMember(comment, member);
 	}
 
 	@Transactional
@@ -96,7 +105,7 @@ public class CommentService {
 			throw new ServiceException("403", "본인 댓글은 좋아요 할 수 없습니다.");
 		}
 
-		if (commentLikeRepository.existsByComment(comment)) {
+		if (commentLikeRepository.existsByCommentAndMember(comment, member)) {
 			throw new ServiceException("400", "이미 좋아요를 누른 댓글입니다.");
 		}
 
@@ -117,12 +126,13 @@ public class CommentService {
 		Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
 
+		Member member = memberService.findByEmail(userDetails.getUsername());
 		if (comment.getMember().getEmail().equals(userDetails.getUsername())) {
 			throw new ServiceException("403", "본인 댓글은 좋아요 할 수 없습니다.");
 		}
 
-		if (commentLikeRepository.existsByComment(comment)) {
-			commentLikeRepository.deleteByComment(comment);
+		if (commentLikeRepository.existsByCommentAndMember(comment, member)) {
+			commentLikeRepository.deleteByCommentAndMember(comment, member);
 			comment.decreaseLikeCount();
 			commentRepository.save(comment);
 		} else {

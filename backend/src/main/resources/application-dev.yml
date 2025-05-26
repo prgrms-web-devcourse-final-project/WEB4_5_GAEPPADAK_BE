@@ -30,4 +30,4 @@ mock:
   enabled: false # TODO(fix)
 
 schedule:
-  cron: 0 0 */3 * * * # TODO(fix)
+  cron: 0 0 0 * * 1 # TODO(fix)

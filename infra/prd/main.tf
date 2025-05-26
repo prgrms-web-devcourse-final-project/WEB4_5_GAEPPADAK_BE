@@ -187,28 +187,28 @@ resource "aws_security_group" "sg_1" {
     from_port = 3000
     to_port   = 3000
     protocol  = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # 필요시 제한 가능
+    cidr_blocks = ["0.0.0.0/0"] # 그라파나 필요시 특정 관리자 제한 가능
   }
 
   ingress {
     from_port = 9090
     to_port   = 9090
     protocol  = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    self      = true # Prometheus는 EC2 인스턴스 내부에서만 접근
   }
 
   ingress {
     from_port = 3100
     to_port   = 3100
     protocol  = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    self      = true # Loki는 EC2 인스턴스 내부에서만 접근
   }
 
   ingress {
     from_port = 9100
     to_port   = 9100
     protocol  = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    self      = true # Node Exporter는 EC2 인스턴스 내부에서만 접근
   }
 
   egress {
@@ -479,6 +479,11 @@ services:
       - "--mysqld.address=${aws_db_instance.mysql.address}:${aws_db_instance.mysql.port}"
     networks:
       - common
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://mysql-exporter:9104/metrics"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 networks:
   common:
@@ -526,19 +531,18 @@ yum install -y --allowerasing gnupg2
 curl -Ls https://cli.doppler.com/install.sh | sudo DOPPLER_INSTALL_DIR=/usr/local/bin sh
 
 # 프로젝트 디렉토리 및 권한 생성
-for d in tmp/loki logs grafana_data npm_1/volumes/data npm_1/volumes/etc/letsencrypt redis_data db_data mysql_logs; do
+for d in tmp/loki logs grafana_data npm_1/volumes/data npm_1/volumes/etc/letsencrypt redis_data; do
   mkdir -p "/dockerProjects/$d" || { echo "디렉토리 생성 실패: $d"; exit 1; }
 done
-
-# mkdir -p "/dockerProjects/mysql-exporter" || { echo "디렉토리 생성 실패: mysql-exporter"; exit 1; }
 
 chown -R 10001:10001 /dockerProjects/tmp/loki
 chown -R 10001:10001 /dockerProjects/logs
 chown -R 472:472 /dockerProjects/grafana_data
+
 chmod -R 755 /dockerProjects
+chmod 777 /dockerProjects/logs
 
 # Loki 설정 파일 작성
-mkdir -p /dockerProjects/tmp/loki /dockerProjects/logs /dockerProjects/grafana_data
 cat <<EOL > /dockerProjects/loki-config.yaml
 auth_enabled: false
 server:
@@ -601,31 +605,29 @@ EOL
 cat <<EOL > /dockerProjects/prometheus.yml
 global:
   scrape_interval: 15s
+  # evaluation_interval: 15s # rule evaluation 주기
+
 scrape_configs:
   - job_name: "app"
     metrics_path: "/api/actuator/prometheus"
-    honor_labels: true
+    honor_labels: true # ← 우리가 붙인 tag 우선
     static_configs:
       - targets:
           - "app1:8080"
         labels:
           instance: "app"
+  - job_name: "mysql_exporter"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["mysql-exporter:9104"]
   - job_name: "node_exporter"
     scrape_interval: 5s
     static_configs:
       - targets: ["node-exporter:9100"]
-# --- MySQL Exporter 메트릭 수집 설정 추가 ---
-  - job_name: "mysql" # MySQL 메트릭을 위한 새로운 Job 이름
-    scrape_interval: 60s # MySQL 메트릭은 보통 1분 간격으로도 충분
-    static_configs:
-      - targets: ["mysql-exporter:9104"] # <--- mysqld_exporter 컨테이너의 서비스 이름과 포트를 지정 (기본 포트는 9104)
 EOL
 
 # GitHub Container Registry 로그인
 echo "${var.GITHUB_ACCESS_TOKEN_1}" | docker login ghcr.io -u ${var.GITHUB_ACCESS_TOKEN_1_OWNER} --password-stdin
-
-# app1 컨테이너 실행 (Doppler 사용)
-# docker run --restart always -e DOPPLER_TOKEN=${var.DOPPLER_SERVICE_TOKEN} -d --name app1 --network common -p 8080:8080 ghcr.io/prgrms-web-devcourse-final-project/team04-kkokkio-${var.env}:latest
 
 # Docker Compose 파일 생성 (local.docker_compose_content를 여기에 추가)
 cat <<EOT_DOCKER_COMPOSE > /dockerProjects/docker-compose.yml

@@ -5,10 +5,11 @@ import org.springframework.stereotype.Repository;
 
 import site.kkokkio.domain.comment.entity.Comment;
 import site.kkokkio.domain.comment.entity.CommentLike;
+import site.kkokkio.domain.member.entity.Member;
 
 @Repository
 public interface CommentLikeRepository extends JpaRepository<CommentLike, Long> {
-	Boolean existsByComment(Comment comment);
+	Boolean existsByCommentAndMember(Comment comment, Member member);
 
-	void deleteByComment(Comment comment);
+	void deleteByCommentAndMember(Comment comment, Member member);
 }

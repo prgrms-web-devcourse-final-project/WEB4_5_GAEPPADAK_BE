@@ -78,7 +78,7 @@ class CommentServiceTest {
 		when(postRepository.findById(1L)).thenReturn(Optional.of(post));
 		when(commentRepository.findAllByPostAndDeletedAtIsNull(eq(post), any())).thenReturn(comments);
 
-		Page<CommentDto> result = commentService.getCommentListByPostId(1L, PageRequest.of(0, 10));
+		Page<CommentDto> result = commentService.getCommentListByPostId(1L, null, PageRequest.of(0, 10));
 
 		assertEquals(1, result.getTotalElements());
 	}
@@ -88,7 +88,8 @@ class CommentServiceTest {
 	void test1_1() {
 		when(postRepository.findById(1L)).thenReturn(Optional.empty());
 
-		assertThrows(ServiceException.class, () -> commentService.getCommentListByPostId(1L, PageRequest.of(0, 10)));
+		assertThrows(ServiceException.class,
+			() -> commentService.getCommentListByPostId(1L, null, PageRequest.of(0, 10)));
 	}
 
 	@Test
@@ -205,7 +206,7 @@ class CommentServiceTest {
 		ReflectionTestUtils.setField(comment, "createdAt", LocalDateTime.now());
 
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
-		when(commentLikeRepository.existsByComment(comment)).thenReturn(false);
+		when(commentLikeRepository.existsByCommentAndMember(comment, member1)).thenReturn(false);
 		when(userDetails.getUsername()).thenReturn(member1.getEmail());
 		when(memberService.findByEmail(any())).thenReturn(member1);
 
@@ -236,7 +237,7 @@ class CommentServiceTest {
 
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
 		when(memberService.findByEmail(any())).thenReturn(member);
-		when(commentLikeRepository.existsByComment(comment)).thenReturn(true);
+		when(commentLikeRepository.existsByCommentAndMember(comment, member)).thenReturn(true);
 
 		assertThrows(ServiceException.class, () -> commentService.likeComment(1L, userDetails));
 	}
@@ -255,7 +256,7 @@ class CommentServiceTest {
 		ReflectionTestUtils.setField(comment, "createdAt", LocalDateTime.now());
 
 		when(commentRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(comment));
-		when(commentLikeRepository.existsByComment(comment)).thenReturn(true);
+		when(commentLikeRepository.existsByCommentAndMember(any(), any())).thenReturn(true);
 
 		CommentDto result = commentService.unlikeComment(1L, member1);
 
@@ -501,7 +502,7 @@ class CommentServiceTest {
 	void test8() {
 		/// given
 		Pageable inputPageable = PageRequest.of(0, 10, Sort.unsorted());
-		Pageable expectedPageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "reportedAt"));
+		Pageable expectedPageable = PageRequest.of(0, 10, Sort.unsorted());
 
 		// Repository가 반환할 Mock 데이터
 		ReportedCommentSummary mockSummary1 = mock(ReportedCommentSummary.class);
@@ -533,7 +534,7 @@ class CommentServiceTest {
 	@DisplayName("신고된 댓글 목록 조회 - 성공 (검색 조건 있음)")
 	void test9() {
 		/// given
-		Pageable inputPageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "reportedAt"));
+		Pageable inputPageable = PageRequest.of(0, 10, Sort.unsorted());
 		String searchTarget = "nickname";
 		String searchValue = "testUser";
 
@@ -578,7 +579,7 @@ class CommentServiceTest {
 		Pageable inputPageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.ASC, "reportCount"));
 
 		// Service 로직에서 정렬 속성 이름이 유효한지 검증 후 Repository로 전달될 Pageable
-		Pageable expectedPageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.ASC, "reportCount"));
+		Pageable expectedPageable = inputPageable;
 
 		// Repository가 반환할 Mock 데이터
 		ReportedCommentSummary mockSummary1 = mock(ReportedCommentSummary.class);
@@ -660,6 +661,12 @@ class CommentServiceTest {
 		Comment mockComment3 = mock(Comment.class);
 		doNothing().when(mockComment3).softDelete();
 
+		// commentRepository.findAllById 모킹 추가
+		when(commentRepository.findAllById(commentIdsToHide))
+			.thenReturn(Arrays.asList(mockComment1, mockComment2, mockComment3));
+		when(commentReportRepository.countByCommentIdIn(commentIdsToHide))
+			.thenReturn((long)commentIdsToHide.size());
+
 		// commentRepository.findById 호출 시 ID별로 모킹된 comment 객체 반환 설정
 		when(commentRepository.findById(eq(1L))).thenReturn(Optional.of(mockComment1));
 		when(commentRepository.findById(eq(2L))).thenReturn(Optional.of(mockComment2));
@@ -686,7 +693,6 @@ class CommentServiceTest {
 		verify(commentRepository).save(eq(mockComment2));
 		verify(commentRepository).save(eq(mockComment3));
 
-		verify(commentRepository, Mockito.never()).findAllById(anyList());
 		verify(commentReportRepository, Mockito.never())
 			.findReportedCommentSummary(any(), any(), any(), any(), any());
 		verify(commentReportRepository)
@@ -701,14 +707,11 @@ class CommentServiceTest {
 
 		// Comment Mock 객체들을 명시적으로 생성
 		Comment mockComment1 = mock(Comment.class);
-
-		doNothing().when(mockComment1).softDelete();
+		Comment mockComment3 = mock(Comment.class);
 
 		// Service는 commentIdsToHide 목록을 순회하며 findById를 호출
-		when(commentRepository.findById(eq(1L))).thenReturn(Optional.of(mockComment1));
-		when(commentRepository.findById(eq(999L))).thenReturn(Optional.empty());
-
-		when(commentRepository.save(eq(mockComment1))).thenReturn(mockComment1);
+		when(commentRepository.findAllById(commentIdsToHide))
+			.thenReturn(Arrays.asList(mockComment1, mockComment3));
 
 		/// when & then
 		ServiceException ex = assertThrows(ServiceException.class, () ->
@@ -717,14 +720,13 @@ class CommentServiceTest {
 		assertEquals("404", ex.getCode());
 		assertEquals("존재하지 않는 댓글이 포함되어 있습니다.", ex.getMessage());
 
-		verify(commentRepository).findById(eq(1L));
-		verify(commentRepository).findById(eq(999L));
-		verify(commentRepository, Mockito.never()).findById(eq(3L));
-		verify(mockComment1).softDelete();
-		verify(commentRepository).save(eq(mockComment1));
+		verify(commentRepository).findAllById(eq(commentIdsToHide));
+		verify(commentRepository, Mockito.never()).findById(anyLong());
+		verify(mockComment1, Mockito.never()).softDelete();
+		verify(commentRepository, Mockito.never()).save(any(Comment.class));
 
 		verify(commentReportRepository, Mockito.never())
-			.findReportedCommentSummary(any(), any(), any(), any(), any());
+			.countByCommentIdIn(anyList());
 		verify(commentReportRepository, Mockito.never())
 			.updateStatusByCommentIdIn(anyList(), any(ReportProcessingStatus.class));
 	}
@@ -743,6 +745,10 @@ class CommentServiceTest {
 		// commentRepository.findAllById 호출 시 모킹된 댓글 목록 반환 설정
 		when(commentRepository.findAllById(eq(commentIdsToReject)))
 			.thenReturn(Arrays.asList(mockComment1, mockComment2, mockComment3));
+
+		// commentReportRepository.countByCommentIdIn 모킹 추가
+		when(commentReportRepository.countByCommentIdIn(eq(commentIdsToReject)))
+			.thenReturn((long)commentIdsToReject.size());
 
 		// commentReportRepository.deleteAllByCommentIdIn 메서드 Mocking
 		doNothing().when(commentReportRepository)

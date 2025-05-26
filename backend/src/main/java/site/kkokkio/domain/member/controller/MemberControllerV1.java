@@ -67,7 +67,7 @@ public class MemberControllerV1 {
 	@Operation(summary = "회원수정")
 	@ApiErrorCodeExamples({ErrorCode.MISSING_TOKEN, ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
 		ErrorCode.UNSUPPORTED_TOKEN, ErrorCode.MALFORMED_TOKEN,
-		ErrorCode.CREDENTIALS_MISMATCH, ErrorCode.EMAIL_NOT_FOUND})
+		ErrorCode.CREDENTIALS_MISMATCH, ErrorCode.EMAIL_NOT_FOUND, ErrorCode.NICKNAME_ALREADY_EXIST})
 	@PatchMapping("/me")
 	@IsSelf
 	public RsData<MemberResponse> modifyMember(

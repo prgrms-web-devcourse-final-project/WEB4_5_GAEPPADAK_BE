@@ -3,8 +3,9 @@ package site.kkokkio.domain.post.service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -100,14 +101,17 @@ public class PostService {
 	@Transactional(readOnly = true)
 	public List<PostDto> getTopPostsWithKeyword() {
 		LocalDateTime now = LocalDateTime.now(ZoneId.of("UTC"));
+		String formattedNow = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS"));
 		List<KeywordMetricHourly> topKeywordMetrics =
-			keywordMetricHourlyRepository.findTop10HourlyMetricsClosestToNowNative(now);
+			keywordMetricHourlyRepository.findTop10HourlyMetricsClosestToNowNative(formattedNow);
 
 		return topKeywordMetrics.stream()
-			.peek(metric -> {
+			.filter(metric -> {
 				if (metric.getPost() == null) {
-					throw new ServiceException("500", "해당 키워드에 post가 존재하지 않습니다.");
+					log.error("keywordMetricHourlyId: {} 해당 키워드에 post가 존재하지 않습니다.", metric.getId());
+					return false;
 				}
+				return true;
 			}) // post_id가 null인 키워드 발견 시 서버 문제 예외처리
 			.map(metric -> PostDto.from(metric.getPost(), metric.getKeyword().getText()))
 			.toList();
@@ -411,43 +415,30 @@ public class PostService {
 		Pageable pageable, String searchTarget, String searchValue
 	) {
 		// 1. 정렬 옵션 검증 및 Repository 쿼리 별칭에 맞게 매핑
-		Sort apisort = pageable.getSort();
-		Sort repositorySort = Sort.unsorted();
+		Map<String, String> sortPropertyMapping = new HashMap<>();
+		sortPropertyMapping.put("reportedAt", "latestReportedAt");
+		sortPropertyMapping.put("reportCount", "reportCount");
 
-		// 정렬 속성 이름
-		List<String> sortProperty = Arrays.asList("reportedAt", "reportCount");
-
-		// Reporitory 쿼리의 SELECT 절 별칭과 일치해야 하는 정렬 속성 이름
-		List<String> repositorySortProperty = Arrays.asList("latestReportedAt", "reportCount");
-
-		// 기본 정렬: 최신순 내림차순
-		String defaultSortProperty = "reportedAt";
-		Sort.Direction defaultDirection = Sort.Direction.DESC;
+		Sort newSort = Sort.unsorted();
 
 		// Pageable의 Sort 객체 순회하며 개별 정렬 Order 처리
-		for (Sort.Order order : apisort) {
+		for (Sort.Order order : pageable.getSort()) {
 			String property = order.getProperty();
 			Sort.Direction direction = order.getDirection();
 
-			// 정렬 속성 이름이 허용된 목록에 있는지 확인
-			int propertyIndex = sortProperty.indexOf(property);
+			String sqlProperty = sortPropertyMapping.get(property);
 
 			// 허용되지 않은 정렬 속성이면 오류 발생
-			if (propertyIndex == -1) {
+			if (sqlProperty == null) {
 				throw new ServiceException("400", "부적절한 정렬 옵션입니다.");
 			}
 
-			// 속성 이름을 Repository 쿼리의 별칭과 연결하여 repositorySort에 추가
-			String repositoryProperty = repositorySortProperty.get(propertyIndex);
-			repositorySort = repositorySort.and(Sort.by(direction, repositoryProperty));
+			newSort = newSort.and(Sort.by(direction, sqlProperty));
 		}
 
 		// 만약 Pageable에 정렬 정보가 전혀 없었다면 기본 정렬 적용
-		if (repositorySort.isEmpty()) {
-			// 기본 정렬 reportedAt 내림차순
-			int defaultPropertyIndex = sortProperty.indexOf(defaultSortProperty);
-			String defaultRepositoryProperty = repositorySortProperty.get(defaultPropertyIndex);
-			repositorySort = Sort.by(defaultDirection, defaultRepositoryProperty);
+		if (!newSort.isSorted()) {
+			newSort = Sort.by(Sort.Direction.DESC, "latestReportedAt");
 		}
 
 		// Repository에 전달할 최종 Pageable 객체 생성 시 Unpaged Pageable 처리
@@ -457,11 +448,11 @@ public class PostService {
 			repositoryPageable = PageRequest.of(
 				pageable.getPageNumber(),
 				pageable.getPageSize(),
-				repositorySort
+				newSort
 			);
 		} else {
 			// 입력 Pageable이 페이징 정보를 가지고 있지 않다면 (Unpaged)
-			repositoryPageable = PageRequest.of(0, Integer.MAX_VALUE, repositorySort);
+			repositoryPageable = PageRequest.of(0, Integer.MAX_VALUE, newSort);
 		}
 
 		// 2. 검색 조건 검증 및 Repository 쿼리 파라미터에 맞게 매핑
@@ -481,25 +472,18 @@ public class PostService {
 				case "post_summary" -> searchSummary = trimmedSearchValue;
 				case "keyword" -> searchKeyword = trimmedSearchValue;
 				case "report_reason" -> searchReportReason = trimmedSearchValue;
-				default -> {
-					throw new ServiceException("400", "부적절한 검색 옵션입니다.");
-				}
+				default -> throw new ServiceException("400", "부적절한 검색 옵션입니다.");
 			}
 		}
 
-		// 3. PostReportRepository 메서드 호출
-		// 매핑된 검색 인자들과 Repository용 Pageable 객체를 넘겨 호출
-		Page<ReportedPostSummary> reportedPostPage =
-			postReportRepository.findReportedPostSummary(
-				searchTitle,
-				searchSummary,
-				searchKeyword,
-				searchReportReason,
-				repositoryPageable
-			);
-
-		// 4. 결과 반환
-		return reportedPostPage;
+		// 3. PostReportRepository 메서드 호출 및 반환
+		return postReportRepository.findReportedPostSummary(
+			searchTitle,
+			searchSummary,
+			searchKeyword,
+			searchReportReason,
+			repositoryPageable
+		);
 	}
 
 	/**
@@ -508,20 +492,37 @@ public class PostService {
 	 */
 	@Transactional
 	public void hideReportedPost(List<Long> postIds) {
-		for (Long postId : postIds) {
-			// 1. 포스트 조회 (소프트 삭제 여부와 상관없이 일단 존재하면 가져옴)
-			Post post = postRepository.findById(postId)
-				.orElseThrow(() -> new ServiceException("404", "존재하지 않는 포스트가 포함되어 있습니다."));
+		// 1. 요청된 ID 목록이 비어있는지 확인
+		if (postIds == null || postIds.isEmpty()) {
+			throw new ServiceException("400", "삭제할 포스트 ID가 제공되지 않았습니다.");
+		}
 
-			// 2. 이미 삭제(숨김)된 포스트인지 확인
+		// 2. 요청된 모든 포스트 ID에 해당하는 Post 엔티티들이 실제로 존재하는지 확인
+		List<Post> existingPosts = postRepository.findAllById(postIds);
+		if (existingPosts.size() != postIds.size()) {
+			throw new ServiceException("404", "존재하지 않는 포스트가 포함되어 있습니다.");
+		}
+
+		// 3. 요청된 postIds 중 실제로 신고된 포스트의 개수를 확인
+		long reportedPostCount = postReportRepository.countByPostIdIn(postIds);
+
+		// 4. 요청된 postIds의 개수와 실제로 신고된 포스트의 개수가 다르면 에러 처리
+		if (reportedPostCount != postIds.size()) {
+			throw new ServiceException("400", "신고되지 않은 포스트가 요청에 포함되어 있습니다.");
+		}
+
+		// 5. 각 포스트를 숨김 처리 및 신고 상태 변경
+		for (Long postId : postIds) {
+			Post post = postRepository.findById(postId)
+				.orElseThrow(() -> new ServiceException("404", "내부 오류: 포스트를 찾을 수 없습니다."));
+
+			// 이미 삭제된 포스트인지 확인
 			if (post.isDeleted()) {
 				throw new ServiceException("400", "ID [" + postId + "]포스트는 이미 삭제되었습니다.");
 			}
 
-			// 3. 포스트를 소프트 딜리트
+			// 포스트를 숨김 처리
 			post.softDelete();
-
-			// 4. 변경사항 저장
 			postRepository.save(post);
 		}
 
@@ -535,15 +536,26 @@ public class PostService {
 	 */
 	@Transactional
 	public void rejectReportedPost(List<Long> postIds) {
-		// 1. 요청된 모든 포스트 ID에 해당하는 Post 엔티티들을 한 번에 조회
-		List<Post> posts = postRepository.findAllById(postIds);
+		// 1. 요청된 ID 목록이 비어있는지 확인
+		if (postIds == null || postIds.isEmpty()) {
+			throw new ServiceException("400", "신고 거부할 포스트 ID가 제공되지 않았습니다.");
+		}
 
-		// 2. 조회된 포스트 개수와 요청된 ID 개수를 비교하여, 누락된 포스트가 있는지 확인
-		if (posts.size() != postIds.size()) {
+		// 2. 요청된 모든 포스트 ID에 해당하는 Post 엔티티들이 실제로 존재하는지 확인
+		List<Post> existingPosts = postRepository.findAllById(postIds);
+		if (existingPosts.size() != postIds.size()) {
 			throw new ServiceException("404", "존재하지 않는 포스트가 포함되어 있습니다.");
 		}
 
-		// 3. 요청된 포스트 ID들에 해당하는 모든 신고 엔티티 삭제
+		// 3. 요청된 postIds 중 실제로 신고된 포스트의 개수를 확인
+		long reportedPostCount = postReportRepository.countByPostIdIn(postIds);
+
+		// 4. 요청된 postIds의 개수와 실제로 신고된 포스트의 개수가 다르면 에러 처리
+		if (reportedPostCount != postIds.size()) {
+			throw new ServiceException("400", "신고되지 않은 포스트가 요청에 포함되어 있습니다. 신고된 포스트만 거부할 수 있습니다.");
+		}
+
+		// 5. 모든 검증을 통과했다면, 요청된 포스트 ID들에 해당하는 모든 신고 엔티티의 상태를 변경
 		postReportRepository.updateStatusByPostIdIn(postIds, ReportProcessingStatus.REJECTED);
 	}
 }

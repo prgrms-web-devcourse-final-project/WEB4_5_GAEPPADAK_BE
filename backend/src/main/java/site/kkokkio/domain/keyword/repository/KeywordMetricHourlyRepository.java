@@ -26,9 +26,10 @@ public interface KeywordMetricHourlyRepository extends JpaRepository<KeywordMetr
 		LIMIT 10
 		""",
 		nativeQuery = true)
-	List<KeywordMetricHourly> findTop10HourlyMetricsClosestToNowNative(@Param("now") LocalDateTime now);
+	List<KeywordMetricHourly> findTop10HourlyMetricsClosestToNowNative(@Param("now") String now);
 
 	List<KeywordMetricHourly> findById_KeywordIdOrderById_BucketAtDesc(Long keywordId);
 
-	Optional<KeywordMetricHourly> findTop1ById_KeywordIdAndId_BucketAtLessThanOrderById_BucketAtDesc(Long keywordId, LocalDateTime bucketAt);
+	Optional<KeywordMetricHourly> findTop1ById_KeywordIdAndId_BucketAtLessThanOrderById_BucketAtDesc(Long keywordId,
+		LocalDateTime bucketAt);
 }

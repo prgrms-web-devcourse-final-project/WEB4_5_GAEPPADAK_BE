@@ -25,4 +25,7 @@ public interface MemberRepository extends JpaRepository<Member, UUID> {
 
 	// 역할로 검색 (정확히 일치)
 	Page<Member> findByRole(MemberRole role, Pageable pageable);
+
+	// 닉네임 존재 여부 확인 (대소문자 구분 없이)
+	boolean existsByNicknameIgnoreCase(String nickname);
 }

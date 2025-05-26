@@ -79,26 +79,57 @@ public class MemberService {
 	}
 
 	// 회원 정보 수정
+	@Transactional
 	public MemberResponse modifyMemberInfo(CustomUserDetails userDetails, MemberUpdateRequest requestBody) {
 
 		Member member = findByEmail(userDetails.getUsername());
 
-		// 회원 정보 수정
+		String newNickname = requestBody.nickname();
+		String oldNickname = member.getNickname();
+		String newPassword = requestBody.password();
+		String oldPassword = member.getPasswordHash();
+
+		duplicationCheck(newNickname, oldNickname, newPassword, oldPassword);
+
+		// 회원 정보 수정 - 닉네임, 비밀번호가 입력되지 않을 경우 기존을 유지
 		Member modifiedMember = Member.builder()
 			.id(member.getId())
 			.email(member.getEmail())
-			.nickname(requestBody.nickname() != null ? requestBody.nickname() : member.getNickname())
-			.birthDate(member.getBirthDate()) // 기존 생년월일 유지
-			.passwordHash(requestBody.password() != null ? passwordEncoder.encode(requestBody.password()) :
-				member.getPasswordHash())
+			.nickname(newNickname != null ? newNickname : oldNickname)
+			.birthDate(member.getBirthDate())
+			.passwordHash(newPassword != null ? passwordEncoder.encode(newPassword) :
+				oldPassword)
 			.role(member.getRole())
 			.emailVerified(member.isEmailVerified())
-			.build(); // 기존 역할 유지
+			.build();
 
 		memberRepository.save(modifiedMember);
 
 		return new MemberResponse(modifiedMember);
 	}
+
+	// 중복 확인 로직
+	public void duplicationCheck(String newNickname, String oldNickname, String newPassword, String oldPassword) {
+		if (newNickname != null && !newNickname.isEmpty()) { // 닉네임 변경 요청이 있을 경우에만 검증
+			if (newNickname.equals(oldNickname)) {
+				// 현재 닉네임과 동일한 닉네임으로 변경 시도
+				throw new ServiceException("400", "현재 닉네임과 동일한 닉네임입니다.");
+			}
+			if (memberRepository.existsByNickname(newNickname)) {
+				// 이미 존재하는 닉네임일 경우
+				throw new ServiceException("409", "이미 사용중인 닉네임입니다."); // 409 Conflict
+			}
+		}
+
+		if (newPassword != null && !newPassword.isEmpty()) { // 비밀번호 변경 요청이 있을 경우에만 검증
+			// 현재 비밀번호와 동일한지 확인 (인코딩된 비밀번호 비교)
+			if (passwordEncoder.matches(newPassword, oldPassword)) {
+				throw new ServiceException("400", "현재 비밀번호와 동일한 비밀번호입니다.");
+			}
+		}
+	}
+
+
 
 	// 비밀번호 초기화
 	@Transactional

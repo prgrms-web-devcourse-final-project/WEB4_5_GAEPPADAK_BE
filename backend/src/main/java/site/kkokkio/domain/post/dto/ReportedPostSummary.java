@@ -1,9 +1,8 @@
 package site.kkokkio.domain.post.dto;
 
-import java.time.LocalDateTime;
+import java.sql.Timestamp;
 
 import lombok.Builder;
-import site.kkokkio.global.enums.ReportProcessingStatus;
 
 @Builder
 public record ReportedPostSummary(
@@ -13,8 +12,8 @@ public record ReportedPostSummary(
 	Long keywordId,
 	String keyword,
 	String reportReason,
-	LocalDateTime latestReportedAt,
-	int reportCount,
-	ReportProcessingStatus status
+	Timestamp latestReportedAt,
+	Long reportCount,
+	String status
 ) {
 }

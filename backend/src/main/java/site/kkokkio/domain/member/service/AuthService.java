@@ -3,22 +3,27 @@ package site.kkokkio.domain.member.service;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import site.kkokkio.domain.member.controller.dto.MemberLoginResponse;
 import site.kkokkio.domain.member.controller.dto.PasswordVerificationRequest;
 import site.kkokkio.domain.member.entity.Member;
-import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.global.auth.CustomUserDetails;
+import site.kkokkio.global.exception.CustomAuthException;
+import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.global.util.JwtUtils;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -87,25 +92,28 @@ public class AuthService {
 
 	/** 로그아웃 -> Access Token 블랙리스트 등록 + Refresh Token 삭제 + 쿠키 삭제 */
 	public void logout(HttpServletRequest request, HttpServletResponse response) {
-		String accessToken = jwtUtils.getJwtFromCookies(request)
-			.orElseThrow(() -> new ServiceException("401", "로그인 상태가 아닙니다."));
+		Optional<String> token = jwtUtils.getJwtFromCookies(request);
 
-		// Token의 subject 추출에서 email 추출
-		String email = jwtUtils.getClaims(accessToken).getSubject();
+		if (token.isPresent()) {
+			String accessToken = token.get();
 
-		// Access Token 남은 만료시간 만큼 블랙리스트에 저장
-		long remainingMs = jwtUtils.getExpiration(accessToken).getTime() - System.currentTimeMillis();
-		redisTemplate.opsForValue()
-			.set("blackList:" + accessToken, "logout", Duration.ofMillis(remainingMs));
+			try {
+				String email = jwtUtils.getClaims(accessToken).getSubject();
 
-		// Redis에서 Refresh Token 삭제
-		redisTemplate.delete("refreshToken:" + email);
+				long remainingMs = jwtUtils.getExpiration(accessToken).getTime() - System.currentTimeMillis();
+				redisTemplate.opsForValue()
+					.set("blackList:" + accessToken, "logout", Duration.ofMillis(remainingMs));
 
-		// 쿠키 삭제
+				redisTemplate.delete("refreshToken:" + email);
+			} catch (JwtException | IllegalArgumentException | CustomAuthException e) {
+				log.info(e.toString());
+			}
+		}
 		jwtUtils.clearAuthCookies(response);
 	}
 
 	public boolean checkPassword(PasswordVerificationRequest request, CustomUserDetails userDetails) {
-		return passwordEncoder.matches(request.getPassword(), userDetails.getPassword());
+		Member member = memberService.findByEmail(userDetails.getUsername());
+		return passwordEncoder.matches(request.getPassword(), member.getPasswordHash());
 	}
 }

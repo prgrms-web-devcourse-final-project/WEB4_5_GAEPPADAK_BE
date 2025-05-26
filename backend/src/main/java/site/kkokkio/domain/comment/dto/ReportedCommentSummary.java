@@ -1,21 +1,18 @@
 package site.kkokkio.domain.comment.dto;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
-import site.kkokkio.global.enums.ReportProcessingStatus;
+import java.sql.Timestamp;
 
 public record ReportedCommentSummary(
 	Long commentId,
-	UUID memberId,
+	String memberId,
 	String nickname,
-	boolean isDeletedMember,
+	Integer isDeletedMember,
 	Long postId,
 	String postTitle,
 	String commentBody,
 	String reportReasons,
-	LocalDateTime latestReportedAt,
-	int reportCount,
-	ReportProcessingStatus status
+	Timestamp latestReportedAt,
+	Long reportCount,
+	String status
 ) {
 }

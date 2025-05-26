@@ -86,8 +86,10 @@ public class PostControllerV2 {
 			sort = "reportedAt",
 			direction = Sort.Direction.DESC
 		) Pageable pageable,
-		@RequestParam(required = false) String searchTarget,
-		@RequestParam(required = false) String searchValue
+		@Parameter(description = "검색 대상 필드")
+		@RequestParam(value = "searchTarget", required = false) String searchTarget,
+		@Parameter(description = "검색어")
+		@RequestParam(value = "searchValue", required = false) String searchValue
 	) {
 		// 서비스 레이어 메서드 호출하여 신고된 포스트 목록 조회
 		Page<ReportedPostSummary> reportedPostPage = postService

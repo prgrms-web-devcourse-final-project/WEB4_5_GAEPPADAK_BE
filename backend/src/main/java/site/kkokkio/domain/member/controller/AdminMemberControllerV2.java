@@ -52,7 +52,9 @@ public class AdminMemberControllerV2 {
 		ErrorCode.MALFORMED_TOKEN,
 		ErrorCode.MISSING_TOKEN,
 		ErrorCode.TOKEN_EXPIRED,
-		ErrorCode.CREDENTIALS_MISMATCH
+		ErrorCode.CREDENTIALS_MISMATCH,
+		ErrorCode.FORBIDDEN,
+		ErrorCode.LOGOUT_BAD_REQUEST
 	})
 	@GetMapping
 	public RsData<AdminMemberListResponse> getMemberList(
@@ -89,7 +91,9 @@ public class AdminMemberControllerV2 {
 		ErrorCode.MISSING_TOKEN,
 		ErrorCode.TOKEN_EXPIRED,
 		ErrorCode.CREDENTIALS_MISMATCH,
-		ErrorCode.EMAIL_NOT_FOUND
+		ErrorCode.EMAIL_NOT_FOUND,
+		ErrorCode.FORBIDDEN,
+		ErrorCode.LOGOUT_BAD_REQUEST
 	})
 	@PatchMapping("/{memberId}")
 	public RsData<AdminMemberResponse> changeMemberRole(

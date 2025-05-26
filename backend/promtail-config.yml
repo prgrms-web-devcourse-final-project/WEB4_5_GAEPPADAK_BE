@@ -18,5 +18,4 @@ scrape_configs:
 
     pipeline_stages:
       - multiline:
-          firstline: '^\[ls\] \[' # 로그의 시작을 나타내는 정규식
-          separator: '\] \[le\]' # 멀티라인 로그의 구분자
+          firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} \[' # 로그의 시작을 나타내는 정규식

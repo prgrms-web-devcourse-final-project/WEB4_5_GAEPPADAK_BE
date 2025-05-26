@@ -6,7 +6,9 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
@@ -45,7 +47,6 @@ import site.kkokkio.global.auth.CustomUserDetails;
 import site.kkokkio.global.auth.CustomUserDetailsService;
 import site.kkokkio.global.config.SecurityConfig;
 import site.kkokkio.global.enums.MemberRole;
-import site.kkokkio.global.enums.ReportProcessingStatus;
 import site.kkokkio.global.enums.ReportReason;
 import site.kkokkio.global.exception.ServiceException;
 import site.kkokkio.global.util.JwtUtils;
@@ -188,14 +189,21 @@ public class PostControllerV2Test {
 	@WithMockUser(roles = "ADMIN")
 	void getReportedPosts_Success_Basic() throws Exception {
 		/// given
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+		LocalDateTime now = LocalDateTime.now(ZoneId.of("UTC"));
+
+		Timestamp formattedDateTime1 = Timestamp.valueOf(now.minusDays(5));
+		String reportedTime1Formated = formattedDateTime1.toLocalDateTime().format(formatter);
 		ReportedPostSummary summary1 = new ReportedPostSummary(
 			1L, "제목1", "요약1", 10L, "키워드1", "BAD_CONTENT",
-			LocalDateTime.now().minusDays(5), 3, ReportProcessingStatus.PENDING
+			formattedDateTime1, 3L, "PENDING"
 		);
 
+		Timestamp formattedDateTime2 = Timestamp.valueOf(now.minusDays(1));
+		String reportedTime2Formated = formattedDateTime2.toLocalDateTime().format(formatter);
 		ReportedPostSummary summary2 = new ReportedPostSummary(
 			2L, "제목2", "요약2", 11L, "키워드2", "BAD_CONTENT,FALSE_INFO",
-			LocalDateTime.now().minusDays(1), 5, ReportProcessingStatus.PENDING
+			formattedDateTime2, 5L, "PENDING"
 		);
 
 		List<ReportedPostSummary> summaryList = Arrays.asList(summary1, summary2);
@@ -208,12 +216,6 @@ public class PostControllerV2Test {
 		// PostService의 getReportedPostsList 메서드 Mocking
 		when(postService.getReportedPostsList(eq(contollerPageable), eq(null), eq(null)))
 			.thenReturn(mockServicePage);
-
-		// ReportedPostResponse.from 메서드가 수행할 매핑 결과 예상
-		String expectedReportedAt1 = summary1.latestReportedAt()
-			.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
-		String expectedReportedAt2 = summary2.latestReportedAt()
-			.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
 
 		/// when & then
 		mockMvc.perform(get("/api/v2/admin/reports/posts")
@@ -234,9 +236,9 @@ public class PostControllerV2Test {
 			.andExpect(jsonPath("$.data.list[0].keyword").value(summary1.keyword()))
 			.andExpect(jsonPath("$.data.list[0].reportReason").isArray())
 			.andExpect(jsonPath("$.data.list[0].reportReason.length()").value(1))
-			.andExpect(jsonPath("$.data.list[0].reportedAt").value(expectedReportedAt1))
+			.andExpect(jsonPath("$.data.list[0].reportedAt").value(reportedTime1Formated))
 			.andExpect(jsonPath("$.data.list[0].reportCount").value(summary1.reportCount()))
-			.andExpect(jsonPath("$.data.list[0].status").value(summary1.status().name()))
+			.andExpect(jsonPath("$.data.list[0].status").value(summary1.status()))
 
 			// 두 번째 항목 상세 검증
 			.andExpect(jsonPath("$.data.list[1].postId").value(summary2.postId()))
@@ -246,9 +248,9 @@ public class PostControllerV2Test {
 			.andExpect(jsonPath("$.data.list[1].keyword").value(summary2.keyword()))
 			.andExpect(jsonPath("$.data.list[1].reportReason").isArray())
 			.andExpect(jsonPath("$.data.list[1].reportReason.length()").value(2))
-			.andExpect(jsonPath("$.data.list[1].reportedAt").value(expectedReportedAt2))
+			.andExpect(jsonPath("$.data.list[1].reportedAt").value(reportedTime2Formated))
 			.andExpect(jsonPath("$.data.list[1].reportCount").value(summary2.reportCount()))
-			.andExpect(jsonPath("$.data.list[1].status").value(summary2.status().name()))
+			.andExpect(jsonPath("$.data.list[1].status").value(summary2.status()))
 
 			// 페이징 메타데이터 검증
 			.andExpect(jsonPath("$.data.meta.page").value(mockServicePage.getNumber()))

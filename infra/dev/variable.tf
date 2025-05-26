@@ -61,6 +61,10 @@ variable "DB_NAME" {
   description = "DB_NAME (Provided via Doppler)"
 }
 
+variable "DB_PORT" {
+  description = "DB_PORT (Provided via Doppler)"
+}
+
 variable "DB_USERNAME" {
   description = "DB_USERNAME (Provided via Doppler)"
 }

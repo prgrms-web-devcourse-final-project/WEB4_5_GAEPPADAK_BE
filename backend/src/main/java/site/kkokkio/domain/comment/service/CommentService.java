@@ -1,7 +1,8 @@
 package site.kkokkio.domain.comment.service;
 
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -40,12 +41,21 @@ public class CommentService {
 	private final CommentReportRepository commentReportRepository;
 	private final MemberService memberService;
 
-	public Page<CommentDto> getCommentListByPostId(Long postId, Pageable pageable) {
+	public Page<CommentDto> getCommentListByPostId(Long postId, UserDetails userDetails, Pageable pageable) {
 		Post post = postRepository.findById(postId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 포스트입니다."));
 
 		return commentRepository.findAllByPostAndDeletedAtIsNull(post, pageable)
-			.map(CommentDto::from);
+			.map(comment -> CommentDto.from(comment, isLikedByMe(userDetails, comment)));
+	}
+
+	public Boolean isLikedByMe(UserDetails userDetails, Comment comment) {
+		if (userDetails == null) {
+			return null;
+		}
+
+		Member member = memberService.findByEmail(userDetails.getUsername());
+		return commentLikeRepository.existsByCommentAndMember(comment, member);
 	}
 
 	@Transactional
@@ -95,7 +105,7 @@ public class CommentService {
 			throw new ServiceException("403", "본인 댓글은 좋아요 할 수 없습니다.");
 		}
 
-		if (commentLikeRepository.existsByComment(comment)) {
+		if (commentLikeRepository.existsByCommentAndMember(comment, member)) {
 			throw new ServiceException("400", "이미 좋아요를 누른 댓글입니다.");
 		}
 
@@ -116,12 +126,13 @@ public class CommentService {
 		Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글입니다."));
 
+		Member member = memberService.findByEmail(userDetails.getUsername());
 		if (comment.getMember().getEmail().equals(userDetails.getUsername())) {
 			throw new ServiceException("403", "본인 댓글은 좋아요 할 수 없습니다.");
 		}
 
-		if (commentLikeRepository.existsByComment(comment)) {
-			commentLikeRepository.deleteByComment(comment);
+		if (commentLikeRepository.existsByCommentAndMember(comment, member)) {
+			commentLikeRepository.deleteByCommentAndMember(comment, member);
 			comment.decreaseLikeCount();
 			commentRepository.save(comment);
 		} else {
@@ -198,34 +209,32 @@ public class CommentService {
 		Pageable pageable, String searchTarget, String searchValue) {
 
 		// 1. 정렬 옵션 검증 및 매핑
-		Sort apiSort = pageable.getSort();
-		Sort repositorySort = Sort.unsorted();
+		Map<String, String> sortPropertyMapping = new HashMap<>();
+		sortPropertyMapping.put("reportedAt", "latestReportedAt");
+		sortPropertyMapping.put("reportCount", "reportCount");
 
-		// 정렬 속성 및 기본 정렬 방향 정의
-		List<String> sortProperties = Arrays.asList("reportedAt", "reportCount");
-		Sort.Direction defaultDirection = Sort.Direction.DESC;
+		Sort newSort = Sort.unsorted();
 
-		// Pageable의 Sort 객체 순회
-		for (Sort.Order order : apiSort) {
+		// Pageable의 Sort 객체 순회하며 개별 정렬 Order 처리
+		for (Sort.Order order : pageable.getSort()) {
 			String property = order.getProperty();
+			Sort.Direction direction = order.getDirection();
 
-			// 정렬 속성 이름이 허용된 목록에 있는지 확인
-			if (!sortProperties.contains(property)) {
-				// 허용되지 않은 정렬 속성이면 오류 발생
+			String sqlProperty = sortPropertyMapping.get(property);
+
+			// 허용되지 않은 정렬 속성이면 오류 발생
+			if (sqlProperty == null) {
 				throw new ServiceException("400", "부적절한 정렬 옵션입니다.");
 			}
-
-			// 정렬 속성 이름을 CommentRepositoryRepository 쿼리의 별칭과 연결
-			repositorySort = repositorySort.and(Sort.by(order.getDirection(), property));
+			newSort = newSort.and(Sort.by(direction, sqlProperty));
 		}
 
-		// 만약 Pageable에 정렬 정보가 전혀 없었다면 기본 정렬 적용
-		if (repositorySort.isEmpty()) {
-			repositorySort = Sort.by(defaultDirection, "reportedAt");
-		}
-
-		// Pageable 객체 재생성 (원본 Pageable의 다른 정보(page, size)를 유지하고 정렬만 대체
-		Pageable repositoryPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), repositorySort);
+		// 최종 Pageable 객체 생성
+		Pageable repositoryPageable = PageRequest.of(
+			pageable.getPageNumber(),
+			pageable.getPageSize(),
+			newSort
+		);
 
 		// 2. 검색 조건 매핑
 		String searchNickname = null;
@@ -266,21 +275,36 @@ public class CommentService {
 	@Transactional
 	public void hideReportedComment(List<Long> commentIds) {
 
+		// 1. 요청된 ID 목록이 비어있는지 확인
+		if (commentIds == null || commentIds.isEmpty()) {
+			throw new ServiceException("400", "삭제할 댓글 ID가 제공되지 않았습니다.");
+		}
+
+		// 2. 이미 삭제(숨김)된 댓글인지 확인
+		List<Comment> existingComments = commentRepository.findAllById(commentIds);
+
+		if (existingComments.size() != commentIds.size()) {
+			throw new ServiceException("404", "존재하지 않는 댓글이 포함되어 있습니다.");
+		}
+		// 3. 요청된 commentIds 중 실제로 신고된 댓글의 개수를 확인
+		long reportedCommentCount = commentReportRepository.countByCommentIdIn(commentIds);
+
+		// 4. 요청된 commentIds의 개수와 실제로 신고된 댓글의 개수가 다르면 에러 처리
+		if (reportedCommentCount != existingComments.size()) {
+			throw new ServiceException("400", "신고되지 않은 댓글이 요청에 포함되어 있습니다.");
+		}
+
+		// 5. 각 댓글을 숨김 처리 및 신고 상태 변경
 		for (Long commentId : commentIds) {
-
-			// 1. 댓글 조회 (소프트 삭제 여부와 상관없이 일단 존재하면 가져옴)
 			Comment comment = commentRepository.findById(commentId)
-				.orElseThrow(() -> new ServiceException("404", "존재하지 않는 댓글이 포함되어 있습니다."));
+				.orElseThrow(() -> new ServiceException("404", "내부 오류: 댓글을 찾을 수 없습니다."));
 
-			// 2. 이미 삭제(숨김)된 댓글인지 확인
+			// 이미 삭제된 댓글인지 확인
 			if (comment.isDeleted()) {
 				throw new ServiceException("400", "ID [" + commentId + "] 댓글은 이미 삭제되었습니다.");
 			}
 
-			// 3. 댓글을 숨김 처리
 			comment.softDelete();
-
-			// 4. 변경사항 저장
 			commentRepository.save(comment);
 		}
 
@@ -295,15 +319,26 @@ public class CommentService {
 	@Transactional
 	public void rejectReportedComment(List<Long> commentIds) {
 
-		// 1. 요청된 모든 댓글 ID에 해당하는 Comment 엔티티 조회
-		List<Comment> comments = commentRepository.findAllById(commentIds);
+		// 1. 요청된 ID 목록이 비어있는지 확인
+		if (commentIds == null || commentIds.isEmpty()) {
+			throw new ServiceException("400", "신고 거부할 댓글 ID가 제공되지 않았습니다.");
+		}
+		// 2. 요청된 모든 댓글 ID에 해당하는 Comment 엔티티들이 실제로 존재하는지 확인
+		List<Comment> existingComments = commentRepository.findAllById(commentIds);
 
-		// 2. 조회된 댓글 개수와 요청된 ID 개수를 비교하여, 누락된 댓글(존재하지 않는 댓글)이 있는지 확인
-		if (comments.size() != commentIds.size()) {
+		if (existingComments.size() != commentIds.size()) {
 			throw new ServiceException("404", "존재하지 않는 댓글이 포함되어 있습니다.");
 		}
 
-		// 3. 요청된 댓글 ID들에 해당하는 모든 신고 엔티티 삭제
+		// 3. 요청된 commentIds 중 실제로 신고된 댓글의 개수를 확인
+		long reportedCommentCount = commentReportRepository.countByCommentIdIn(commentIds);
+
+		// 4. 요청된 commentIds의 개수와 실제로 신고된 댓글의 개수가 다르면 에러 처리
+		if (reportedCommentCount != existingComments.size()) {
+			throw new ServiceException("400", "신고되지 않은 댓글이 요청에 포함되어 있습니다. 신고된 댓글만 거부할 수 있습니다.");
+		}
+
+		// 5. 모든 검증을 통과했다면, 요청된 댓글 ID들에 해당하는 모든 신고 엔티티의 상태를 변경
 		commentReportRepository.updateStatusByCommentIdIn(commentIds, ReportProcessingStatus.REJECTED);
 	}
 }

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -511,15 +512,15 @@ public class PostServiceTest {
 	@DisplayName("신고된 포스트 목록 조회 - 성공 (기본 페이징)")
 	void getReportedPostsList_Success_Basic() {
 		/// given
-		Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Order.desc("reportedAt")));
+		Pageable pageable = PageRequest.of(0, 10, Sort.unsorted());
 
 		// Service 메서드는 Repository 호출 시 Repository 별칭 기준의 Pageable을 생성하여 전달
-		Pageable expectedRepoPageable = PageRequest.of(0, 10, Sort.by(Sort.Order.desc("latestReportedAt")));
+		Pageable expectedRepoPageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "latestReportedAt"));
 
 		// Repository가 반환할 ReportedPostSummary 데이터 및 Page 객체 Mocking
 		ReportedPostSummary summary1 = new ReportedPostSummary(
 			1L, "제목1", "요약1", 10L, "키워드A",
-			"BAD_CONTENT", LocalDateTime.now(), 3, ReportProcessingStatus.PENDING
+			"BAD_CONTENT", Timestamp.valueOf(LocalDateTime.now()), 3L, "PENDING"
 		);
 		List<ReportedPostSummary> summaryList = List.of(summary1);
 		Page<ReportedPostSummary> mockRepoPage = new PageImpl<>(summaryList, expectedRepoPageable, summaryList.size());
@@ -554,7 +555,7 @@ public class PostServiceTest {
 
 		// Service 메서드가 Unpaged Pageable을 받아 Repository에 전달할 예상 Pageable 객체
 		Pageable expectedRepoPageable = PageRequest.of(0, Integer.MAX_VALUE,
-			Sort.by(Sort.Order.desc("latestReportedAt")));
+			Sort.by(Sort.Direction.DESC, "latestReportedAt"));
 
 		// Repository가 반환할 Page 객체 Mocking
 		Page<ReportedPostSummary> mockRepoPage = new PageImpl<>(List.of(), pageable, 0);
@@ -578,10 +579,10 @@ public class PostServiceTest {
 	@DisplayName("신고된 포스트 목록 조회 - 성공 (정렬 적용)")
 	void getReportedPostsList_Success_Sort() {
 		/// given
-		Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Order.asc("reportCount")));
+		Pageable pageable = PageRequest.of(0, 10, Sort.unsorted());
 
 		// Service 메서드는 Repository 호출 시 Repository 별칭 기준의 Pageable을 생성하여 전달
-		Pageable expectedRepoPageable = PageRequest.of(0, 10, Sort.by(Sort.Order.asc("reportCount")));
+		Pageable expectedRepoPageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "latestReportedAt"));
 
 		// Repository가 반환할 Page 객체 Mocking
 		Page<ReportedPostSummary> mockRepoPage = new PageImpl<>(List.of(), expectedRepoPageable, 0);
@@ -646,6 +647,11 @@ public class PostServiceTest {
 		ReflectionTestUtils.setField(post2, "id", 2L);
 		ReflectionTestUtils.setField(post2, "deletedAt", null);
 
+		when(postRepository.findAllById(eq(postIdsToHide)))
+			.thenReturn(List.of(post1, post2));
+		when(postReportRepository.countByPostIdIn(eq(postIdsToHide)))
+			.thenReturn((long)postIdsToHide.size());
+
 		when(postRepository.findById(1L)).thenReturn(Optional.of(post1));
 		when(postRepository.findById(2L)).thenReturn(Optional.of(post2));
 
@@ -686,13 +692,8 @@ public class PostServiceTest {
 		ReflectionTestUtils.setField(post3, "id", 3L);
 		ReflectionTestUtils.setField(post3, "deletedAt", null);
 
-		when(postRepository.findById(1L)).thenReturn(Optional.of(post1));
-
-		// 존재하지 않는 ID (999L)에 대해서는 Optional.empty() 반환
-		when(postRepository.findById(999L)).thenReturn(Optional.empty());
-
-		// PostRepository의 save 메서드 Mocking
-		when(postRepository.save(any(Post.class))).thenAnswer(invocation -> invocation.getArgument(0));
+		when(postRepository.findAllById(eq(postIdsToHide)))
+			.thenReturn(Arrays.asList(post1, post3));
 
 		/// when & then
 		assertThatThrownBy(() -> postService.hideReportedPost(postIdsToHide))
@@ -700,14 +701,15 @@ public class PostServiceTest {
 			.hasMessageContaining("존재하지 않는 포스트가 포함되어 있습니다.");
 
 		// PostRepository의 findById 메서드가 예외가 발생하기 전까지 호출되었는지 검증
-		verify(postRepository).findById(1L);
-		verify(postRepository).findById(999L);
+		verify(postRepository).findAllById(eq(postIdsToHide));
+		verify(postRepository, never()).findById(1L);
+		verify(postRepository, never()).findById(999L);
 		verify(postRepository, never()).findById(3L);
 
-		verify(postRepository).save(eq(post1));
+		verify(postRepository, never()).save(eq(post1));
 		verify(postRepository, never()).save(eq(post3));
 		verify(postReportRepository, never()).updateStatusByPostIdIn(anyList(), any(ReportProcessingStatus.class));
-		assertThat(post1.isDeleted()).isTrue();
+		assertThat(post1.isDeleted()).isFalse();
 		assertThat(post3.isDeleted()).isFalse();
 	}
 
@@ -727,20 +729,25 @@ public class PostServiceTest {
 		ReflectionTestUtils.setField(post2, "id", 2L);
 		ReflectionTestUtils.setField(post2, "deletedAt", LocalDateTime.now());
 
+		when(postRepository.findAllById(eq(postIdsToHide)))
+			.thenReturn(Arrays.asList(post1, post2));
 		when(postRepository.findById(1L)).thenReturn(Optional.of(post1));
 		when(postRepository.findById(deletedPostId)).thenReturn(Optional.of(post2));
+		when(postReportRepository.countByPostIdIn(eq(postIdsToHide)))
+			.thenReturn((long)postIdsToHide.size());
 
 		/// when & then
 		assertThatThrownBy(() -> postService.hideReportedPost(postIdsToHide))
 			.isInstanceOf(ServiceException.class)
 			.hasMessageContaining("ID [" + deletedPostId + "]포스트는 이미 삭제되었습니다.");
 
+		verify(postRepository).findAllById(eq(postIdsToHide));
+		verify(postReportRepository).countByPostIdIn(eq(postIdsToHide));
 		verify(postRepository).findById(1L);
-		verify(postRepository).findById(deletedPostId);
+		verify(postRepository).save(any(Post.class));
+		verify(postReportRepository, never())
+			.updateStatusByPostIdIn(anyList(), any(ReportProcessingStatus.class));
 		assertThat(post1.isDeleted()).isTrue();
-		verify(postRepository).save(eq(post1));
-		verify(postRepository, never()).save(eq(post2));
-		verify(postReportRepository, never()).updateStatusByPostIdIn(anyList(), any(ReportProcessingStatus.class));
 	}
 
 	@Test
@@ -751,16 +758,18 @@ public class PostServiceTest {
 
 		// 신고 거부될 Post 엔티티 Mocking
 		Post post1 = Post.builder().build();
-		ReflectionTestUtils.setField(post1, "id", 1L);
+		ReflectionTestUtils.setField(post1, "id", 4L);
 
 		Post post2 = Post.builder().build();
-		ReflectionTestUtils.setField(post2, "id", 2L);
+		ReflectionTestUtils.setField(post2, "id", 5L);
 
 		List<Post> foundPosts = Arrays.asList(post1, post2);
 
 		// PostRepository의 findAllById 메서드 Mocking
 		when(postRepository.findAllById(eq(postIdsToReject))).thenReturn(foundPosts);
 
+		when(postReportRepository.countByPostIdIn(eq(postIdsToReject)))
+			.thenReturn((long)postIdsToReject.size());
 		// PostReportRepository의 updateStatusByPostIdIn 메서드 Mocking
 		doNothing().when(postReportRepository)
 			.updateStatusByPostIdIn(eq(postIdsToReject), eq(ReportProcessingStatus.REJECTED));

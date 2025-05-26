@@ -171,6 +171,23 @@ public class MailServiceTest {
 	}
 
 	@Test
+	@DisplayName("인증 코드 발송 실패 - 비회원")
+	void sendAuthCodeFailByNonMemberTest() throws MessagingException {
+		// given
+		when(memberRepository.existsByEmail(testEmail)).thenReturn(false);
+
+		// when & then
+		assertThatThrownBy(() -> mailService.sendAuthCode(testEmail))
+			.isInstanceOf(ServiceException.class)
+			.hasMessage("존재하지 않는 이메일입니다.");
+
+		verify(memberRepository, times(1)).existsByEmail(testEmail);
+		verify(mailSender, times(0)).createMimeMessage();
+		verify(mailSender, times(0)).send(any(MimeMessage.class));
+		verify(valueOperations, times(0)).set(anyString(), anyString(), any(Duration.class));
+	}
+
+	@Test
 	@DisplayName("인증 코드 검증 성공 테스트")
 	void validationAuthCodeSuccessTest() {
 		// given

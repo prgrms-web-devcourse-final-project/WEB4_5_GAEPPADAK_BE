@@ -102,7 +102,7 @@ public class MailService {
 
 		// DB에서 회원 이메일이 존재하는지 확인
 		if (!memberRepository.existsByEmail(email)) {
-			throw new ServiceException("404", "존재하지 않는 회원입니다.");
+			throw new ServiceException("404", "존재하지 않는 이메일입니다.");
 		}
 
 		String authCode = sendSimpleMessage(email); // 이메일 인증 코드 발송

@@ -72,6 +72,7 @@ public class AuthControllerV1 {
 
 	@Operation(summary = "이메일 인증 코드 전송")
 	@PostMapping("/verify-email")
+	@ApiErrorCodeExamples({ErrorCode.EMAIL_NOT_FOUND})
 	public RsData<Void> requestAuthCode(@RequestParam String email) throws MessagingException {
 
 		boolean isSend = mailService.sendAuthCode(email);

@@ -136,6 +136,7 @@ public class MailServiceTest {
 	@DisplayName("인증 코드 발송 성공 테스트")
 	void sendAuthCodeSuccessTest() throws MessagingException {
 		// given
+		when(memberRepository.existsByEmail(testEmail)).thenReturn(true); // 회원으로 가정
 		when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
 
 		// when
@@ -156,6 +157,7 @@ public class MailServiceTest {
 	@DisplayName("인증 코드 발송 실패 테스트")
 	void sendAuthCodeFailTest() throws MessagingException {
 		// given
+		when(memberRepository.existsByEmail(testEmail)).thenReturn(true); // 회원으로 가정
 		when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
 		doThrow(new MailException("Mail sending failed") {
 		}).when(mailSender).send(any(MimeMessage.class));
@@ -167,6 +169,23 @@ public class MailServiceTest {
 		assertThat(result).isFalse();
 		verify(mailSender, times(1)).createMimeMessage();
 		verify(mailSender, times(1)).send(any(MimeMessage.class));
+		verify(valueOperations, times(0)).set(anyString(), anyString(), any(Duration.class));
+	}
+
+	@Test
+	@DisplayName("인증 코드 발송 실패 - 비회원")
+	void sendAuthCodeFailByNonMemberTest() throws MessagingException {
+		// given
+		when(memberRepository.existsByEmail(testEmail)).thenReturn(false);
+
+		// when & then
+		assertThatThrownBy(() -> mailService.sendAuthCode(testEmail))
+			.isInstanceOf(ServiceException.class)
+			.hasMessage("존재하지 않는 이메일입니다.");
+
+		verify(memberRepository, times(1)).existsByEmail(testEmail);
+		verify(mailSender, times(0)).createMimeMessage();
+		verify(mailSender, times(0)).send(any(MimeMessage.class));
 		verify(valueOperations, times(0)).set(anyString(), anyString(), any(Duration.class));
 	}
 

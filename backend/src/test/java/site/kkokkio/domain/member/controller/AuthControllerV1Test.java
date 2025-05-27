@@ -172,4 +172,19 @@ public class AuthControllerV1Test {
 			.andExpect(jsonPath("$.code").value("500"))
 			.andExpect(jsonPath("$.message").value("인증 코드 전송이 실패하였습니다."));
 	}
+
+	@Test
+	@DisplayName("이메일 인증 코드 전송 - 실패 (비회원)")
+	void sendAuthCodeNonMemberFail() throws Exception {
+		// given
+		given(mailService.sendAuthCode("nonmember@example.com"))
+			.willThrow(new ServiceException("404", "존재하지 않는 이메일입니다."));
+
+		// when & then
+		mockMvc.perform(post("/api/v1/auth/verify-email")
+				.param("email", "nonmember@example.com"))
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.code").value("404"))
+			.andExpect(jsonPath("$.message").value("존재하지 않는 이메일입니다."));
+	}
 }

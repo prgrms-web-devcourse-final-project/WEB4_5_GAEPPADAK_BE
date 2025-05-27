@@ -86,7 +86,7 @@ public class PostService {
 	}
 
 	@Transactional(readOnly = true)
-	public PostDto getPostWithKeywordById(Long id) {
+	public PostDto getPostWithKeywordById(Long id, UserDetails userDetails) {
 		Post post = postRepository.findById(id)
 			.orElseThrow(() -> new ServiceException("404", "포스트를 불러오지 못했습니다."));
 
@@ -95,7 +95,16 @@ public class PostService {
 
 		String keywordText = postKeyword.getKeyword().getText();
 
-		return PostDto.from(post, keywordText);
+		return PostDto.from(post, keywordText, isReportedByMe(userDetails, post));
+	}
+
+	private Boolean isReportedByMe(UserDetails userDetails, Post post) {
+		if (userDetails == null) {
+			return null;
+		}
+		Member member = memberService.findByEmail(userDetails.getUsername());
+
+		return postReportRepository.existsByPostAndReporter(post, member);
 	}
 
 	@Transactional(readOnly = true)

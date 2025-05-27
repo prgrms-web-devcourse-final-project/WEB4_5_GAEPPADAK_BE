@@ -16,6 +16,7 @@ public record CommentDto(
 	@NonNull String body,
 	@NonNull Integer likeCount,
 	Boolean likedByMe,
+	Boolean reportedByMe,
 	@NonNull LocalDateTime createdAt
 ) {
 	public static CommentDto from(Comment comment) {
@@ -34,7 +35,7 @@ public record CommentDto(
 			.build();
 	}
 
-	public static CommentDto from(Comment comment, Boolean likedByMe) {
+	public static CommentDto from(Comment comment, Boolean likedByMe, Boolean reportedByMe) {
 		String nickname = comment.getMember().getDeletedAt() != null
 			? "탈퇴한 회원"
 			: comment.getMember().getNickname();
@@ -46,6 +47,7 @@ public record CommentDto(
 			.body(comment.getBody())
 			.likeCount(comment.getLikeCount())
 			.likedByMe(likedByMe)
+			.reportedByMe(reportedByMe)
 			.createdAt(comment.getCreatedAt())
 			.build();
 	}

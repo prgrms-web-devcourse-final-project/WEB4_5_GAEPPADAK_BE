@@ -122,7 +122,7 @@ public class PostServiceTest {
 		given(postKeywordRepository.findByPost_Id(postId)).willReturn(Optional.of(postKeyword));
 
 		// when
-		PostDto result = postService.getPostWithKeywordById(postId);
+		PostDto result = postService.getPostWithKeywordById(postId, null);
 
 		// then
 		assertThat(result.postId()).isEqualTo(postId);
@@ -139,7 +139,7 @@ public class PostServiceTest {
 		given(postRepository.findById(1L)).willReturn(Optional.empty());
 
 		// when & then
-		assertThatThrownBy(() -> postService.getPostWithKeywordById(1L))
+		assertThatThrownBy(() -> postService.getPostWithKeywordById(1L, null))
 			.isInstanceOf(ServiceException.class)
 			.hasMessageContaining("포스트를 불러오지 못했습니다.");
 	}

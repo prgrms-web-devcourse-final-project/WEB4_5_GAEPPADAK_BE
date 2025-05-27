@@ -42,11 +42,10 @@ public class PostControllerV2 {
 
 	@Operation(
 		summary = "포스트 신고",
-		description = "댓글을 신고하는 기능입니다."
+		description = "포스트를 신고하는 기능입니다."
 	)
 	@ApiErrorCodeExamples({ErrorCode.TOKEN_EXPIRED, ErrorCode.UNSUPPORTED_TOKEN,
 		ErrorCode.MALFORMED_TOKEN, ErrorCode.CREDENTIALS_MISMATCH,
-		ErrorCode.CREDENTIALS_MISMATCH,
 		ErrorCode.POST_NOT_FOUND_3,
 		ErrorCode.REPORT_POST_BAD_REQUEST,
 		ErrorCode.REPORT_REASON_BAD_REQUEST,

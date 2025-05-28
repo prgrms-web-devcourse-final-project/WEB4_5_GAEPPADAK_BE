@@ -9,7 +9,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,17 +18,17 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import site.kkokkio.global.auth.CustomUserDetails;
 import site.kkokkio.global.dto.RsData;
 import site.kkokkio.global.exception.CustomAuthException;
 import site.kkokkio.global.util.JwtUtils;
 
-@Component
+@Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -43,7 +42,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		@NonNull FilterChain filterChain) throws ServletException, IOException {
 
 		// 쿠키에서 토큰 추출
-		String token = extractTokenFromCookie(request);
+		String token = jwtUtils.getJwtFromCookies(request).orElse(null);
 
 		try {
 			// 토큰 유효성 검사
@@ -76,16 +75,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 				}
 			}
 		} catch (CustomAuthException e) {
+			log.warn("토큰 에러 발생 : {}", e.getMessage());
 			setErrorResponse(response,
 				Integer.parseInt(e.getAuthErrorType().getHttpStatus()), e.getAuthErrorType().getDefaultMessage());
 			return;
 		} catch (ExpiredJwtException e) {
+			log.warn("만료된 토큰 요청 발생: {}", e.getMessage());
 			setErrorResponse(response, HttpStatus.UNAUTHORIZED.value(), "만료된 토큰입니다.");
 			return;
 		} catch (JwtException e) {
+			log.warn("유효하지 않은 토큰 요청 발생: {}", e.getMessage());
 			setErrorResponse(response, HttpStatus.UNAUTHORIZED.value(), "유효하지 않은 토큰입니다.");
 			return;
 		} catch (UsernameNotFoundException e) {
+			log.warn("사용자를 찾지 못함 : {}", e.getMessage());
 			setErrorResponse(response, HttpStatus.UNAUTHORIZED.value(), "사용자를 찾을 수 없습니다.");
 			return;
 		}
@@ -95,20 +98,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	@Override
 	protected boolean shouldNotFilter(HttpServletRequest request) {
-		return request.getRequestURI().equals("/api/v1/auth/logout");
-	}
-
-	// 쿠키에서 토큰 추출하는 메서드
-	private String extractTokenFromCookie(HttpServletRequest request) {
-		Cookie[] cookies = request.getCookies();
-		if (cookies != null) {
-			for (Cookie cookie : cookies) {
-				if ("accessToken".equals(cookie.getName())) {
-					return cookie.getValue();
-				}
-			}
-		}
-		return null;
+		return request.getRequestURI().equals("/api/v1/auth/logout")
+			|| request.getRequestURI().equals("/api/v1/auth/refresh")
+			|| request.getRequestURI().equals("/api/v1/auth/login");
 	}
 
 	// Redis에서 토큰 블랙리스트 확인

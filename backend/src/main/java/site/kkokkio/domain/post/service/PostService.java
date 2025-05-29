@@ -537,7 +537,7 @@ public class PostService {
 			postRepository.save(post);
 		}
 
-		// 요청된 포스트 ID들에 해당하는 모든 신고 엔티티의 상태를 ACCEPTED로 업데이트
+		// 6. 요청된 포스트 ID들에 해당하는 모든 신고 엔티티의 상태를 ACCEPTED로 업데이트
 		postReportRepository.updateStatusByPostIdIn(postIds, ReportProcessingStatus.ACCEPTED);
 	}
 

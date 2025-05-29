@@ -314,7 +314,7 @@ public class CommentService {
 			commentRepository.save(comment);
 		}
 
-		// 5. 요청된 댓글 ID들에 해당하는 모든 신고 엔티티의 상태를 ACCEPTED로 업데이트
+		// 6. 요청된 댓글 ID들에 해당하는 모든 신고 엔티티의 상태를 ACCEPTED로 업데이트
 		commentReportRepository.updateStatusByCommentIdIn(commentIds, ReportProcessingStatus.ACCEPTED);
 	}
 

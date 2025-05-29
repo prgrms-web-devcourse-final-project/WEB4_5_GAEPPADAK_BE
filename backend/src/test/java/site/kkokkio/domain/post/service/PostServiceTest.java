@@ -118,7 +118,7 @@ public class PostServiceTest {
 			.keyword(keyword)
 			.build();
 
-		given(postRepository.findById(postId)).willReturn(Optional.of(post));
+		given(postRepository.findByIdAndDeletedAtIsNull(postId)).willReturn(Optional.of(post));
 		given(postKeywordRepository.findByPost_Id(postId)).willReturn(Optional.of(postKeyword));
 
 		// when
@@ -136,7 +136,7 @@ public class PostServiceTest {
 	@DisplayName("postId로 포스트 단건 조회 실패 - 포스트 없음")
 	void test2() {
 		// given
-		given(postRepository.findById(1L)).willReturn(Optional.empty());
+		given(postRepository.findByIdAndDeletedAtIsNull(1L)).willReturn(Optional.empty());
 
 		// when & then
 		assertThatThrownBy(() -> postService.getPostWithKeywordById(1L, null))

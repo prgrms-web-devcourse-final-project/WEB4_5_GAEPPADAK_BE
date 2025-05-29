@@ -45,17 +45,23 @@ public class CommentService {
 		Post post = postRepository.findById(postId)
 			.orElseThrow(() -> new ServiceException("404", "존재하지 않는 포스트입니다."));
 
-		return commentRepository.findAllByPostAndDeletedAtIsNull(post, pageable)
-			.map(comment -> CommentDto.from(comment, isLikedByMe(userDetails, comment)));
-	}
-
-	public Boolean isLikedByMe(UserDetails userDetails, Comment comment) {
 		if (userDetails == null) {
-			return null;
+			return commentRepository.findAllByPostAndDeletedAtIsNull(post, pageable)
+				.map(comment -> CommentDto.from(comment, null, null));
 		}
 
 		Member member = memberService.findByEmail(userDetails.getUsername());
+		return commentRepository.findAllByPostAndDeletedAtIsNull(post, pageable)
+			.map(comment -> CommentDto.from(
+				comment, isLikedByMe(comment, member), isReportedByMe(comment, member)));
+	}
+
+	private Boolean isLikedByMe(Comment comment, Member member) {
 		return commentLikeRepository.existsByCommentAndMember(comment, member);
+	}
+
+	private Boolean isReportedByMe(Comment comment, Member member) {
+		return commentReportRepository.existsByCommentAndReporter(comment, member);
 	}
 
 	@Transactional

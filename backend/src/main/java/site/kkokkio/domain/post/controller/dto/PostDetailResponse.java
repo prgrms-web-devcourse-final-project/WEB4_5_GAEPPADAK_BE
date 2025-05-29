@@ -8,6 +8,7 @@ public record PostDetailResponse(
 	String keyword,
 	String title,
 	String summary,
-	String thumbnailUrl
+	String thumbnailUrl,
+	Boolean reportedByMe
 ) {
 }

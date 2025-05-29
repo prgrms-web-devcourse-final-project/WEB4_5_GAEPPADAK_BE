@@ -111,7 +111,9 @@ public class JwtUtils {
 				.build()
 				.parseSignedClaims(token);
 			return true;
-		} catch (ExpiredJwtException | MalformedJwtException | IllegalArgumentException |
+		} catch (ExpiredJwtException e) {
+			throw e;
+		} catch (MalformedJwtException | IllegalArgumentException |
 				 UnsupportedJwtException | SecurityException e) {
 			handleAuthException(e);
 			return false;
@@ -141,7 +143,7 @@ public class JwtUtils {
 
 			// Todo: 프론트, 백엔드 도메인 일치 후(Strict)적용
 			.sameSite("None") // 외부 사이트 요청 차단 (CSRF 방지)
-			.maxAge(Duration.ofMillis(expiration)) // Access Token 만료 시간 : 10분
+			.maxAge(Duration.ofMillis(expiration + 300000)) // Access Token 만료 시간 : 15분
 			.secure(true) // HTTPS 통신 시에만 전송
 			.build();
 

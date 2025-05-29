@@ -9,6 +9,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,14 +45,18 @@ public class PostControllerV1 {
 	@Operation(summary = "포스트 조회")
 	@ApiErrorCodeExamples({ErrorCode.POST_NOT_FOUND_2})
 	@GetMapping("/{postId}")
-	public RsData<PostDetailResponse> getPostById(@PathVariable("postId") Long postId) {
-		PostDto postDto = postService.getPostWithKeywordById(postId);
+	public RsData<PostDetailResponse> getPostById(
+		@PathVariable("postId") Long postId,
+		@AuthenticationPrincipal UserDetails userDetails
+	) {
+		PostDto postDto = postService.getPostWithKeywordById(postId, userDetails);
 		PostDetailResponse data = PostDetailResponse.builder()
 			.postId(postDto.postId())
 			.keyword(postDto.keyword())
 			.title(postDto.title())
 			.summary(postDto.summary())
 			.thumbnailUrl(postDto.thumbnailUrl())
+			.reportedByMe(postDto.reportedByMe())
 			.build();
 
 		return new RsData<>(

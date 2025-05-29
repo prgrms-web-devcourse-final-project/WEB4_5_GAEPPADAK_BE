@@ -292,7 +292,7 @@ services:
     volumes:
       - /dockerProjects/logs:/app/logs
     networks:
-      - common
+      - common_internal
     depends_on:
       redis:
         condition: service_started
@@ -309,7 +309,7 @@ services:
       - /dockerProjects/redis_data:/data
     command: ["redis-server", "--notify-keyspace-events", "Ex"]
     networks:
-      - common
+      - common_internal
 
   npm_1:
     container_name: npm_1
@@ -325,7 +325,7 @@ services:
       - /dockerProjects/npm_1/volumes/data:/data
       - /dockerProjects/npm_1/volumes/etc/letsencrypt:/etc/letsencrypt
     networks:
-      - common
+      - common_internal
 
   prometheus:
     container_name: prometheus
@@ -338,7 +338,7 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
     networks:
-      - common
+      - common_internal
 
   loki:
     container_name: loki
@@ -351,7 +351,7 @@ services:
       - /dockerProjects/tmp/loki:/tmp/loki
     command: -config.file=/etc/loki/local-config.yaml
     networks:
-      - common
+      - common_internal
 
   promtail:
     container_name: promtail
@@ -362,7 +362,7 @@ services:
       - /dockerProjects/promtail-config.yml:/etc/promtail/config.yml
     command: -config.file=/etc/promtail/config.yml
     networks:
-      - common
+      - common_internal
     depends_on:
       loki:
         condition: service_started
@@ -379,7 +379,7 @@ services:
       - GF_SECURITY_ADMIN_USER=${var.DB_USERNAME}
       - GF_SECURITY_ADMIN_PASSWORD=${var.DB_PASSWORD}
     networks:
-      - common
+      - common_internal
     depends_on:
       prometheus:
         condition: service_started
@@ -401,7 +401,7 @@ services:
       - '--path.sysfs=/host/sys'
       - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
     networks:
-      - common
+      - common_internal
 
   mysql: # MySQL 컨테이너 서비스 정의 추가
     container_name: mysql
@@ -422,7 +422,7 @@ services:
       TZ: UTC
     command: ["mysqld", "--general-log=1", "--general-log-file=/logs/general.log"] # /logs 볼륨에 로그 저장
     networks:
-      - common
+      - common_internal
     healthcheck: # MySQL 컨테이너 헬스체크 추가
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u${var.DB_USERNAME}", "-p${var.DB_PASSWORD}"]
       interval: 10s
@@ -437,7 +437,7 @@ services:
       - "--mysqld.username=${var.DB_USERNAME}:${var.DB_PASSWORD}"
       - "--mysqld.address=mysql:${var.DB_PORT}"
     networks:
-      - common
+      - common_internal
     healthcheck: # MySQL exporter 컨테이너 헬스체크 추가
       test: ["CMD", "curl", "-f", "http://mysql-exporter:9104/metrics"]
       interval: 10s
@@ -448,7 +448,8 @@ services:
         condition: service_healthy
 
 networks:
-  common:
+  common_internal:
+    name: common
     driver: bridge
 
 volumes:

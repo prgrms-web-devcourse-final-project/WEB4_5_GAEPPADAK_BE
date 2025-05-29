@@ -361,7 +361,7 @@ services:
     volumes:
       - /dockerProjects/logs:/app/logs
     networks:
-      - common
+      - common_internal
     depends_on:
       redis:
         condition: service_started
@@ -376,7 +376,7 @@ services:
       - /dockerProjects/redis_data:/data
     command: ["redis-server", "--notify-keyspace-events", "Ex"]
     networks:
-      - common
+      - common_internal
 
   npm_1:
     container_name: npm_1
@@ -392,7 +392,7 @@ services:
       - /dockerProjects/npm_1/volumes/data:/data
       - /dockerProjects/npm_1/volumes/etc/letsencrypt:/etc/letsencrypt
     networks:
-      - common
+      - common_internal
 
   prometheus:
     container_name: prometheus
@@ -405,7 +405,7 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
     networks:
-      - common
+      - common_internal
 
   loki:
     container_name: loki
@@ -418,7 +418,7 @@ services:
       - /dockerProjects/tmp/loki:/tmp/loki
     command: -config.file=/etc/loki/local-config.yaml
     networks:
-      - common
+      - common_internal
 
   promtail:
     container_name: promtail
@@ -429,7 +429,7 @@ services:
       - /dockerProjects/promtail-config.yml:/etc/promtail/config.yml
     command: -config.file=/etc/promtail/config.yml
     networks:
-      - common
+      - common_internal
     depends_on:
       loki:
         condition: service_started
@@ -446,7 +446,7 @@ services:
       - GF_SECURITY_ADMIN_USER=${var.DB_USERNAME}
       - GF_SECURITY_ADMIN_PASSWORD=${var.DB_PASSWORD}
     networks:
-      - common
+      - common_internal
     depends_on:
       prometheus:
         condition: service_started
@@ -468,7 +468,7 @@ services:
       - '--path.sysfs=/host/sys'
       - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
     networks:
-      - common
+      - common_internal
 
   mysql-exporter:
     container_name: mysql-exporter
@@ -478,7 +478,7 @@ services:
       - "--mysqld.username=${var.DB_USERNAME}:${var.DB_PASSWORD}"
       - "--mysqld.address=${aws_db_instance.mysql.address}:${aws_db_instance.mysql.port}"
     networks:
-      - common
+      - common_internal
     healthcheck:
       test: ["CMD", "curl", "-f", "http://mysql-exporter:9104/metrics"]
       interval: 10s
@@ -486,7 +486,8 @@ services:
       retries: 5
 
 networks:
-  common:
+  common_internal:
+    name: common
     driver: bridge
 
 volumes:

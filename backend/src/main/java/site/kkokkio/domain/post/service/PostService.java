@@ -87,7 +87,7 @@ public class PostService {
 
 	@Transactional(readOnly = true)
 	public PostDto getPostWithKeywordById(Long id, UserDetails userDetails) {
-		Post post = postRepository.findById(id)
+		Post post = postRepository.findByIdAndDeletedAtIsNull(id)
 			.orElseThrow(() -> new ServiceException("404", "포스트를 불러오지 못했습니다."));
 
 		PostKeyword postKeyword = postKeywordRepository.findByPost_Id(id)
@@ -118,6 +118,8 @@ public class PostService {
 			.filter(metric -> {
 				if (metric.getPost() == null) {
 					log.error("keywordMetricHourlyId: {} 해당 키워드에 post가 존재하지 않습니다.", metric.getId());
+					return false;
+				} else if (metric.getPost().isDeleted()) {
 					return false;
 				}
 				return true;

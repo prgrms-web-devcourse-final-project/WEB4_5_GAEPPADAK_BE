@@ -21,12 +21,15 @@ public interface PostKeywordRepository extends JpaRepository<PostKeyword, Long>,
 		JOIN FETCH pk.post p
 		JOIN FETCH pk.keyword k
 		WHERE k.text = :keywordText
+			AND p.deletedAt IS NULL
 		""",
 		countQuery = """
 			SELECT COUNT(pk)
 			FROM PostKeyword pk
 			JOIN pk.keyword k ON pk.keyword.id = k.id
+			JOIN pk.post p ON pk.post.id = p.id
 			WHERE k.text = :keywordText
+				AND p.deletedAt IS NULL
 			""")
 	Page<PostKeyword> findByKeywordTextWithPostAndKeyword(@Param("keywordText") String keywordText, Pageable pageable);
 

@@ -39,7 +39,6 @@ public interface PostReportRepository extends JpaRepository<PostReport, Long> {
 		WHERE (:searchTitle IS NULL OR LOWER(p.title) LIKE LOWER(CONCAT('%', :searchTitle, '%')))
 			AND (:searchSummary IS NULL OR LOWER(p.summary) LIKE LOWER(CONCAT('%', :searchSummary, '%')))
 			AND (:searchKeyword IS NULL OR LOWER(k.text) LIKE LOWER(CONCAT('%', :searchKeyword, '%')))
-			AND (p.deleted_at IS NULL)
 			AND (:searchReportReason IS NULL OR p.post_id IN (
 					SELECT sub_pr.post_id
 					FROM post_report sub_pr
@@ -63,7 +62,6 @@ public interface PostReportRepository extends JpaRepository<PostReport, Long> {
 			WHERE (:searchTitle IS NULL OR LOWER(p.title) LIKE LOWER(CONCAT('%', :searchTitle, '%')))
 			AND (:searchSummary IS NULL OR LOWER(p.summary) LIKE LOWER(CONCAT('%', :searchSummary, '%')))
 			AND (:searchKeyword IS NULL OR LOWER(k.text) LIKE LOWER(CONCAT('%', :searchKeyword, '%')))
-			AND (p.deleted_at IS NULL)
 			AND (:searchReportReason IS NULL OR p.post_id IN (
 					SELECT sub_pr.post_id
 					FROM post_report sub_pr

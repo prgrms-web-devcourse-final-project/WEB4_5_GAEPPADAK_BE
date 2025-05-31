@@ -258,7 +258,15 @@ public class CommentService {
 				case "nickname" -> searchNickname = trimmedSearchValue;
 				case "post_title" -> searchPostTitle = trimmedSearchValue;
 				case "comment_body" -> searchCommentBody = trimmedSearchValue;
-				case "report_reason" -> searchReportReason = trimmedSearchValue;
+				case "report_reason" -> {
+					// 한글 검색어를 Enum 이름으로 변환
+					searchReportReason = ReportReason.findByNameOrDescription(trimmedSearchValue);
+
+					if (searchReportReason == null && !trimmedSearchValue.isBlank()) {
+						// 검색어가 있지만 해당하는 Enum을 찾지 못했을 경우
+						throw new ServiceException("400", "부적절한 검색 옵션입니다. (신고 사유)");
+					}
+				}
 				default -> throw new ServiceException("400", "부적절한 검색 옵션입니다.");
 			}
 		}
